@@ -1,0 +1,42 @@
+# Dependencies
+node_modules/
+
+# Environment files (SENSITIVE - never commit!)
+.env
+.env.local
+.env.production
+
+# Database files
+*.sqlite
+*.sqlite3
+*.db
+
+# Uploads directory (user-generated content)
+uploads/*
+!uploads/.gitkeep
+
+# Deploy archives
+*.zip
+*.tar.gz
+
+# Logs
+*.log
+app.log
+nohup.out
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE / Editor files
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Test coverage
+coverage/

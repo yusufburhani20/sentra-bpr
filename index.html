@@ -1,0 +1,1193 @@
+<!DOCTYPE html>
+<html lang="id" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SENTRA - Sistem Terpusat Referensi, Arsip & Operasional BPR</title>
+    <!-- CSS Stylesheet -->
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+    <!-- LOGIN SCREEN -->
+    <div id="login-screen" class="login-screen">
+        <div class="login-card">
+            <div class="login-logo-area">
+                <div class="login-logo-icon">S</div>
+                <h1 class="login-title">SENTRA</h1>
+                <p class="login-subtitle">Sistem Terpusat Referensi,<br>Arsip & Operasional BPR</p>
+            </div>
+            <div class="login-form-area">
+                <div class="form-group">
+                    <label class="form-label" for="login-username">Username</label>
+                    <div class="login-input-wrap">
+                        <i data-lucide="user" class="login-input-icon"></i>
+                        <input type="text" id="login-username" class="form-control login-input"
+                            placeholder="Masukkan username" autocomplete="username">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="login-password">Password</label>
+                    <div class="login-input-wrap">
+                        <i data-lucide="lock" class="login-input-icon"></i>
+                        <input type="password" id="login-password" class="form-control login-input"
+                            placeholder="Masukkan password" autocomplete="current-password">
+                        <button type="button" id="btn-toggle-password" class="login-eye-btn" title="Tampilkan password">
+                             <i data-lucide="eye" id="eye-icon"></i>
+                        </button>
+                    </div>
+                </div>
+                <div id="login-error" class="login-error" style="display:none;"></div>
+                <button class="btn btn-primary" id="btn-login" style="width:100%; margin-top:8px; padding:12px; font-size:14px;">
+                    <i data-lucide="log-in"></i> Masuk ke Sistem
+                </button>
+            </div>
+            <div class="login-footer-note">
+                <small>© 2026 Tim Teknologi Informasi &nbsp;|&nbsp; SENTRA v2.0</small>
+            </div>>
+        </div>
+    </div>
+
+    <!-- MAIN APP (hidden until logged in) -->
+    <div id="main-app" style="display:none;">
+
+    <!-- Impersonation Banner -->
+    <div id="impersonation-banner" style="display:none; align-items:center; justify-content:center; background:var(--warning); color:#1e1b4b; text-align:center; padding:10px 16px; font-weight:700; font-size:13px; z-index:99999; flex-shrink:0;">
+        <i data-lucide="shield-alert" style="width:16px; height:16px; margin-right:8px; flex-shrink:0;"></i>
+        <span>Mode Login As: Anda sedang mengakses sistem sebagai <span id="impersonate-target-name">-</span> (Akun Asli: <span id="impersonate-admin-name">-</span>).</span>
+        <button class="btn btn-primary" id="btn-stop-impersonate" style="margin-left:14px; padding:4px 10px; font-size:11px; background:#1e1b4b; color:#fff; border:none; cursor:pointer; border-radius:6px; font-weight:700; transition:all 0.2s;">
+            Kembali ke Akun Asli
+        </button>
+    </div>
+
+    <!-- Active User Bar -->
+    <div class="role-simulation-banner">
+        <div class="sim-info">
+            <span class="sim-badge">AKTIF</span>
+            <span>SENTRA - Sistem Terpusat Referensi, Arsip & Operasional BPR (v2.0)</span>
+        </div>
+        <div class="sim-controls">
+            <span class="sim-label">Masuk sebagai:</span>
+            <span id="active-user-display" style="font-weight:700; color:#fff; margin-right:12px;">-</span>
+            <button class="sim-action-btn" id="btn-change-password" title="Ganti Password">
+                <i data-lucide="key-round"></i> Ganti Password
+            </button>
+            <button class="sim-action-btn sim-action-danger" id="btn-logout" title="Keluar">
+                <i data-lucide="log-out"></i> Keluar
+            </button>
+        </div>
+    </div>
+
+    <!-- App Container -->
+    <div class="app-container">
+
+        <!-- Sidebar Navigation -->
+        <aside class="app-sidebar" id="app-sidebar">
+            <div class="brand-section">
+                <div class="brand-logo">S</div>
+                <div class="brand-title-wrap">
+                    <span class="brand-name">SENTRA</span>
+                    <span class="brand-subtitle">REFERENSI, ARSIP & OPERASIONAL BPR</span>
+                </div>
+            </div>
+
+            <nav class="nav-menu">
+                <li>
+                    <a class="nav-item-link active" data-view="dashboard" id="nav-dashboard">
+                        <i data-lucide="layout-dashboard"></i>
+                        <span>Dashboard</span>
+                    </a>
+                </li>
+                <li>
+                    <a class="nav-item-link" data-view="input">
+                        <i data-lucide="plus-circle"></i>
+                        <span>Input Transaksi</span>
+                    </a>
+                </li>
+                <li>
+                    <a class="nav-item-link" data-view="riwayat">
+                        <i data-lucide="history"></i>
+                        <span>Riwayat Transaksi</span>
+                    </a>
+                </li>
+                <li>
+                    <a class="nav-item-link" data-view="kirimslip" id="nav-kirimslip">
+                        <i data-lucide="send"></i>
+                        <span>Kirim Berkas Slip</span>
+                    </a>
+                </li>
+                <li>
+                    <a class="nav-item-link" data-view="kodebiaya" id="nav-kodebiaya">
+                        <i data-lucide="tag"></i>
+                        <span>Kelola Kode Biaya</span>
+                    </a>
+                </li>
+                <li>
+                    <a class="nav-item-link" data-view="users" id="nav-users">
+                        <i data-lucide="users"></i>
+                        <span>Manajemen User</span>
+                    </a>
+                </li>
+                <li>
+                    <a class="nav-item-link" data-view="audit" id="nav-audit">
+                        <i data-lucide="shield-check"></i>
+                        <span>Audit Trail</span>
+                    </a>
+                </li>
+                <li>
+                    <a class="nav-item-link" data-view="approvals" id="nav-approvals" style="display:none; position:relative;">
+                        <i data-lucide="check-square"></i>
+                        <span>Persetujuan</span>
+                        <span class="btn-badge" id="approvals-badge" style="display:none; position:absolute; right:12px; top:50%; transform:translateY(-50%); background:var(--danger); color:#fff; border-radius:50%; font-size:10px; width:18px; height:18px; align-items:center; justify-content:center; font-weight:700;">0</span>
+                    </a>
+                </li>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="user-quick-profile">
+                    <div class="user-avatar" id="user-avatar-initial">A</div>
+                    <div class="user-meta">
+                        <span class="user-name" id="user-display-name">Agus Setiawan</span>
+                        <span class="user-role-label" id="user-display-role">Administrator</span>
+                    </div>
+                </div>
+            </div>
+        </aside>
+        <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+        <!-- Header Area -->
+        <header class="app-header">
+            <div class="page-title-area">
+                <h1 class="page-title" id="page-title-text">Input Transaksi</h1>
+            </div>
+            <div class="header-actions">
+                <span id="current-system-time" style="font-size: 13px; font-weight: 600; color: var(--text-muted);">25 Juni 2026 12:00</span>
+                
+                <!-- Theme Toggle -->
+                <button class="action-btn" id="theme-toggle-btn" title="Ubah Tema">
+                    <i data-lucide="moon" id="theme-icon"></i>
+                </button>
+
+                <!-- Notifications -->
+                <div style="position: relative;">
+                    <button class="action-btn" id="notif-btn" title="Notifikasi">
+                        <i data-lucide="bell"></i>
+                        <span class="btn-badge" id="notif-badge" style="display:none;">0</span>
+                    </button>
+                    
+                    <!-- Notif Dropdown -->
+                    <div class="notification-dropdown" id="notification-dropdown">
+                        <div class="notif-header">
+                            <span>Notifikasi Terbaru</span>
+                            <button id="clear-notif-btn" style="background:none; border:none; color:var(--primary); font-size:11px; font-weight:700; cursor:pointer;">Tandai Dibaca</button>
+                        </div>
+                        <div id="notif-list-container">
+                            <div class="notif-item">
+                                <span class="notif-title">Tidak ada notifikasi baru</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <button class="action-btn menu-toggle-btn" id="menu-toggle" title="Menu">
+                    <i data-lucide="menu"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- Main View Space -->
+        <main class="app-main">
+
+            <!-- 0. VIEW: DASHBOARD -->
+            <section id="view-dashboard" class="view-section" style="display:block;">
+                <!-- KPI CARDS -->
+                <div class="dashboard-kpi-grid">
+                    <div class="kpi-card card-glow-primary">
+                        <div class="kpi-icon"><i data-lucide="wallet"></i></div>
+                        <div class="kpi-content">
+                            <span class="kpi-label">Volume Transaksi</span>
+                            <span class="kpi-value" id="dash-kpi-volume">Rp 0,00</span>
+                        </div>
+                    </div>
+                    <div class="kpi-card card-glow-warning">
+                        <div class="kpi-icon"><i data-lucide="activity"></i></div>
+                        <div class="kpi-content">
+                            <span class="kpi-label">Transaksi Hari Ini</span>
+                            <span class="kpi-value" id="dash-kpi-today-count">0</span>
+                            <span class="kpi-sub-label" id="dash-kpi-yesterday-diff">vs kemarin: 0</span>
+                        </div>
+                    </div>
+                    <div class="kpi-card card-glow-info">
+                        <div class="kpi-icon"><i data-lucide="calculator"></i></div>
+                        <div class="kpi-content">
+                            <span class="kpi-label">Rata-rata Transaksi</span>
+                            <span class="kpi-value" id="dash-kpi-avg">Rp 0,00</span>
+                        </div>
+                    </div>
+                    <div class="kpi-card card-glow-success">
+                        <div class="kpi-icon"><i data-lucide="user-check"></i></div>
+                        <div class="kpi-content">
+                            <span class="kpi-label">Total Transaksi</span>
+                            <span class="kpi-value" id="dash-kpi-total-count">0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CHARTS GRID -->
+                <div class="dashboard-charts-grid">
+                    <div class="chart-card">
+                        <h3 class="chart-title">Tren Volume Transaksi (7 Hari Terakhir)</h3>
+                        <div class="chart-container" style="position: relative; height: 320px; width: 100%;">
+                            <canvas id="chart-volume-trend"></canvas>
+                        </div>
+                    </div>
+                    <div class="chart-card">
+                        <h3 class="chart-title">Penyebaran Berdasarkan Kode Biaya</h3>
+                        <div class="chart-container" style="position: relative; height: 320px; width: 100%;">
+                            <canvas id="chart-cc-distribution"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="chart-card" style="margin-top: 24px;">
+                    <h3 class="chart-title">Aktivitas & Produktivitas Operator</h3>
+                    <div class="chart-container" style="position: relative; height: 300px; width: 100%;">
+                        <canvas id="chart-operator-activity"></canvas>
+                    </div>
+                </div>
+            </section>
+
+            <!-- VIEW: PERSETUJUAN (APPROVALS) -->
+            <section id="view-approvals" class="view-section" style="display:none;">
+                <div class="card" id="approvals-pending-card">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+                        <h2 style="font-size: 16px; font-weight: 700;">Permintaan Persetujuan Edit / Hapus</h2>
+                        <span class="badge badge-info" id="pending-approvals-count-label">0 Menunggu</span>
+                    </div>
+
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Ref No</th>
+                                    <th>Tipe</th>
+                                    <th>Diajukan Oleh</th>
+                                    <th>Tanggal Pengajuan</th>
+                                    <th>Detail Perubahan</th>
+                                    <th>Aksi Keputusan</th>
+                                </tr>
+                            </thead>
+                            <tbody id="approvals-table-body">
+                                <tr>
+                                    <td colspan="6" style="text-align:center; color:var(--text-muted);">Tidak ada pengajuan persetujuan tertunda.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="card" style="margin-top:20px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+                        <h2 style="font-size: 16px; font-weight: 700;" id="approvals-history-title">Riwayat Pengajuan</h2>
+                    </div>
+
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Ref No</th>
+                                    <th>Tipe</th>
+                                    <th>Diajukan Oleh</th>
+                                    <th>Tanggal Pengajuan</th>
+                                    <th>Detail Perubahan</th>
+                                    <th>Status</th>
+                                    <th>Diproses Oleh</th>
+                                    <th>Alasan / Catatan</th>
+                                </tr>
+                            </thead>
+                            <tbody id="approvals-history-table-body">
+                                <tr>
+                                    <td colspan="8" style="text-align:center; color:var(--text-muted);">Belum ada riwayat pengajuan.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 1. VIEW: INPUT TRANSAKSI (SPLIT PANEL) -->
+            <section id="view-input" class="view-section" style="display:none;">
+                <div class="grid-2col" style="grid-template-columns: 1fr 1fr; align-items: start;">
+                    
+                    <!-- Input Form Column -->
+                    <div class="card">
+                        <h2 style="font-size: 16px; font-weight: 700; margin-bottom: 16px;">Form Entry Slip Jurnal</h2>
+                        
+                        <!-- Rekening Debet (Nama & No Rekening) -->
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">Nama Perkiraan Debet</label>
+                                <input type="text" id="tx-debet-nama" class="form-control" placeholder="Ketik atau pilih perkiraan..." list="debet-nama-list" autocomplete="off">
+                                <datalist id="debet-nama-list"></datalist>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">No. P/K Debet</label>
+                                <input type="text" id="tx-debet-rekening" class="form-control" placeholder="Ketik atau pilih rekening..." list="debet-rekening-list" autocomplete="off">
+                                <datalist id="debet-rekening-list"></datalist>
+                            </div>
+                        </div>
+
+                        <!-- Rekening Kredit / Perkiraan Lawan (Nama & No Rekening) -->
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">Nama Perkiraan Lawan (Kredit)</label>
+                                <input type="text" id="tx-kredit-nama" class="form-control" placeholder="Ketik atau pilih perkiraan..." list="kredit-nama-list" autocomplete="off">
+                                <datalist id="kredit-nama-list"></datalist>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">No. P/K Lawan (Kredit)</label>
+                                <input type="text" id="tx-kredit-rekening" class="form-control" placeholder="Ketik atau pilih rekening..." list="kredit-rekening-list" autocomplete="off">
+                                <datalist id="kredit-rekening-list"></datalist>
+                            </div>
+                        </div>
+
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">Nominal Utama (Rupiah)</label>
+                                <input type="number" id="tx-nominal-utama" class="form-control" placeholder="Contoh: 10000">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Nominal Sen/Desimal</label>
+                                <input type="number" id="tx-nominal-desimal" class="form-control" placeholder="Contoh: 31">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Keterangan / Rincian Transaksi</label>
+                            <textarea id="tx-keterangan" class="form-control" rows="3" placeholder="Contoh: BY PARKIR KENDARAAN DINAS"></textarea>
+                        </div>
+
+                        <div class="form-row" style="margin-top: 20px;">
+                            <button type="button" class="btn btn-secondary" id="btn-reset-tx">
+                                <i data-lucide="rotate-ccw"></i> Reset Form
+                            </button>
+                            <button type="button" class="btn btn-primary" id="btn-save-tx">
+                                <i data-lucide="save"></i> Simpan Transaksi
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Slip Preview Column -->
+                    <div style="display: flex; flex-direction: column; gap: 16px;">
+                        <div class="card" style="padding: 12px;">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+                                <h3 style="font-size:14px; font-weight:700; color:var(--text-muted);">Pratinjau Slip Fisik</h3>
+                                <div style="display:flex; align-items:center; gap:12px;">
+                                    <label style="font-size: 11px; font-weight: 600; display: flex; align-items: center; gap: 4px; cursor: pointer; color: var(--text-muted);">
+                                        <input type="checkbox" id="print-data-only" checked> Cetak Isian Saja (Pre-printed)
+                                    </label>
+                                    <button class="btn btn-success" id="btn-print-slip" style="padding:6px 14px; font-size:12px;">
+                                        <i data-lucide="printer"></i> Cetak Slip
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <!-- Printer Calibration & Layout Settings panel -->
+                            <div class="calibration-panel" style="background:var(--primary-light); padding:12px 16px; border-radius:var(--radius-md); margin-bottom:12px; display:flex; flex-direction:column; gap:12px; border: 1px solid var(--border-color);">
+                                <div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 1px solid rgba(0,0,0,0.05); padding-bottom:6px;">
+                                    <span style="font-size:12px; font-weight:700; color:var(--primary); text-transform:uppercase; letter-spacing:0.5px;">Pengaturan & Kalibrasi Cetak</span>
+                                    <span style="font-size:10px; color:var(--text-muted); font-style:italic;">*Disimpan otomatis</span>
+                                </div>
+                                
+                                <!-- Baris 1: Ukuran & Skala -->
+                                <div style="display:flex; gap:16px; flex-wrap:wrap; font-size:11px;">
+                                    <div style="display:flex; align-items:center; gap:6px;">
+                                        <label style="font-weight:600;">Lebar Slip (cm):</label>
+                                        <input type="number" id="cal-slip-width" class="form-control" style="width:65px; padding:3px 6px; font-size:11px;" value="15.5" step="0.1" min="5" max="30">
+                                    </div>
+                                    <div style="display:flex; align-items:center; gap:6px;">
+                                        <label style="font-weight:600;">Tinggi Slip (cm):</label>
+                                        <input type="number" id="cal-slip-height" class="form-control" style="width:65px; padding:3px 6px; font-size:11px;" value="10.5" step="0.1" min="5" max="30">
+                                    </div>
+                                    <div style="display:flex; align-items:center; gap:6px;">
+                                        <label style="font-weight:600;">Skala (%):</label>
+                                        <input type="number" id="cal-slip-scale" class="form-control" style="width:65px; padding:3px 6px; font-size:11px;" value="100" step="1" min="50" max="150">
+                                    </div>
+                                    <div style="display:flex; align-items:center; gap:6px;">
+                                        <label style="font-weight:600;">Kertas:</label>
+                                        <select id="cal-page-size" class="form-control" style="width:130px; padding:3px 6px; font-size:11px;">
+                                            <option value="slip">Slip (15.5 x 10.5cm)</option>
+                                            <option value="a4">A4 Portrait (Excel)</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <!-- Baris 2: Arah Rotasi & Geser Offset -->
+                                <div style="display:flex; gap:16px; flex-wrap:wrap; font-size:11px; align-items:center;">
+                                    <div style="display:flex; align-items:center; gap:6px;">
+                                        <label style="font-weight:600;">Rotasi/Arah:</label>
+                                        <select id="cal-slip-rotation" class="form-control" style="width:145px; padding:3px 6px; font-size:11px;">
+                                            <option value="0">0° (Lanskap Standar)</option>
+                                            <option value="90">90° (Potret Kanan)</option>
+                                            <option value="180">180° (Lanskap Terbalik)</option>
+                                            <option value="270">270° (Potret Kiri)</option>
+                                        </select>
+                                    </div>
+                                    <div style="display:flex; align-items:center; gap:6px;">
+                                        <label style="font-weight:600;">Geser X (mm):</label>
+                                        <input type="number" id="cal-offset-x" class="form-control" style="width:50px; padding:3px 6px; font-size:11px;" value="0" step="1">
+                                    </div>
+                                    <div style="display:flex; align-items:center; gap:6px;">
+                                        <label style="font-weight:600;">Geser Y (mm):</label>
+                                        <input type="number" id="cal-offset-y" class="form-control" style="width:50px; padding:3px 6px; font-size:11px;" value="0" step="1">
+                                    </div>
+                                    <div style="display:flex; align-items:center; gap:8px; margin-left:10px;">
+                                        <label style="font-weight:700; color:var(--primary); display:flex; align-items:center; gap:4px; cursor:pointer;">
+                                            <input type="checkbox" id="cal-enable-drag"> Mode Drag & Drop
+                                        </label>
+                                        <button type="button" class="btn btn-primary" id="btn-apply-calibration" style="padding:2px 8px; font-size:10px; line-height:1.2; font-weight:700; border-radius:4px;">
+                                            Apply
+                                        </button>
+                                        <button type="button" class="btn btn-secondary" id="btn-reset-calibration" style="padding:2px 8px; font-size:10px; line-height:1.2; font-weight:700; border-radius:4px; border-color:var(--danger-light); color:var(--danger);">
+                                            Reset
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- Hidden Calibration Inputs for Drag & Drop Offsets -->
+                                <input type="hidden" id="cal-el-date-x" value="0">
+                                <input type="hidden" id="cal-el-date-y" value="0">
+                                <input type="hidden" id="cal-el-val-x" value="0">
+                                <input type="hidden" id="cal-el-val-y" value="0">
+                                <input type="hidden" id="cal-el-debet-x" value="0">
+                                <input type="hidden" id="cal-el-debet-y" value="0">
+                                <input type="hidden" id="cal-el-kredit-x" value="0">
+                                <input type="hidden" id="cal-el-kredit-y" value="0">
+                                <input type="hidden" id="cal-el-amount-x" value="0">
+                                <input type="hidden" id="cal-el-amount-y" value="0">
+                                <input type="hidden" id="cal-el-terbilang-x" value="0">
+                                <input type="hidden" id="cal-el-terbilang-y" value="0">
+                                <input type="hidden" id="cal-el-details-x" value="0">
+                                <input type="hidden" id="cal-el-details-y" value="0">
+                            </div>
+                            
+                            <!-- Yellow Physical Slip Area (BPR Bank Nusamba Debit Slip style) -->
+                            <div class="voucher-slip-scroll-wrapper">
+                                <div class="voucher-slip" id="printable-voucher-slip">
+                                <!-- Top Yellow Band -->
+                                <div class="slip-top-band">
+                                    <div class="logo-wrap">
+                                        <span class="logo-text-large">bank <strong>nusamba</strong></span>
+                                        <span class="logo-text-sub">bpr bank nusamba jabar</span>
+                                    </div>
+                                    <div class="slip-type-title">slip debet</div>
+                                </div>
+
+                                <!-- Metadata validasi / tanggal -->
+                                <div class="slip-meta-row">
+                                    <div class="meta-item-validasi">
+                                        <span class="lbl">Validasi :</span>
+                                        <span class="val" id="slip-val-validation">CSSPA0146 / REF: CSSPA0146-260625-0001</span>
+                                    </div>
+                                    <div class="meta-item-tanggal">
+                                        <span class="lbl">Tanggal :</span>
+                                        <span class="val" id="slip-val-date">25 Juni 2026</span>
+                                    </div>
+                                </div>
+
+                                <!-- Box Debet & Perkiraan Lawan -->
+                                <div class="slip-boxes-row">
+                                    <div class="slip-box-container debet-box">
+                                        <div class="box-title">DEBET</div>
+                                        <div class="box-inner">
+                                            <div class="box-label-desc">Nama B.P./B.B. & No. P/K</div>
+                                            <div class="box-value-rekening" id="slip-val-debet-rekening">54305</div>
+                                            <div class="box-value-nama" id="slip-val-debet-nama">BY PARKIR/TOL</div>
+                                        </div>
+                                    </div>
+                                    <div class="slip-box-container kredit-box">
+                                        <div class="box-title">Perkiraan Lawan</div>
+                                        <div class="box-inner">
+                                            <div class="box-label-desc">Nama B.P./B.B. & No. P/K</div>
+                                            <div class="box-value-rekening" id="slip-val-kredit-rekening">0159000004</div>
+                                            <div class="box-value-nama" id="slip-val-kredit-nama">REKENING UTAMA KAS</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Detail Keuangan -->
+                                <div class="slip-details-section">
+                                    <div class="detail-row row-rp">
+                                        <span class="lbl">Rp.</span>
+                                        <div class="rp-box-val">
+                                            <span class="val" id="slip-val-amount">Rp 10.000,31</span>
+                                        </div>
+                                    </div>
+                                    <div class="detail-row row-terbilang">
+                                        <span class="lbl">Terbilang :</span>
+                                        <span class="val" id="slip-val-terbilang">Sepuluh Ribu Koma Tiga Puluh Satu Rupiah</span>
+                                    </div>
+                                    <div class="detail-row row-keterangan">
+                                        <span class="lbl">Keterangan :</span>
+                                        <span class="val" id="slip-val-details">BY PARKIR KENDARAAN DINAS</span>
+                                    </div>
+                                </div>
+
+                            </div>
+                            <!-- End of Slip Area -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 2. VIEW: RIWAYAT TRANSAKSI -->
+            <section id="view-riwayat" class="view-section" style="display:none;">
+                <div class="card">
+                    <div class="page-filters">
+                        <div class="filters-left">
+                            <div class="search-input-wrap">
+                                <i data-lucide="search"></i>
+                                <input type="text" id="riwayat-search" class="form-control" placeholder="Cari nomor ref / rekening...">
+                            </div>
+                            <select id="riwayat-filter-code" class="form-control" style="width:160px;">
+                                <option value="">Semua Rekening</option>
+                                <!-- Populated dynamically -->
+                            </select>
+                            <input type="date" id="riwayat-filter-date" class="form-control" style="width:160px;">
+                        </div>
+                        <button class="btn btn-success" id="btn-export-riwayat">
+                            <i data-lucide="file-spreadsheet"></i> Ekspor Rekap (CSV)
+                        </button>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>No. Referensi</th>
+                                    <th>Tanggal</th>
+                                    <th>Operator ID</th>
+                                    <th>Rekening Debet</th>
+                                    <th>Rekening Kredit</th>
+                                    <th>Nominal</th>
+                                    <th>Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="riwayat-table-body">
+                                <!-- Populated by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Pagination Controls -->
+                    <div class="pagination-controls" style="display:flex; justify-content:space-between; align-items:center; margin-top:20px; flex-wrap:wrap; gap:10px;">
+                        <span id="riwayat-pagination-info" style="font-size:13px; color:var(--text-muted); font-weight:550;">Menampilkan 0 dari 0 transaksi</span>
+                        <div style="display:flex; gap:8px; align-items:center;">
+                            <button class="btn btn-secondary" id="btn-prev-riwayat" style="padding:6px 12px; font-size:12px;">
+                                <i data-lucide="chevron-left" style="width:14px; height:14px;"></i> Sebelum
+                            </button>
+                            <span id="riwayat-page-indicator" style="font-size:13px; font-weight:700; color:var(--primary); padding:0 8px;">Halaman 1 / 1</span>
+                            <button class="btn btn-secondary" id="btn-next-riwayat" style="padding:6px 12px; font-size:12px;">
+                                Berikut <i data-lucide="chevron-right" style="width:14px; height:14px;"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 2b. VIEW: KIRIM SLIP -->
+            <section id="view-kirimslip" class="view-section" style="display:none;">
+                <div class="grid-2col" style="grid-template-columns: 1fr 2fr; align-items: start;">
+                    
+                    <!-- Form Send Slips -->
+                    <div class="card">
+                        <h2 style="font-size: 16px; font-weight: 700; margin-bottom: 16px;">Kirim Berkas Slip Baru</h2>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Kantor Kas / Unit Pengirim</label>
+                            <input type="text" id="submit-kantor-kas" class="form-control" placeholder="Contoh: Kantor Kas Jabar">
+                        </div>
+
+                        <!-- Checklists -->
+                        <div class="form-group" style="margin-top:16px;">
+                            <label class="form-label">Ceklis Kelengkapan Berkas</label>
+                            <div style="display:flex; flex-direction:column; gap:10px; margin-top:8px;">
+                                <label style="display:flex; align-items:center; gap:8px; font-size:13px; font-weight:550; cursor:pointer; user-select:none; margin:0;">
+                                    <input type="checkbox" id="submit-checklist-slips" checked> Slip Transaksi
+                                </label>
+                                <label style="display:flex; align-items:center; gap:8px; font-size:13px; font-weight:550; cursor:pointer; user-select:none; margin:0;">
+                                    <input type="checkbox" id="submit-checklist-mutasi" checked> Mutasi Kas
+                                </label>
+                                <label style="display:flex; align-items:center; gap:8px; font-size:13px; font-weight:550; cursor:pointer; user-select:none; margin:0;">
+                                    <input type="checkbox" id="submit-checklist-pb" checked> Pemindahbukuan (PB)
+                                </label>
+                                <label style="display:flex; align-items:center; gap:8px; font-size:13px; font-weight:550; cursor:pointer; user-select:none; margin:0;">
+                                    <input type="checkbox" id="submit-checklist-fo" checked> Laporan Funding Officer (FO)
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Custom Manual checklists -->
+                        <div class="form-group" style="margin-top:16px; border-top:1px solid var(--border-color); padding-top:16px;">
+                            <label class="form-label">Kelengkapan Lainnya (Ketik Manual)</label>
+                            <div id="submit-checklist-other-list" style="display:flex; flex-direction:column; gap:6px; margin-bottom:8px;">
+                                <!-- Dynamically populated list items -->
+                            </div>
+                            <div style="display:flex; gap:8px;">
+                                <input type="text" id="submit-checklist-other-input" class="form-control" style="font-size:12px; padding:6px 10px;" placeholder="Ketik kelengkapan lain...">
+                                <button type="button" class="btn btn-secondary" id="btn-add-other-checklist" style="padding:6px 12px; font-size:12px; height:38px;"><i data-lucide="plus" style="width:12px; height:12px;"></i> Tambah</button>
+                            </div>
+                        </div>
+
+                        <!-- Image upload and camera -->
+                        <div class="form-group" style="margin-top:16px; border-top:1px solid var(--border-color); padding-top:16px;">
+                            <label class="form-label">Foto Bukti Kirim</label>
+                            <input type="file" id="submit-bukti-kirim" accept="image/*" style="display:none;">
+                            <div class="upload-area-box" id="upload-box-kirim" style="border: 2px dashed var(--border-color); border-radius: 8px; padding: 20px; text-align: center; cursor: pointer; transition: all 0.2s;">
+                                <i data-lucide="camera" style="width: 28px; height: 28px; color: var(--text-muted); margin-bottom: 6px; margin-left:auto; margin-right:auto;"></i>
+                                <div style="font-size: 12px; font-weight: 700; color: var(--text-main);">Ambil Foto Kamera / Pilih File</div>
+                                <div style="font-size: 10px; color: var(--text-muted); margin-top: 2px;">Format gambar JPG/PNG, dikompres otomatis</div>
+                                <img id="preview-bukti-kirim" style="display:none; max-width:100%; max-height:140px; border-radius:6px; margin-top:8px; object-fit:contain;">
+                            </div>
+                        </div>
+
+                        <button class="btn btn-primary" id="btn-submit-slip-submission" style="width:100%; margin-top:20px; padding:12px;">
+                            <i data-lucide="send" style="width:14px; height:14px; margin-right:4px;"></i> Kirim Slip & Laporan
+                        </button>
+                    </div>
+
+                    <!-- List Table -->
+                    <div class="card" style="min-height: 400px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:10px;">
+                            <h2 style="font-size: 16px; font-weight: 700;">Daftar Pengiriman Berkas Slip & Laporan</h2>
+                            <button class="btn btn-secondary" id="btn-refresh-submissions" style="font-size:12px; padding:6px 12px;">
+                                <i data-lucide="refresh-cw" style="width:12px; height:12px; margin-right:4px;"></i> Refresh
+                            </button>
+                        </div>
+                        
+                        <!-- Laporan & Ekspor Container (Visible to Admin & Supervisor only) -->
+                        <div id="laporan-slip-container" style="display:none; flex-direction:column; gap:16px; margin-bottom:20px; border-bottom:1px solid var(--border-color); padding-bottom:16px;">
+                            <!-- Stats Cards -->
+                            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap:12px;">
+                                <div style="background:var(--primary-light); padding:12px; border-radius:10px; border:1px solid var(--border-color);">
+                                    <div style="font-size:11px; color:var(--text-muted); font-weight:600; text-transform:uppercase; letter-spacing:0.5px;">Total Pengiriman</div>
+                                    <div style="font-size:20px; font-weight:800; color:var(--primary); margin-top:2px;" id="stat-total-kirim">0</div>
+                                </div>
+                                <div style="background:var(--warning-light); padding:12px; border-radius:10px; border:1px solid var(--border-color);">
+                                    <div style="font-size:11px; color:var(--text-muted); font-weight:600; text-transform:uppercase; letter-spacing:0.5px;">Dalam Perjalanan</div>
+                                    <div style="font-size:20px; font-weight:800; color:var(--warning); margin-top:2px;" id="stat-pending-kirim">0</div>
+                                </div>
+                                <div style="background:var(--success-light); padding:12px; border-radius:10px; border:1px solid var(--border-color);">
+                                    <div style="font-size:11px; color:var(--text-muted); font-weight:600; text-transform:uppercase; letter-spacing:0.5px;">Telah Sampai</div>
+                                    <div style="font-size:20px; font-weight:800; color:var(--success); margin-top:2px;" id="stat-sampai-kirim">0</div>
+                                </div>
+                            </div>
+                            
+                            <!-- Export Action -->
+                            <div style="display:flex; justify-content:flex-end;">
+                                <button class="btn btn-success" id="btn-export-slip-csv" style="font-size:12px; padding:8px 14px; height:36px;">
+                                    <i data-lucide="download" style="width:12px; height:12px; margin-right:4px;"></i> Ekspor Laporan (CSV)
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="table-responsive">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Tanggal Kirim</th>
+                                        <th>Kantor Kas / Pengirim</th>
+                                        <th>Ceklis Kelengkapan</th>
+                                        <th style="text-align: center;">Bukti Kirim</th>
+                                        <th style="text-align: center;">Bukti Sampai</th>
+                                        <th>Status / Penerima</th>
+                                        <th style="text-align: center;">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="submissions-table-body">
+                                    <tr>
+                                        <td colspan="7" style="text-align:center; color:var(--text-muted);">Belum ada riwayat pengiriman berkas.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 3. VIEW: KELOLA KODE BIAYA -->
+            <section id="view-kodebiaya" class="view-section" style="display:none;">
+                <div class="grid-2col" style="grid-template-columns: 2fr 1fr;">
+                    
+                    <!-- Table Codes List -->
+                    <div class="card">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:10px;">
+                            <h2 style="font-size: 16px; font-weight: 700;">Daftar Kode Biaya Pengeluaran</h2>
+                            <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+                                <button class="btn btn-secondary" id="btn-bulk-delete-codes" style="font-size:12px; padding:6px 12px; color:var(--danger); border-color:var(--danger-light); display:none;">
+                                    <i data-lucide="trash-2"></i> Hapus Terpilih
+                                </button>
+                                <button class="btn btn-secondary" id="btn-clear-all-codes" style="font-size:12px; padding:6px 12px; color:var(--danger); border-color:var(--danger-light);">
+                                    <i data-lucide="trash"></i> Kosongkan
+                                </button>
+                                <button class="btn btn-secondary" id="btn-export-codes" style="font-size:12px; padding:6px 12px;">
+                                    <i data-lucide="download"></i> Export CSV
+                                </button>
+                                <label class="btn btn-secondary" style="font-size:12px; padding:6px 12px; cursor:pointer; margin:0;">
+                                    <i data-lucide="upload"></i> Import CSV
+                                    <input type="file" id="import-codes-file" accept=".csv" style="display:none;">
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <!-- Search Bar -->
+                        <div class="page-filters" style="margin-bottom:12px; padding:0; background:none; border:none; box-shadow:none; display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
+                            <div class="search-input-wrap" style="width:100%; max-width:320px;">
+                                <i data-lucide="search"></i>
+                                <input type="text" id="codes-search" class="form-control" placeholder="Cari kode / deskripsi...">
+                            </div>
+                            <div style="display:flex; align-items:center; gap:8px;">
+                                <label for="codes-limit" style="font-size:13px; color:var(--text-muted); font-weight:600; white-space:nowrap; margin:0;">Tampilkan:</label>
+                                <select id="codes-limit" class="form-control" style="width:80px; padding:6px 10px; font-size:12px; height:34px;">
+                                    <option value="10">10</option>
+                                    <option value="25">25</option>
+                                    <option value="50" selected>50</option>
+                                    <option value="100">100</option>
+                                </select>
+                                <span style="font-size:13px; color:var(--text-muted); font-weight:600; white-space:nowrap;">per hal.</span>
+                            </div>
+                        </div>
+
+                        <!-- Import status bar -->
+                        <div id="import-status-bar" style="display:none; margin-bottom:12px; padding:10px 14px; border-radius:8px; font-size:12px; font-weight:600;"></div>
+                        <!-- CSV format hint -->
+                        <div style="font-size:11px; color:var(--text-muted); margin-bottom:12px; padding:8px 12px; background:var(--primary-light); border-radius:6px;">
+                            <strong>Format CSV:</strong> kolom pertama = Kode Akun, kolom kedua = Deskripsi &nbsp;|&nbsp;
+                            <a id="btn-download-template" href="#" style="color:var(--primary); font-weight:700; text-decoration:none;">⬇ Unduh Template</a>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 40px; text-align: center;"><input type="checkbox" id="check-all-codes"></th>
+                                        <th>Kode Akun</th>
+                                        <th>Keterangan / Deskripsi</th>
+                                        <th>Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="codes-table-body">
+                                    <!-- Populated by JS -->
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Pagination Controls -->
+                        <div class="pagination-controls" style="display:flex; justify-content:space-between; align-items:center; margin-top:20px; flex-wrap:wrap; gap:10px;">
+                            <span id="codes-pagination-info" style="font-size:13px; color:var(--text-muted); font-weight:550;">Menampilkan 0 dari 0 kode biaya</span>
+                            <div style="display:flex; gap:8px; align-items:center;">
+                                <button class="btn btn-secondary" id="btn-prev-codes" style="padding:6px 12px; font-size:12px;">
+                                    <i data-lucide="chevron-left" style="width:14px; height:14px;"></i> Sebelum
+                                </button>
+                                <span id="codes-page-indicator" style="font-size:13px; font-weight:700; color:var(--primary); padding:0 8px;">Halaman 1 / 1</span>
+                                <button class="btn btn-secondary" id="btn-next-codes" style="padding:6px 12px; font-size:12px;">
+                                    Berikut <i data-lucide="chevron-right" style="width:14px; height:14px;"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Add/Edit form -->
+                    <div class="card">
+                        <h2 style="font-size: 16px; font-weight: 700; margin-bottom: 16px;" id="code-form-title">Tambah Kode Biaya</h2>
+                        <input type="hidden" id="code-edit-id">
+                        
+                        <div class="form-group">
+                            <label class="form-label">Kode Akun (Unique)</label>
+                            <input type="text" id="code-input-kode" class="form-control" placeholder="Contoh: 54305">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Deskripsi Akun</label>
+                            <input type="text" id="code-input-desc" class="form-control" placeholder="Contoh: BY PARKIR/TOL">
+                        </div>
+
+                        <div style="display:flex; flex-direction:column; gap:10px; margin-top:20px;">
+                            <button class="btn btn-primary" id="btn-submit-code">Simpan Kode Biaya</button>
+                            <button class="btn btn-secondary" id="btn-cancel-code" style="display:none;">Batal Edit</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 4. VIEW: USER MANAGEMENT -->
+            <section id="view-users" class="view-section" style="display:none;">
+                <div class="card" style="margin-bottom: 20px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+                        <h2 style="font-size: 16px; font-weight: 700;">Manajemen Pengguna Aplikasi</h2>
+                        <button class="btn btn-primary" id="btn-add-user">
+                            <i data-lucide="plus"></i> Tambah User Baru
+                        </button>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Nama Pengguna</th>
+                                    <th>Username</th>
+                                    <th>Unit / Bagian</th>
+                                    <th>Peran (Role)</th>
+                                    <th>Kode Operator ID</th>
+                                    <th>Status Akun</th>
+                                    <th>Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="user-table-body">
+                                <!-- Populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Ref Counter Management Card -->
+                <div class="card">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+                        <div>
+                            <h2 style="font-size: 16px; font-weight: 700; margin-bottom:4px;">Kelola Nomor Referensi Operator</h2>
+                            <p style="font-size:12px; color:var(--text-muted); margin:0;">Nomor referensi terus bertambah setiap kali transaksi disimpan. Admin dapat mengatur nilai awal dan prefix.</p>
+                        </div>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Operator ID</th>
+                                    <th>Nama Pengguna</th>
+                                    <th>Prefix Nomor Ref</th>
+                                    <th>Counter Berikutnya</th>
+                                    <th>Contoh No. Ref Berikutnya</th>
+                                    <th>Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="ref-counter-table-body">
+                                <!-- Populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 5. VIEW: AUDIT TRAIL -->
+            <section id="view-audit" class="view-section" style="display:none;">
+                <div class="card">
+                    <div class="page-filters">
+                        <div class="filters-left">
+                            <div class="search-input-wrap">
+                                <i data-lucide="search"></i>
+                                <input type="text" id="audit-search" class="form-control" placeholder="Cari log audit...">
+                            </div>
+                            <select id="audit-filter-role" class="form-control" style="width:160px;">
+                                <option value="">Semua Peran (Role)</option>
+                                <option value="Admin">Admin</option>
+                                <option value="Supervisor">Supervisor</option>
+                                <option value="Teller">Teller</option>
+                                <option value="SDM">SDM</option>
+                                <option value="Kas">Petugas Kas</option>
+                            </select>
+                        </div>
+                        <button class="btn btn-secondary" id="btn-clear-audit-logs" style="color:var(--danger); border-color:var(--danger-light);">
+                            <i data-lucide="trash-2"></i> Hapus Semua Log
+                        </button>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Waktu Kejadian</th>
+                                    <th>Nama Pengguna</th>
+                                    <th>Peran</th>
+                                    <th>Detail Aktivitas / Aksi</th>
+                                    <th>IP Address</th>
+                                </tr>
+                            </thead>
+                            <tbody id="audit-table-body">
+                                <!-- Populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Pagination Controls -->
+                    <div class="pagination-controls" style="display:flex; justify-content:space-between; align-items:center; margin-top:20px; flex-wrap:wrap; gap:10px;">
+                        <span id="audit-pagination-info" style="font-size:13px; color:var(--text-muted); font-weight:550;">Menampilkan 0 dari 0 log</span>
+                        <div style="display:flex; gap:8px; align-items:center;">
+                            <button class="btn btn-secondary" id="btn-prev-audit" style="padding:6px 12px; font-size:12px;">
+                                <i data-lucide="chevron-left" style="width:14px; height:14px;"></i> Sebelum
+                            </button>
+                            <span id="audit-page-indicator" style="font-size:13px; font-weight:700; color:var(--primary); padding:0 8px;">Halaman 1 / 1</span>
+                            <button class="btn btn-secondary" id="btn-next-audit" style="padding:6px 12px; font-size:12px;">
+                                Berikut <i data-lucide="chevron-right" style="width:14px; height:14px;"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ACCESS DENIED PAGE -->
+            <section id="view-access-denied" class="view-section" style="display:none;">
+                <div class="card denied-container">
+                    <div class="denied-icon">
+                        <i data-lucide="shield-alert"></i>
+                    </div>
+                    <h2 style="font-size:20px; font-weight:700; margin-bottom:8px;">Akses Ditolak</h2>
+                    <p style="color:var(--text-muted); max-width:400px; font-size:14px; margin-bottom:20px;">
+                        Maaf, peran aktif Anda saat ini tidak memiliki hak akses untuk membuka halaman atau modul administrasi ini. Silakan ganti peran aktif pada panel simulasi di atas.
+                    </p>
+                    <button class="btn btn-primary" onclick="showSection('input')">Kembali ke Input Transaksi</button>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- TOAST NOTIFICATION CONTAINER -->
+    <div class="toast-stack" id="toast-stack"></div>
+
+    <!-- MODAL: ADD/EDIT USER -->
+    <div class="modal-overlay" id="modal-user">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h3 class="modal-title" id="user-modal-title">Tambah Pengguna Baru</h3>
+                <button class="modal-close modal-close-btn"><i data-lucide="x"></i></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="user-edit-id">
+                <div class="form-group">
+                    <label class="form-label">Nama Lengkap</label>
+                    <input type="text" id="user-nama" class="form-control" placeholder="Masukkan nama lengkap...">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Username</label>
+                    <input type="text" id="user-username" class="form-control" placeholder="Masukkan username...">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Bagian Kerja</label>
+                    <select id="user-bagian" class="form-control">
+                        <option value="Teller">Teller</option>
+                        <option value="SDM">Sumber Daya Manusia (SDM)</option>
+                        <option value="Kantor Kas">Kantor Kas</option>
+                        <option value="Supervisor">Supervisor</option>
+                        <option value="Administrasi">Administrasi (IT)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Peran Sistem (Role)</label>
+                    <select id="user-role" class="form-control">
+                        <option value="Teller">Teller</option>
+                        <option value="SDM">SDM</option>
+                        <option value="Kas">Petugas Kas</option>
+                        <option value="Supervisor">Supervisor</option>
+                        <option value="Admin">Admin</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Kode Operator ID (contoh: CSSPA0146)</label>
+                    <input type="text" id="user-operator-code" class="form-control" placeholder="Contoh: CSSPA0146">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Status Akun</label>
+                    <select id="user-status" class="form-control">
+                        <option value="Aktif">Aktif</option>
+                        <option value="Nonaktif">Nonaktif</option>
+                    </select>
+                </div>
+                <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:20px;">
+                    <button class="btn btn-secondary modal-close-btn">Batal</button>
+                    <button class="btn btn-primary" id="btn-submit-user">Simpan Pengguna</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: DETAIL TRANSACTION VOUCHER (FOR REPRINT / VIEW) -->
+    <div class="modal-overlay" id="modal-detail-slip">
+        <div class="modal-container" style="max-width: 600px;">
+            <div class="modal-header">
+                <h3 class="modal-title">Detail Transaksi Jurnal</h3>
+                <button class="modal-close modal-close-btn"><i data-lucide="x"></i></button>
+            </div>
+            <div class="modal-body" style="padding-top:0;">
+                <div style="display:flex; justify-content:flex-end; margin-bottom: 12px;">
+                    <button class="btn btn-success" id="btn-modal-print" style="padding:6px 14px; font-size:12px;">
+                        <i data-lucide="printer"></i> Cetak Ulang Voucher
+                    </button>
+                </div>
+                
+                <!-- Inner print container -->
+                <div id="modal-print-container">
+                    <!-- Slip cloning container, populated via JS reprint -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    </div><!-- /#main-app -->
+
+    <!-- MODAL: Ganti Password Sendiri -->
+    <div class="modal-overlay" id="modal-change-password">
+        <div class="modal-container" style="max-width:420px;">
+            <div class="modal-header">
+                <h3 class="modal-title"><i data-lucide="key-round"></i> Ganti Password</h3>
+                <button class="modal-close" onclick="closeModal('modal-change-password')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">Password Lama</label>
+                    <input type="password" id="cp-current" class="form-control" placeholder="Password saat ini">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Password Baru</label>
+                    <input type="password" id="cp-new" class="form-control" placeholder="Minimal 6 karakter">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Konfirmasi Password Baru</label>
+                    <input type="password" id="cp-confirm" class="form-control" placeholder="Ulangi password baru">
+                </div>
+                <div id="cp-error" style="display:none; color:var(--danger); font-size:12px; margin-top:6px;"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('modal-change-password')">Batal</button>
+                <button class="btn btn-primary" id="btn-submit-change-password">Simpan Password</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: Admin Reset Password User -->
+    <div class="modal-overlay" id="modal-reset-password">
+        <div class="modal-container" style="max-width:400px;">
+            <div class="modal-header">
+                <h3 class="modal-title"><i data-lucide="shield-alert"></i> Reset Password Pengguna</h3>
+                <button class="modal-close" onclick="closeModal('modal-reset-password')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p style="font-size:13px; margin-bottom:14px; color:var(--text-muted);">
+                    Reset password untuk: <strong id="rp-user-name">-</strong>
+                </p>
+                <input type="hidden" id="rp-user-id">
+                <div class="form-group">
+                    <label class="form-label">Password Baru (kosongkan untuk default: <code>slip1234</code>)</label>
+                    <input type="text" id="rp-new-password" class="form-control" placeholder="Biarkan kosong = slip1234">
+                </div>
+                <div id="rp-error" style="display:none; color:var(--danger); font-size:12px;"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('modal-reset-password')">Batal</button>
+                <button class="btn btn-primary" id="btn-submit-reset-password">Reset Password</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: Request Edit Transaksi (Teller/SDM/Kas) -->
+    <div class="modal-overlay" id="modal-request-edit">
+        <div class="modal-container" style="max-width: 500px;">
+            <div class="modal-header">
+                <h3 class="modal-title"><i data-lucide="edit-3"></i> Ajukan Koreksi Transaksi</h3>
+                <button class="modal-close" onclick="closeModal('modal-request-edit')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="req-edit-tx-id">
+                <div class="form-group">
+                    <label class="form-label">Nama Perkiraan Debet</label>
+                    <input type="text" id="req-edit-debet-nama" class="form-control" list="req-edit-debet-nama-list">
+                    <datalist id="req-edit-debet-nama-list"></datalist>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">No Rekening Debet</label>
+                    <input type="text" id="req-edit-debet-rekening" class="form-control" list="req-edit-debet-rekening-list">
+                    <datalist id="req-edit-debet-rekening-list"></datalist>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Nama Perkiraan Kredit / Lawan</label>
+                    <input type="text" id="req-edit-kredit-nama" class="form-control" list="req-edit-kredit-nama-list">
+                    <datalist id="req-edit-kredit-nama-list"></datalist>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">No Rekening Kredit</label>
+                    <input type="text" id="req-edit-kredit-rekening" class="form-control" list="req-edit-kredit-rekening-list">
+                    <datalist id="req-edit-kredit-rekening-list"></datalist>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Nominal Utama (Rupiah)</label>
+                    <input type="number" id="req-edit-nominal-utama" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Nominal Desimal (Sen)</label>
+                    <input type="number" id="req-edit-nominal-desimal" class="form-control" min="0" max="99">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Keterangan Transaksi</label>
+                    <input type="text" id="req-edit-keterangan" class="form-control">
+                </div>
+                <div id="req-edit-error" style="display:none; color:var(--danger); font-size:12px; margin-top:6px;"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('modal-request-edit')">Batal</button>
+                <button class="btn btn-primary" id="btn-submit-request-edit">Ajukan Perubahan</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: Konfirmasi Terima/Sampai Berkas Slip -->
+    <div class="modal-overlay" id="modal-confirm-arrival">
+        <div class="modal-container" style="max-width: 440px;">
+            <div class="modal-header">
+                <h3 class="modal-title"><i data-lucide="check-circle" style="color:var(--success); display:inline-block; vertical-align:middle; margin-right:6px;"></i> Konfirmasi Terima Berkas</h3>
+                <button class="modal-close" onclick="closeModal('modal-confirm-arrival')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="confirm-arrival-id">
+                <div class="form-group">
+                    <label class="form-label">Nama Penerima (di Kantor Pusat)</label>
+                    <input type="text" id="confirm-penerima-name" class="form-control" placeholder="Masukkan nama penerima...">
+                </div>
+                <div class="form-group" style="margin-top:16px;">
+                    <label class="form-label">Foto Bukti Sampai</label>
+                    <input type="file" id="confirm-bukti-sampai" accept="image/*" style="display:none;">
+                    <div class="upload-area-box" id="upload-box-sampai" style="border: 2px dashed var(--border-color); border-radius: 8px; padding: 20px; text-align: center; cursor: pointer; transition: all 0.2s;">
+                        <i data-lucide="camera" style="width: 28px; height: 28px; color: var(--text-muted); margin-bottom: 6px; margin-left:auto; margin-right:auto;"></i>
+                        <div style="font-size: 12px; font-weight: 700; color: var(--text-main);">Ambil Foto Kamera / Pilih File</div>
+                        <div style="font-size: 10px; color: var(--text-muted); margin-top: 2px;">Format gambar JPG/PNG, dikompres otomatis</div>
+                        <img id="preview-bukti-sampai" style="display:none; max-width:100%; max-height:140px; border-radius:6px; margin-top:8px; object-fit:contain;">
+                    </div>
+                </div>
+                <div id="confirm-arrival-error" style="display:none; color:var(--danger); font-size:12px; margin-top:6px;"></div>
+            </div>
+            <div class="modal-footer" style="display:flex; gap:12px; margin-top:20px;">
+                <button class="btn btn-secondary" style="flex:1;" onclick="closeModal('modal-confirm-arrival')">Batal</button>
+                <button class="btn btn-primary" id="btn-submit-confirm-arrival" style="flex:1;">Simpan Konfirmasi</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: Image Viewer / Photo Preview -->
+    <div class="modal-overlay" id="modal-image-viewer">
+        <div class="modal-container" style="max-width: 650px; background: rgba(17, 24, 39, 0.95);">
+            <div class="modal-header" style="border-bottom:1px solid rgba(255,255,255,0.1);">
+                <h3 class="modal-title" style="color:#fff;" id="image-viewer-title">Foto Bukti</h3>
+                <button class="modal-close modal-close-btn" style="color:#fff; opacity:0.8;"><i data-lucide="x"></i></button>
+            </div>
+            <div class="modal-body" style="text-align: center; padding: 20px 0;">
+                <img id="image-viewer-img" style="max-width: 100%; max-height: 70vh; border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.8); object-fit:contain;">
+            </div>
+        </div>
+    </div>
+
+    <!-- Ikon Lucide -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Aplikasi Utama JS -->
+    <script type="module" src="app.js"></script>
+</body>
+</html>

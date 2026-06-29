@@ -1,0 +1,222 @@
+const bcrypt = require('bcryptjs');
+const db = require('./db');
+
+const SALT_ROUNDS = 10;
+const DEFAULT_PASSWORD = 'slip1234';
+
+function runAsync(sql, params = []) {
+    return new Promise((resolve, reject) => {
+        db.run(sql, params, (err) => {
+            // Resolve instead of reject to safely ignore already existing column/table/index errors
+            resolve(err);
+        });
+    });
+}
+
+function getAsync(sql, params = []) {
+    return new Promise((resolve, reject) => {
+        db.get(sql, params, (err, row) => {
+            if (err) reject(err);
+            else resolve(row);
+        });
+    });
+}
+
+async function initializeDb(callback) {
+    try {
+        // 1. Users Table
+        await runAsync(`CREATE TABLE IF NOT EXISTS users (
+            id TEXT PRIMARY KEY,
+            username TEXT UNIQUE,
+            nama TEXT,
+            bagian TEXT,
+            role TEXT,
+            status TEXT,
+            operator_code TEXT,
+            password_hash TEXT,
+            deleted_at TEXT
+        )`);
+
+        // 2. Cost Codes Table
+        await runAsync(`CREATE TABLE IF NOT EXISTS cost_codes (
+            id TEXT PRIMARY KEY,
+            kode TEXT UNIQUE,
+            deskripsi TEXT,
+            deleted_at TEXT
+        )`);
+
+        // 3. Transactions Table
+        await runAsync(`CREATE TABLE IF NOT EXISTS transactions (
+            id TEXT PRIMARY KEY,
+            ref_no TEXT UNIQUE,
+            tanggal TEXT,
+            operator_code TEXT,
+            debet_nama TEXT,
+            debet_rekening TEXT,
+            kredit_nama TEXT,
+            kredit_rekening TEXT,
+            jenis_transaksi TEXT,
+            nominal_utama REAL,
+            nominal_desimal REAL,
+            keterangan TEXT,
+            terbilang TEXT
+        )`);
+
+        // Safe alterations/indexes for transactions
+        await runAsync("ALTER TABLE transactions ADD COLUMN debet_nama TEXT");
+        await runAsync("ALTER TABLE transactions ADD COLUMN debet_rekening TEXT");
+        await runAsync("ALTER TABLE transactions ADD COLUMN kredit_nama TEXT");
+        await runAsync("ALTER TABLE transactions ADD COLUMN kredit_rekening TEXT");
+        await runAsync("CREATE INDEX IF NOT EXISTS idx_transactions_tanggal ON transactions (tanggal)");
+        await runAsync("CREATE INDEX IF NOT EXISTS idx_transactions_operator ON transactions (operator_code)");
+
+        // 4. Audit Logs Table
+        await runAsync(`CREATE TABLE IF NOT EXISTS audit_logs (
+            id TEXT PRIMARY KEY,
+            tanggal TEXT,
+            "user" TEXT,
+            role TEXT,
+            aksi TEXT,
+            ip TEXT
+        )`);
+
+        // 5. Notifications Table
+        await runAsync(`CREATE TABLE IF NOT EXISTS notifications (
+            id TEXT PRIMARY KEY,
+            tanggal TEXT,
+            user_role TEXT,
+            pesan TEXT,
+            dibaca INTEGER DEFAULT 0
+        )`);
+
+        // 6. Reference Counters Table
+        await runAsync(`CREATE TABLE IF NOT EXISTS ref_counters (
+            operator_code TEXT PRIMARY KEY,
+            counter INTEGER DEFAULT 1,
+            prefix TEXT
+        )`);
+
+        // 7. Approval Requests Table
+        await runAsync(`CREATE TABLE IF NOT EXISTS approval_requests (
+            id TEXT PRIMARY KEY,
+            transaction_id TEXT,
+            ref_no TEXT,
+            request_type TEXT,
+            request_data TEXT,
+            operator_code TEXT,
+            operator_name TEXT,
+            requested_at TEXT,
+            status TEXT DEFAULT 'PENDING',
+            reviewed_by TEXT,
+            reviewed_at TEXT,
+            reason TEXT
+        )`);
+
+        // 8. Slip Submissions Table
+        await runAsync(`CREATE TABLE IF NOT EXISTS slip_submissions (
+            id TEXT PRIMARY KEY,
+            tanggal_kirim TEXT,
+            operator_name TEXT,
+            operator_code TEXT,
+            kantor_kas TEXT,
+            checklist_slips INTEGER DEFAULT 0,
+            checklist_mutasi INTEGER DEFAULT 0,
+            checklist_pb INTEGER DEFAULT 0,
+            checklist_fo INTEGER DEFAULT 0,
+            checklist_lainnya TEXT DEFAULT '[]',
+            bukti_kirim_path TEXT,
+            bukti_sampai_path TEXT DEFAULT NULL,
+            status TEXT DEFAULT 'Dikirim',
+            tanggal_sampai TEXT DEFAULT NULL,
+            penerima_name TEXT DEFAULT NULL
+        )`);
+
+        // Migrations
+        await runAsync("ALTER TABLE users ADD COLUMN deleted_at TEXT");
+        await runAsync("ALTER TABLE cost_codes ADD COLUMN deleted_at TEXT");
+        await runAsync("ALTER TABLE transactions ADD COLUMN deleted_at TEXT");
+        await runAsync("ALTER TABLE users ADD COLUMN password_hash TEXT");
+
+        // Hash default password
+        const defaultHash = await bcrypt.hash(DEFAULT_PASSWORD, SALT_ROUNDS);
+
+        // Seed default users if they do not exist (do not overwrite on conflict)
+        const seedUser = async (id, username, nama, bagian, role, status, operator_code, hash) => {
+            const sql = `
+                INSERT INTO users (id, username, nama, bagian, role, status, operator_code, password_hash)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT (id) DO NOTHING
+            `;
+            await runAsync(sql, [id, username, nama, bagian, role, status, operator_code, hash]);
+        };
+
+        await seedUser("USR-001", "admin1", "Agus Setiawan", "Administrasi", "Admin", "Aktif", "CSSPA0146", defaultHash);
+        await seedUser("USR-002", "spv1", "Heri Kiswanto", "Supervisor", "Supervisor", "Aktif", "CSSPA0147", defaultHash);
+        await seedUser("USR-003", "teller1", "Budi Utomo", "Teller", "Teller", "Aktif", "CSSPA0148", defaultHash);
+        await seedUser("USR-004", "sdm1", "Siti Rahma", "SDM", "SDM", "Aktif", "CSSPA0149", defaultHash);
+        await seedUser("USR-005", "kas1", "Rian Hidayat", "Kantor Kas", "Kas", "Aktif", "CSSPA0150", defaultHash);
+
+        // Force-seed default cost codes
+        const seedCc = async (id, kode, deskripsi) => {
+            const sql = `
+                INSERT INTO cost_codes (id, kode, deskripsi)
+                VALUES (?, ?, ?)
+                ON CONFLICT (id) DO UPDATE SET
+                    kode = EXCLUDED.kode,
+                    deskripsi = EXCLUDED.deskripsi
+            `;
+            await runAsync(sql, [id, kode, deskripsi]);
+        };
+
+        await seedCc("1", "53820", "BY PARKIR/TOL");
+        await seedCc("2", "53821", "BY TRANSPORT");
+        await seedCc("3", "53822", "BY INVENTARIS KECIL");
+        await seedCc("4", "53823", "BY ADMINISTRASI ASURANSI");
+        await seedCc("5", "53900", "BEBAN PAJAK - PAJAK");
+        await seedCc("6", "53901", "BY. PAJAK PBB");
+        await seedCc("7", "54305", "BY PARKIR/TOL");
+        await seedCc("8", "54306", "REKREASI / OLAHRAGA");
+        await seedCc("9", "54307", "BY RELASI DIREKSI");
+        await seedCc("10", "54308", "BY PENAGIHAN KREDIT MACET");
+        await seedCc("11", "54309", "BY HOTEL/ PENGINAPAN TAMU");
+        await seedCc("12", "54310", "BY FOTOCOPY");
+        await seedCc("13", "54311", "BY PREMI ASURANSI");
+
+        // Seed default transactions if empty
+        const txRow = await getAsync("SELECT count(*) as count FROM transactions");
+        const txCountVal = txRow ? (parseInt(txRow.count) || 0) : 0;
+        if (txCountVal === 0) {
+            await runAsync("INSERT INTO transactions (id, ref_no, tanggal, operator_code, debet_nama, debet_rekening, kredit_nama, kredit_rekening, jenis_transaksi, nominal_utama, nominal_desimal, keterangan, terbilang) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                ["TX-001", "CSSPA0146001", "2026-06-24T08:15:00", "CSSPA0146", "BY PARKIR/TOL", "54305", "REKENING UTAMA KAS", "0159000004", "R/P Umum", 10000.00, 31.00, "BY PARKIR KENDARAAN DINAS", "Sepuluh Ribu Koma Tiga Puluh Satu Rupiah"]);
+        }
+
+        // Seed default audit logs if empty
+        const logRow = await getAsync("SELECT count(*) as count FROM audit_logs");
+        const logCountVal = logRow ? (parseInt(logRow.count) || 0) : 0;
+        if (logCountVal === 0) {
+            await runAsync("INSERT INTO audit_logs VALUES (?, ?, ?, ?, ?, ?)",
+                ["LOG-001", "2026-06-24T08:00:00", "System", "System", "Inisialisasi database & seed data awal", "127.0.0.1"]);
+        }
+
+        // Fill ref counters for existing/seeded users
+        await new Promise((resolve) => {
+            db.all("SELECT operator_code FROM users WHERE deleted_at IS NULL", [], (err, rows) => {
+                if (!err && rows) {
+                    rows.forEach(row => {
+                        db.run(`INSERT OR IGNORE INTO ref_counters (operator_code, counter, prefix) VALUES (?, 1, ?)`,
+                            [row.operator_code, row.operator_code]);
+                    });
+                }
+                resolve();
+            });
+        });
+
+        console.log("Database initialized & default credentials verified.");
+        if (callback) callback();
+    } catch (e) {
+        console.error("Critical Database Initialization Error:", e);
+        if (callback) callback(e);
+    }
+}
+
+module.exports = initializeDb;
