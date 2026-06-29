@@ -955,9 +955,9 @@
             </section>
 
             <!-- DEPLOY MODAL -->
-            <div id="modal-deploy" class="modal-overlay" style="display:none; z-index:9999;">
-                <div class="modal-box" style="max-width:680px; width:95%;">
-                    <div class="modal-header" style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%); border-radius:12px 12px 0 0; padding:20px 24px;">
+            <div id="modal-deploy" class="modal-overlay">
+                <div class="modal-box" style="max-width:680px; width:95%; background:var(--bg-card); border-radius:12px; overflow:hidden; border:1px solid var(--border-color); box-shadow:0 25px 60px rgba(0,0,0,0.4);">
+                    <div class="modal-header" style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%); border-radius:12px 12px 0 0; padding:20px 24px; margin-bottom:0;">
                         <div style="display:flex; align-items:center; gap:12px;">
                             <div style="width:36px; height:36px; background:rgba(99,179,237,0.2); border-radius:8px; display:flex; align-items:center; justify-content:center; border:1px solid rgba(99,179,237,0.3);">
                                 <i data-lucide="terminal" style="width:18px; height:18px; color:#63b3ed;"></i>
@@ -967,8 +967,9 @@
                                 <p style="color:#a0aec0; margin:0; font-size:12px;">Menarik kode terbaru dari GitHub dan merestart server</p>
                             </div>
                         </div>
+                        <button onclick="document.getElementById('modal-deploy').classList.remove('active')" style="background:none;border:none;cursor:pointer;color:#a0aec0;padding:4px;"><i data-lucide="x" style="width:18px;height:18px;"></i></button>
                     </div>
-                    <div class="modal-body" style="padding:0; background:#0d1117;">
+                    <div style="padding:0; background:#0d1117;">
                         <!-- Terminal Output -->
                         <div id="deploy-terminal" style="
                             font-family: 'Courier New', Courier, monospace;
@@ -985,10 +986,10 @@
                             <span style="color:#8b949e;">-- Terminal output akan muncul di sini --</span>
                         </div>
                     </div>
-                    <div class="modal-footer" style="background:#161b22; border-radius:0 0 12px 12px; padding:16px 20px; display:flex; justify-content:space-between; align-items:center; border-top:1px solid #30363d;">
+                    <div style="background:#161b22; border-radius:0 0 12px 12px; padding:16px 20px; display:flex; justify-content:space-between; align-items:center; border-top:1px solid #30363d;">
                         <span id="deploy-status-text" style="font-size:13px; color:#8b949e; font-style:italic;">Siap menjalankan deploy.</span>
                         <div style="display:flex; gap:10px;">
-                            <button id="btn-deploy-close" class="btn btn-secondary" onclick="document.getElementById('modal-deploy').style.display='none'">
+                            <button id="btn-deploy-close" class="btn btn-secondary" onclick="document.getElementById('modal-deploy').classList.remove('active')">
                                 Tutup
                             </button>
                             <button id="btn-deploy-run" class="btn btn-primary" style="background: linear-gradient(135deg, #1a73e8, #0f3460); border:none; min-width:140px;">

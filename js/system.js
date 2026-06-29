@@ -178,19 +178,27 @@ export function initDeployPanel() {
     if (!btnOpen || !modal) return;
 
     // Hanya tampilkan untuk Admin
-    if (state.currentUser?.role !== 'Admin') {
+    const role = state.currentRole || state.currentUser?.role;
+    if (role !== 'Admin') {
         const deployCard = document.getElementById('deploy-card');
         if (deployCard) deployCard.style.display = 'none';
         return;
     }
 
-    btnOpen.addEventListener('click', () => {
+    // Remove existing listeners by cloning button
+    const newBtnOpen = btnOpen.cloneNode(true);
+    btnOpen.parentNode.replaceChild(newBtnOpen, btnOpen);
+
+    newBtnOpen.addEventListener('click', () => {
         resetDeployTerminal();
-        modal.style.display = 'flex';
+        modal.classList.add('active');
         if (window.lucide) window.lucide.createIcons();
     });
 
-    btnRun.addEventListener('click', () => runDeploy());
+    // Wire up run button fresh
+    const newBtnRun = btnRun.cloneNode(true);
+    btnRun.parentNode.replaceChild(newBtnRun, btnRun);
+    newBtnRun.addEventListener('click', () => runDeploy());
 }
 
 function resetDeployTerminal() {
@@ -322,4 +330,3 @@ async function runDeploy() {
         setTimeout(() => window.location.reload(), 4000);
     }
 }
-
