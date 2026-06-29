@@ -880,8 +880,28 @@
 
             <!-- 5. VIEW: AUDIT TRAIL -->
             <section id="view-audit" class="view-section" style="display:none;">
+
+                <!-- System Update Card (Admin Only) -->
+                <div id="deploy-card" class="card" style="margin-bottom:18px; border:1.5px solid rgba(26,115,232,0.25); background: linear-gradient(135deg, rgba(26,115,232,0.05) 0%, rgba(15,52,96,0.08) 100%);">
+                    <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:16px;">
+                        <div style="display:flex; align-items:center; gap:14px;">
+                            <div style="width:48px; height:48px; background:linear-gradient(135deg,#1a73e8,#0f3460); border-radius:12px; display:flex; align-items:center; justify-content:center; flex-shrink:0; box-shadow:0 4px 12px rgba(26,115,232,0.3);">
+                                <i data-lucide="cloud-download" style="width:22px; height:22px; color:#fff;"></i>
+                            </div>
+                            <div>
+                                <h4 style="margin:0; font-size:15px; font-weight:700; color:var(--text-primary);">Pembaruan Sistem</h4>
+                                <p style="margin:2px 0 0; font-size:13px; color:var(--text-muted);">Tarik kode terbaru dari GitHub & restart server secara otomatis</p>
+                            </div>
+                        </div>
+                        <button id="btn-open-deploy" class="btn btn-primary" style="background:linear-gradient(135deg,#1a73e8,#0f3460); border:none; padding:10px 22px; font-weight:600; box-shadow:0 4px 12px rgba(26,115,232,0.3); white-space:nowrap;">
+                            <i data-lucide="rocket" style="width:15px; height:15px;"></i> Deploy Update
+                        </button>
+                    </div>
+                </div>
+
                 <div class="card">
                     <div class="page-filters">
+
                         <div class="filters-left">
                             <div class="search-input-wrap">
                                 <i data-lucide="search"></i>
@@ -933,6 +953,52 @@
                     </div>
                 </div>
             </section>
+
+            <!-- DEPLOY MODAL -->
+            <div id="modal-deploy" class="modal-overlay" style="display:none; z-index:9999;">
+                <div class="modal-box" style="max-width:680px; width:95%;">
+                    <div class="modal-header" style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%); border-radius:12px 12px 0 0; padding:20px 24px;">
+                        <div style="display:flex; align-items:center; gap:12px;">
+                            <div style="width:36px; height:36px; background:rgba(99,179,237,0.2); border-radius:8px; display:flex; align-items:center; justify-content:center; border:1px solid rgba(99,179,237,0.3);">
+                                <i data-lucide="terminal" style="width:18px; height:18px; color:#63b3ed;"></i>
+                            </div>
+                            <div>
+                                <h3 style="color:#fff; margin:0; font-size:16px; font-weight:700;">Deploy Pembaruan Sistem</h3>
+                                <p style="color:#a0aec0; margin:0; font-size:12px;">Menarik kode terbaru dari GitHub dan merestart server</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-body" style="padding:0; background:#0d1117;">
+                        <!-- Terminal Output -->
+                        <div id="deploy-terminal" style="
+                            font-family: 'Courier New', Courier, monospace;
+                            font-size: 13px;
+                            line-height: 1.6;
+                            padding: 20px;
+                            min-height: 280px;
+                            max-height: 380px;
+                            overflow-y: auto;
+                            color: #c9d1d9;
+                            background: #0d1117;
+                            border-bottom: 1px solid #30363d;
+                        ">
+                            <span style="color:#8b949e;">-- Terminal output akan muncul di sini --</span>
+                        </div>
+                    </div>
+                    <div class="modal-footer" style="background:#161b22; border-radius:0 0 12px 12px; padding:16px 20px; display:flex; justify-content:space-between; align-items:center; border-top:1px solid #30363d;">
+                        <span id="deploy-status-text" style="font-size:13px; color:#8b949e; font-style:italic;">Siap menjalankan deploy.</span>
+                        <div style="display:flex; gap:10px;">
+                            <button id="btn-deploy-close" class="btn btn-secondary" onclick="document.getElementById('modal-deploy').style.display='none'">
+                                Tutup
+                            </button>
+                            <button id="btn-deploy-run" class="btn btn-primary" style="background: linear-gradient(135deg, #1a73e8, #0f3460); border:none; min-width:140px;">
+                                <i data-lucide="rocket" style="width:15px; height:15px;"></i> Mulai Deploy
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
 
             <!-- ACCESS DENIED PAGE -->
             <section id="view-access-denied" class="view-section" style="display:none;">

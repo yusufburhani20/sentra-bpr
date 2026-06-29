@@ -37,6 +37,7 @@ app.use('/api/notifications', require('./routes/notificationRoutes'));
 app.use('/api/dashboard', require('./routes/dashboardRoutes'));
 app.use('/api/approvals', require('./routes/approvalRoutes'));
 app.use('/api/slip-submissions', require('./routes/slipSubmissionRoutes'));
+app.use('/api/system', require('./routes/systemRoutes'));
 
 // ─── CATCH-ALL SPA ROUTE ──────────────────────────────────────────────────────
 app.get('*', (req, res) => {

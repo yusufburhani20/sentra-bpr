@@ -5,7 +5,7 @@ import { fetchNextRef, renderInputView, updateLiveSlipPreview, resetTxForm, save
 import { renderRiwayatView, exportRiwayatToCSV, submitEditRequest } from './js/history.js';
 import { renderKodeBiayaView, resetCostCodeForm, submitCostCode, exportCostCodes, importCostCodes, downloadCostCodeTemplate, bulkDeleteSelectedCodes, clearAllCostCodes } from './js/costCodes.js';
 import { renderUsersView, openAddUserModal, submitUser, submitResetPassword } from './js/users.js';
-import { renderAuditTrailView, clearAuditLogs, updateNotifBadge, renderNotifDropdown, markNotifsRead, startClock, initTheme, toggleTheme } from './js/system.js';
+import { renderAuditTrailView, clearAuditLogs, updateNotifBadge, renderNotifDropdown, markNotifsRead, startClock, initTheme, toggleTheme, initDeployPanel } from './js/system.js';
 import { renderDashboardView } from './js/dashboard.js';
 import { renderApprovalsView, fetchPendingApprovalsCount } from './js/approvals.js';
 import { fetchSubmissions, setupSlipSubmissionForm, submitSlipSubmission, submitConfirmArrival, addCustomChecklistItem } from './js/slipSubmissions.js';
@@ -120,6 +120,7 @@ export async function showSection(sectionId) {
         renderUsersView();
     } else if (sectionId === "audit") {
         renderAuditTrailView();
+        initDeployPanel();
     }
     
     document.getElementById("app-sidebar").classList.remove("mobile-open");
