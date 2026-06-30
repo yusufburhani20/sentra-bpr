@@ -1,7 +1,7 @@
 import { state } from './js/state.js';
 import { showToast, escapeHtml, openModal, closeModal, authFetch } from './js/utils.js';
 import { showLoginScreen, hideLoginScreen, checkAuth, login, logout, changePassword } from './js/auth.js';
-import { fetchNextRef, renderInputView, updateLiveSlipPreview, resetTxForm, saveTransaction, printElement, initLayoutDragAndDrop, saveAndPrintTransaction } from './js/transactions.js';
+import { fetchNextRef, renderInputView, updateLiveSlipPreview, resetTxForm, saveTransaction, printElement, initLayoutDragAndDrop, saveAndPrintTransaction, setupAutocompleteSearch } from './js/transactions.js';
 import { renderRiwayatView, exportRiwayatToCSV, submitEditRequest } from './js/history.js';
 import { renderKodeBiayaView, resetCostCodeForm, submitCostCode, exportCostCodes, importCostCodes, downloadCostCodeTemplate, bulkDeleteSelectedCodes, clearAllCostCodes } from './js/costCodes.js';
 import { renderUsersView, openAddUserModal, submitUser, submitResetPassword } from './js/users.js';
@@ -253,6 +253,11 @@ window.addEventListener("DOMContentLoaded", async () => {
     startClock();
     initTheme();
     initLayoutDragAndDrop();
+
+    setupAutocompleteSearch("tx-debet-nama", "debet-nama-list", "name");
+    setupAutocompleteSearch("tx-debet-rekening", "debet-rekening-list", "code");
+    setupAutocompleteSearch("tx-kredit-nama", "kredit-nama-list", "name");
+    setupAutocompleteSearch("tx-kredit-rekening", "kredit-rekening-list", "code");
 
     document.getElementById("btn-login").addEventListener("click", login);
     document.getElementById("login-password").addEventListener("keydown", (e) => {

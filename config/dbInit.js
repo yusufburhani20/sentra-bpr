@@ -69,6 +69,9 @@ async function initializeDb(callback) {
         await runAsync("ALTER TABLE transactions ADD COLUMN kredit_rekening TEXT");
         await runAsync("CREATE INDEX IF NOT EXISTS idx_transactions_tanggal ON transactions (tanggal)");
         await runAsync("CREATE INDEX IF NOT EXISTS idx_transactions_operator ON transactions (operator_code)");
+        await runAsync("CREATE INDEX IF NOT EXISTS idx_transactions_debet_rek ON transactions (debet_rekening)");
+        await runAsync("CREATE INDEX IF NOT EXISTS idx_transactions_kredit_rek ON transactions (kredit_rekening)");
+        await runAsync("CREATE INDEX IF NOT EXISTS idx_cost_codes_search ON cost_codes (kode, deskripsi)");
 
         // 4. Audit Logs Table
         await runAsync(`CREATE TABLE IF NOT EXISTS audit_logs (
@@ -79,6 +82,7 @@ async function initializeDb(callback) {
             aksi TEXT,
             ip TEXT
         )`);
+        await runAsync(`CREATE INDEX IF NOT EXISTS idx_audit_logs_user_aksi ON audit_logs ("user", aksi)`);
 
         // 5. Notifications Table
         await runAsync(`CREATE TABLE IF NOT EXISTS notifications (

@@ -6,6 +6,7 @@ const { requireAuth, requireRole } = require('../middleware/auth');
 router.use(requireAuth);
 
 router.get('/', costCodeController.getCostCodes);
+router.get('/search', costCodeController.searchCostCodes);
 router.post('/', requireRole('Admin'), costCodeController.createCostCode);
 router.put('/:id', requireRole('Admin'), costCodeController.updateCostCode);
 router.delete('/:id', requireRole('Admin'), costCodeController.deleteCostCode);

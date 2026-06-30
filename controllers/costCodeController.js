@@ -40,6 +40,28 @@ exports.getCostCodes = (req, res) => {
     });
 };
 
+exports.searchCostCodes = (req, res) => {
+    const search = req.query.query ? req.query.query.trim() : "";
+    const limit = parseInt(req.query.limit) || 10;
+
+    let query = "SELECT kode, deskripsi FROM cost_codes WHERE deleted_at IS NULL";
+    let params = [];
+
+    if (search) {
+        const s = `%${search}%`;
+        query += " AND (kode LIKE ? OR deskripsi LIKE ?)";
+        params.push(s, s);
+    }
+
+    query += " ORDER BY kode ASC LIMIT ?";
+    params.push(limit);
+
+    db.all(query, params, (err, rows) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json(rows);
+    });
+};
+
 exports.createCostCode = (req, res) => {
     const { kode, deskripsi } = req.body;
     const id = crypto.randomUUID();

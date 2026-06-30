@@ -19,30 +19,12 @@ export async function renderInputView() {
     
     nameDatalists.forEach(id => {
         const dl = document.getElementById(id);
-        if (dl) {
-            dl.innerHTML = "";
-            state.costCodesDB.forEach(cc => {
-                const opt = document.createElement("option");
-                opt.value = cc.deskripsi;
-                opt.label = cc.kode;
-                opt.textContent = cc.kode;
-                dl.appendChild(opt);
-            });
-        }
+        if (dl) dl.innerHTML = "";
     });
 
     rekDatalists.forEach(id => {
         const dl = document.getElementById(id);
-        if (dl) {
-            dl.innerHTML = "";
-            state.costCodesDB.forEach(cc => {
-                const opt = document.createElement("option");
-                opt.value = cc.kode;
-                opt.label = cc.deskripsi;
-                opt.textContent = cc.deskripsi;
-                dl.appendChild(opt);
-            });
-        }
+        if (dl) dl.innerHTML = "";
     });
 
     const today = new Date();
@@ -496,5 +478,43 @@ export function initLayoutDragAndDrop() {
             targetEl.addEventListener("pointermove", onPointerMove);
             targetEl.addEventListener("pointerup", onPointerUp);
         });
+    });
+}
+
+let debounceTimers = {};
+export function setupAutocompleteSearch(inputId, datalistId, mode) {
+    const inputEl = document.getElementById(inputId);
+    const dlEl = document.getElementById(datalistId);
+    if (!inputEl || !dlEl) return;
+
+    inputEl.addEventListener("input", (e) => {
+        const val = e.target.value.trim();
+        
+        clearTimeout(debounceTimers[inputId]);
+        debounceTimers[inputId] = setTimeout(async () => {
+            if (val.length < 1) {
+                dlEl.innerHTML = "";
+                return;
+            }
+            try {
+                const results = await authFetch(`/api/cost-codes/search?query=${encodeURIComponent(val)}&limit=15`).then(r => r.json());
+                dlEl.innerHTML = "";
+                results.forEach(cc => {
+                    const opt = document.createElement("option");
+                    if (mode === "name") {
+                        opt.value = cc.deskripsi;
+                        opt.label = cc.kode;
+                        opt.textContent = cc.kode;
+                    } else {
+                        opt.value = cc.kode;
+                        opt.label = cc.deskripsi;
+                        opt.textContent = cc.deskripsi;
+                    }
+                    dlEl.appendChild(opt);
+                });
+            } catch (err) {
+                console.error("Gagal melakukan pencarian autocomplete:", err);
+            }
+        }, 150);
     });
 }
