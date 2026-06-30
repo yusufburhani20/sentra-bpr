@@ -62,16 +62,20 @@ export function updateTxPaginationUI(shownCount, totalCount) {
         indicatorEl.innerText = `Halaman ${state.currentTxPage} / ${state.totalTxPages}`;
     }
     
+    const btnFirst = document.getElementById("btn-first-riwayat");
     const btnPrev = document.getElementById("btn-prev-riwayat");
     const btnNext = document.getElementById("btn-next-riwayat");
+    const btnLast = document.getElementById("btn-last-riwayat");
+    if (btnFirst) btnFirst.disabled = state.currentTxPage <= 1;
     if (btnPrev) btnPrev.disabled = state.currentTxPage <= 1;
     if (btnNext) btnNext.disabled = state.currentTxPage >= state.totalTxPages;
+    if (btnLast) btnLast.disabled = state.currentTxPage >= state.totalTxPages;
 }
 
 export async function exportRiwayatToCSV() {
     const searchVal = document.getElementById("riwayat-search").value.toLowerCase();
     const codeVal = document.getElementById("riwayat-filter-code").value;
-    const dateVal = document.getElementById("riwayat-filter-date").value;
+    const dateVal = document.getElementById("riwayat-filter-month").value;
     
     try {
         showToast("Menyiapkan data ekspor...", "info");

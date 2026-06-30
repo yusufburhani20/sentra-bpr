@@ -612,7 +612,7 @@
                                     <option value="">Semua Rekening</option>
                                     <!-- Populated dynamically -->
                                 </select>
-                                <input type="date" id="riwayat-filter-date" class="form-control" style="width:160px;">
+                                <input type="month" id="riwayat-filter-month" class="form-control" style="width:160px;">
                             </div>
                             <button class="btn btn-success" id="btn-export-riwayat">
                                 <i data-lucide="file-spreadsheet"></i> Ekspor Rekap (CSV)
@@ -645,6 +645,10 @@
                                 style="font-size:13px; color:var(--text-muted); font-weight:550;">Menampilkan 0 dari 0
                                 transaksi</span>
                             <div style="display:flex; gap:8px; align-items:center;">
+                                <button class="btn btn-secondary" id="btn-first-riwayat"
+                                    style="padding:6px 12px; font-size:12px;" title="Halaman Pertama">
+                                    <i data-lucide="chevrons-left" style="width:14px; height:14px;"></i> Awal
+                                </button>
                                 <button class="btn btn-secondary" id="btn-prev-riwayat"
                                     style="padding:6px 12px; font-size:12px;">
                                     <i data-lucide="chevron-left" style="width:14px; height:14px;"></i> Sebelum
@@ -655,6 +659,10 @@
                                 <button class="btn btn-secondary" id="btn-next-riwayat"
                                     style="padding:6px 12px; font-size:12px;">
                                     Berikut <i data-lucide="chevron-right" style="width:14px; height:14px;"></i>
+                                </button>
+                                <button class="btn btn-secondary" id="btn-last-riwayat"
+                                    style="padding:6px 12px; font-size:12px;" title="Halaman Terakhir">
+                                    Akhir <i data-lucide="chevrons-right" style="width:14px; height:14px;"></i>
                                 </button>
                             </div>
                         </div>

@@ -30,7 +30,7 @@ export async function refreshData() {
     try {
         const searchVal = document.getElementById("riwayat-search") ? document.getElementById("riwayat-search").value : "";
         const codeVal = document.getElementById("riwayat-filter-code") ? document.getElementById("riwayat-filter-code").value : "";
-        const dateVal = document.getElementById("riwayat-filter-date") ? document.getElementById("riwayat-filter-date").value : "";
+        const dateVal = document.getElementById("riwayat-filter-month") ? document.getElementById("riwayat-filter-month").value : "";
         
         const auditSearchVal = document.getElementById("audit-search") ? document.getElementById("audit-search").value : "";
         const auditRoleVal = document.getElementById("audit-filter-role") ? document.getElementById("audit-filter-role").value : "";
@@ -357,11 +357,17 @@ window.addEventListener("DOMContentLoaded", async () => {
         state.currentTxPage = 1;
         await refreshAndRenderRiwayat();
     });
-    document.getElementById("riwayat-filter-date").addEventListener("change", async () => {
+    document.getElementById("riwayat-filter-month").addEventListener("change", async () => {
         state.currentTxPage = 1;
         await refreshAndRenderRiwayat();
     });
     
+    document.getElementById("btn-first-riwayat").addEventListener("click", async () => {
+        if (state.currentTxPage > 1) {
+            state.currentTxPage = 1;
+            await refreshAndRenderRiwayat();
+        }
+    });
     document.getElementById("btn-prev-riwayat").addEventListener("click", async () => {
         if (state.currentTxPage > 1) {
             state.currentTxPage--;
@@ -371,6 +377,12 @@ window.addEventListener("DOMContentLoaded", async () => {
     document.getElementById("btn-next-riwayat").addEventListener("click", async () => {
         if (state.currentTxPage < state.totalTxPages) {
             state.currentTxPage++;
+            await refreshAndRenderRiwayat();
+        }
+    });
+    document.getElementById("btn-last-riwayat").addEventListener("click", async () => {
+        if (state.currentTxPage < state.totalTxPages) {
+            state.currentTxPage = state.totalTxPages;
             await refreshAndRenderRiwayat();
         }
     });
