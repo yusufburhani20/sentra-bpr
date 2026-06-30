@@ -340,15 +340,12 @@
                             <!-- Rekening Debet (Nama & No Rekening) -->
                             <div class="form-row">
                                 <div class="form-group">
-                                    <label class="form-label">Nama Perkiraan Debet</label>
-                                    <div class="pk-combobox" id="combo-debet-nama-wrap">
-                                        <input type="text" id="tx-debet-nama" class="form-control pk-combo-input"
-                                            placeholder="Ketik atau pilih perkiraan..." autocomplete="off">
-                                        <button type="button" class="pk-combo-arrow" tabindex="-1" aria-label="Tampilkan pilihan">
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-                                        </button>
-                                        <div class="pk-combo-dropdown" id="combo-debet-nama-list"></div>
-                                    </div>
+                                    <label class="form-label" style="display:flex; align-items:center; gap:5px;">
+                                        Nama Perkiraan Debet
+                                        <span style="font-size:10px; color:var(--text-muted); font-weight:400; font-style:italic;">(otomatis)</span>
+                                    </label>
+                                    <input type="text" id="tx-debet-nama" class="form-control pk-nama-readonly"
+                                        placeholder="Terisi otomatis dari No. P/K..." readonly tabindex="-1">
                                 </div>
                                 <div class="form-group">
                                     <label class="form-label">No. P/K Debet</label>
@@ -366,15 +363,12 @@
                             <!-- Rekening Kredit / Perkiraan Lawan (Nama & No Rekening) -->
                             <div class="form-row">
                                 <div class="form-group">
-                                    <label class="form-label">Nama Perkiraan Lawan (Kredit)</label>
-                                    <div class="pk-combobox" id="combo-kredit-nama-wrap">
-                                        <input type="text" id="tx-kredit-nama" class="form-control pk-combo-input"
-                                            placeholder="Ketik atau pilih perkiraan..." autocomplete="off">
-                                        <button type="button" class="pk-combo-arrow" tabindex="-1" aria-label="Tampilkan pilihan">
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-                                        </button>
-                                        <div class="pk-combo-dropdown" id="combo-kredit-nama-list"></div>
-                                    </div>
+                                    <label class="form-label" style="display:flex; align-items:center; gap:5px;">
+                                        Nama Perkiraan Lawan (Kredit)
+                                        <span style="font-size:10px; color:var(--text-muted); font-weight:400; font-style:italic;">(otomatis)</span>
+                                    </label>
+                                    <input type="text" id="tx-kredit-nama" class="form-control pk-nama-readonly"
+                                        placeholder="Terisi otomatis dari No. P/K..." readonly tabindex="-1">
                                 </div>
                                 <div class="form-group">
                                     <label class="form-label">No. P/K Lawan (Kredit)</label>
@@ -388,6 +382,7 @@
                                     </div>
                                 </div>
                             </div>
+
 
 
 

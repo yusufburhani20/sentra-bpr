@@ -254,9 +254,7 @@ window.addEventListener("DOMContentLoaded", async () => {
     initTheme();
     initLayoutDragAndDrop();
 
-    setupPKCombobox("tx-debet-nama",     "combo-debet-nama-list",  "name", "tx-debet-rekening");
     setupPKCombobox("tx-debet-rekening", "combo-debet-rek-list",   "code", "tx-debet-nama");
-    setupPKCombobox("tx-kredit-nama",    "combo-kredit-nama-list", "name", "tx-kredit-rekening");
     setupPKCombobox("tx-kredit-rekening","combo-kredit-rek-list",  "code", "tx-kredit-nama");
 
     document.getElementById("btn-login").addEventListener("click", login);
@@ -335,9 +333,9 @@ window.addEventListener("DOMContentLoaded", async () => {
     document.getElementById("tx-nominal-desimal").addEventListener("input", updateLiveSlipPreview);
     document.getElementById("tx-keterangan").addEventListener("input", updateLiveSlipPreview);
 
-    // The combobox already syncs paired fields in selectItem.
-    // Listen to 'input' events for manual typing to update live preview.
-    ["tx-debet-nama", "tx-debet-rekening", "tx-kredit-nama", "tx-kredit-rekening"].forEach(id => {
+    // Rekening fields: update live preview on input/selection
+    // Nama fields are readonly — they sync automatically via the combobox paired field logic
+    ["tx-debet-rekening", "tx-kredit-rekening"].forEach(id => {
         document.getElementById(id).addEventListener("input", () => updateLiveSlipPreview());
         document.getElementById(id).addEventListener("pk-selected", () => updateLiveSlipPreview());
     });
