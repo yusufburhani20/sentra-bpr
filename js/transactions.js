@@ -299,42 +299,56 @@ export function printElement(el) {
     document.body.appendChild(wrapper);
     document.body.classList.add("printing-active");
 
-    window.print();
+    // Cleanup dijalankan setelah dialog print ditutup (afterprint),
+    // bukan langsung setelah window.print() — karena browser membuka
+    // dialog cetak secara async dan cleanup yang terlalu cepat
+    // menyebabkan halaman penuh yang tercetak (bukan slip).
+    function cleanupAfterPrint() {
+        document.body.classList.remove("printing-active");
 
-    document.body.classList.remove("printing-active");
-    if (document.body.contains(wrapper)) {
-        document.body.removeChild(wrapper);
-    }
-    const styleEl = document.getElementById("print-page-style");
-    if (styleEl) {
-        styleEl.parentNode.removeChild(styleEl);
-    }
-
-    el.classList.remove("print-data-only-active");
-    el.style.removeProperty("--print-offset-x");
-    el.style.removeProperty("--print-offset-y");
-    el.style.removeProperty("--print-slip-width");
-    el.style.removeProperty("--print-slip-height");
-    el.style.removeProperty("--print-transform");
-
-    detailElements.forEach(id => {
-        const child = el.querySelector(detailSelectors[id]);
-        if (child) {
-            if (el.id === "printable-voucher-slip") {
-                const x = parseFloat(document.getElementById(`cal-el-${id}-x`).value) || 0;
-                const y = parseFloat(document.getElementById(`cal-el-${id}-y`).value) || 0;
-                child.style.setProperty("transform", `translate(${x}mm, ${y}mm)`);
-            } else {
-                child.style.removeProperty("transform");
-            }
+        if (document.body.contains(wrapper)) {
+            document.body.removeChild(wrapper);
         }
-    });
+        const styleEl = document.getElementById("print-page-style");
+        if (styleEl) styleEl.parentNode.removeChild(styleEl);
 
-    if (nextSibling) {
-        parent.insertBefore(el, nextSibling);
-    } else {
-        parent.appendChild(el);
+        el.classList.remove("print-data-only-active");
+        el.style.removeProperty("--print-offset-x");
+        el.style.removeProperty("--print-offset-y");
+        el.style.removeProperty("--print-slip-width");
+        el.style.removeProperty("--print-slip-height");
+        el.style.removeProperty("--print-transform");
+
+        detailElements.forEach(id => {
+            const child = el.querySelector(detailSelectors[id]);
+            if (child) {
+                if (el.id === "printable-voucher-slip") {
+                    const x = parseFloat(document.getElementById(`cal-el-${id}-x`).value) || 0;
+                    const y = parseFloat(document.getElementById(`cal-el-${id}-y`).value) || 0;
+                    child.style.setProperty("transform", `translate(${x}mm, ${y}mm)`);
+                } else {
+                    child.style.removeProperty("transform");
+                }
+            }
+        });
+
+        if (nextSibling) {
+            parent.insertBefore(el, nextSibling);
+        } else {
+            parent.appendChild(el);
+        }
     }
+
+    // { once: true } memastikan cleanup hanya berjalan satu kali
+    window.addEventListener("afterprint", cleanupAfterPrint, { once: true });
+
+    // requestAnimationFrame memberi browser satu frame untuk merender
+    // DOM dengan class printing-active sebelum dialog dibuka
+    requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+            window.print();
+        });
+    });
 }
 
 export function initLayoutDragAndDrop() {
