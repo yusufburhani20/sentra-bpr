@@ -14,11 +14,14 @@ exports.getTransactions = (req, res) => {
     let countQuery = "SELECT COUNT(*) as count FROM transactions WHERE deleted_at IS NULL";
     let params = [];
 
-    if (req.user.role !== 'Admin') {
-        const filterRole = " AND operator_code = ?";
+    // Admin dan Kepala Bidang bisa melihat semua transaksi
+    const canSeeAll = req.user.role === 'Admin' || req.user.role === 'Kepala Bidang';
+    if (!canSeeAll) {
+        // Filter berdasarkan username (lebih reliabel dari operator_code yang bisa kosong)
+        const filterRole = " AND username = ?";
         query += filterRole;
         countQuery += filterRole;
-        params.push(req.user.operator_code);
+        params.push(req.user.username);
     }
 
     if (search) {
@@ -138,10 +141,10 @@ exports.createTransaction = (req, res) => {
                 }
 
                 db.run(`INSERT INTO transactions
-                    (id, ref_no, tanggal, operator_code, debet_nama, debet_rekening, kredit_nama, kredit_rekening,
+                    (id, ref_no, tanggal, operator_code, username, debet_nama, debet_rekening, kredit_nama, kredit_rekening,
                      jenis_transaksi, nominal_utama, nominal_desimal, keterangan, terbilang)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-                    [id, ref_no, now, operator_code, dNama, dRek, kNama, kRek,
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                    [id, ref_no, now, operator_code, user.username, dNama, dRek, kNama, kRek,
                      jenis_transaksi, nominal_utama, nominal_desimal, keterangan, terbilang],
                     function(err) {
                         if (err) {

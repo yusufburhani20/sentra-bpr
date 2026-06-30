@@ -103,20 +103,33 @@ exports.resetPassword = async (req, res) => {
 };
 
 exports.getRefCounters = (req, res) => {
-    db.all("SELECT username, operator_code FROM users WHERE deleted_at IS NULL", [], (err, users) => {
+    const canSeeAll = req.user.role === 'Admin' || req.user.role === 'Kepala Bidang';
+
+    db.all("SELECT id, username, operator_code FROM users WHERE deleted_at IS NULL", [], (err, users) => {
         if (err) return res.status(500).json({ error: err.message });
 
+        // Pastikan semua user punya entri di ref_counters
         const insertPromises = users.map(u => new Promise(resolve => {
             db.run(`INSERT OR IGNORE INTO ref_counters (username, counter, prefix) VALUES (?, 1, ?)`,
                 [u.username, u.operator_code || ""], resolve);
         }));
 
         Promise.all(insertPromises).then(() => {
-            db.all(`SELECT rc.username, rc.counter, rc.prefix, u.nama, u.operator_code
+            let query = `SELECT rc.username, rc.counter, rc.prefix, u.nama, u.operator_code
                     FROM ref_counters rc
                     INNER JOIN users u ON u.username = rc.username
-                    WHERE u.deleted_at IS NULL
-                    ORDER BY u.nama ASC`, [], (err, rows) => {
+                    WHERE u.deleted_at IS NULL`;
+            let params = [];
+
+            if (!canSeeAll) {
+                // User biasa hanya melihat counter miliknya sendiri
+                query += " AND rc.username = ?";
+                params.push(req.user.username);
+            }
+
+            query += " ORDER BY u.nama ASC";
+
+            db.all(query, params, (err, rows) => {
                 if (err) return res.status(500).json({ error: err.message });
                 res.json(rows);
             });
@@ -127,6 +140,12 @@ exports.getRefCounters = (req, res) => {
 exports.updateRefCounter = (req, res) => {
     const { username } = req.params;
     const { counter, prefix } = req.body;
+
+    // Hanya Admin dan Kepala Bidang bisa edit counter milik orang lain
+    const canEditAll = req.user.role === 'Admin' || req.user.role === 'Kepala Bidang';
+    if (!canEditAll && req.user.username !== username) {
+        return res.status(403).json({ error: "Anda hanya dapat mengubah counter milik Anda sendiri." });
+    }
 
     const newCounter = parseInt(counter);
     if (isNaN(newCounter) || newCounter < 1) {
@@ -152,6 +171,12 @@ exports.updateRefCounter = (req, res) => {
 
 exports.resetRefCounter = (req, res) => {
     const { username } = req.params;
+
+    // Hanya Admin dan Kepala Bidang bisa reset counter milik orang lain
+    const canEditAll = req.user.role === 'Admin' || req.user.role === 'Kepala Bidang';
+    if (!canEditAll && req.user.username !== username) {
+        return res.status(403).json({ error: "Anda hanya dapat mereset counter milik Anda sendiri." });
+    }
 
     db.run("UPDATE ref_counters SET counter = 1 WHERE username = ?", [username], function(err) {
         if (err) return res.status(500).json({ error: err.message });

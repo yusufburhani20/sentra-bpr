@@ -67,8 +67,10 @@ async function initializeDb(callback) {
         await runAsync("ALTER TABLE transactions ADD COLUMN debet_rekening TEXT");
         await runAsync("ALTER TABLE transactions ADD COLUMN kredit_nama TEXT");
         await runAsync("ALTER TABLE transactions ADD COLUMN kredit_rekening TEXT");
+        await runAsync("ALTER TABLE transactions ADD COLUMN username TEXT");
         await runAsync("CREATE INDEX IF NOT EXISTS idx_transactions_tanggal ON transactions (tanggal)");
         await runAsync("CREATE INDEX IF NOT EXISTS idx_transactions_operator ON transactions (operator_code)");
+        await runAsync("CREATE INDEX IF NOT EXISTS idx_transactions_username ON transactions (username)");
         await runAsync("CREATE INDEX IF NOT EXISTS idx_transactions_debet_rek ON transactions (debet_rekening)");
         await runAsync("CREATE INDEX IF NOT EXISTS idx_transactions_kredit_rek ON transactions (kredit_rekening)");
         await runAsync("CREATE INDEX IF NOT EXISTS idx_cost_codes_search ON cost_codes (kode, deskripsi)");
@@ -163,6 +165,7 @@ async function initializeDb(callback) {
             tanggal_kirim TEXT,
             operator_name TEXT,
             operator_code TEXT,
+            username TEXT,
             kantor_kas TEXT,
             checklist_slips INTEGER DEFAULT 0,
             checklist_mutasi INTEGER DEFAULT 0,
@@ -175,6 +178,8 @@ async function initializeDb(callback) {
             tanggal_sampai TEXT DEFAULT NULL,
             penerima_name TEXT DEFAULT NULL
         )`);
+        await runAsync("ALTER TABLE slip_submissions ADD COLUMN username TEXT");
+        await runAsync("CREATE INDEX IF NOT EXISTS idx_slip_submissions_username ON slip_submissions (username)");
 
         // 9. System Settings Table
         await runAsync(`CREATE TABLE IF NOT EXISTS system_settings (

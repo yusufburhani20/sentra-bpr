@@ -6,9 +6,11 @@ exports.getSubmissions = (req, res) => {
     let query = "SELECT * FROM slip_submissions ORDER BY tanggal_kirim DESC";
     let params = [];
 
-    if (req.user.role !== 'Admin' && req.user.role !== 'Kepala Bidang') {
-        query = "SELECT * FROM slip_submissions WHERE operator_code = ? OR operator_name = ? ORDER BY tanggal_kirim DESC";
-        params = [req.user.operator_code || '', req.user.nama || ''];
+    const canSeeAll = req.user.role === 'Admin' || req.user.role === 'Kepala Bidang';
+    if (!canSeeAll) {
+        // Filter berdasarkan username (lebih reliabel), fallback ke operator_code/nama lama
+        query = "SELECT * FROM slip_submissions WHERE (username = ? OR operator_code = ? OR operator_name = ?) ORDER BY tanggal_kirim DESC";
+        params = [req.user.username || '', req.user.operator_code || '', req.user.nama || ''];
     }
     
     db.all(query, params, (err, rows) => {
@@ -47,18 +49,19 @@ exports.createSubmission = (req, res) => {
     const tanggal_kirim = new Date().toISOString();
     const operator_name = req.user.nama;
     const operator_code = req.user.operator_code;
+    const username = req.user.username;
     const bukti_kirim_path = "/uploads/" + req.file.filename;
 
     const query = `
         INSERT INTO slip_submissions (
-            id, tanggal_kirim, operator_name, operator_code, kantor_kas,
+            id, tanggal_kirim, operator_name, operator_code, username, kantor_kas,
             checklist_slips, checklist_mutasi, checklist_pb, checklist_fo,
             checklist_lainnya, bukti_kirim_path, status
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Dikirim')
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Dikirim')
     `;
 
     const params = [
-        id, tanggal_kirim, operator_name, operator_code, kantor_kas || req.user.bagian || "Kantor Kas",
+        id, tanggal_kirim, operator_name, operator_code, username, kantor_kas || req.user.bagian || "Kantor Kas",
         parseInt(checklist_slips) || 0,
         parseInt(checklist_mutasi) || 0,
         parseInt(checklist_pb) || 0,
