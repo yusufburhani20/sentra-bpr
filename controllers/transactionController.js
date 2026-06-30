@@ -63,19 +63,27 @@ exports.getTransactions = (req, res) => {
 };
 
 exports.getNextRef = (req, res) => {
-    const operator = req.user.operator_code;
-    if (!operator) return res.status(400).json({ error: "Operator code tidak ditemukan di sesi pengguna." });
-
-    // Gunakan atomic increment agar aman dari race condition saat multi-user
-    db.atomicIncrementRef(operator, operator, (err, row) => {
+    // Ambil operator_code terupdate langsung dari database untuk menghindari ketidaksesuaian cookie session
+    db.get("SELECT operator_code FROM users WHERE id = ? AND deleted_at IS NULL", [req.user.id], (err, user) => {
         if (err) return res.status(500).json({ error: err.message });
-        if (!row) return res.status(500).json({ error: "Gagal membaca counter referensi." });
+        if (!user) return res.status(404).json({ error: "Pengguna tidak ditemukan." });
 
-        const { counter, prefix } = row;
-        const seq = String(counter).padStart(3, '0');
-        const nextRef = `${(prefix || operator)}${seq}`;
+        const operator = user.operator_code;
+        if (!operator || operator.trim() === "") {
+            return res.status(400).json({ error: "Operator code tidak ditemukan atau kosong untuk akun Anda." });
+        }
 
-        res.json({ nextRef, counter, prefix: prefix || operator });
+        // Gunakan atomic increment agar aman dari race condition saat multi-user
+        db.atomicIncrementRef(operator, operator, (err, row) => {
+            if (err) return res.status(500).json({ error: err.message });
+            if (!row) return res.status(500).json({ error: "Gagal membaca counter referensi." });
+
+            const { counter, prefix } = row;
+            const seq = String(counter).padStart(3, '0');
+            const nextRef = `${(prefix || operator)}${seq}`;
+
+            res.json({ nextRef, counter, prefix: prefix || operator });
+        });
     });
 };
 
@@ -95,75 +103,80 @@ exports.createTransaction = (req, res) => {
 
     const id = crypto.randomUUID();
     const now = new Date().toISOString();
-    const operator_code = req.user.operator_code;
 
-    const dNama = debet_nama || "Debit Account";
-    const dRek = debet_rekening || "";
-    const kNama = kredit_nama || "Credit Account";
-    const kRek = kredit_rekening || "";
+    // Pastikan operator_code dibaca yang paling baru dari database
+    db.get("SELECT operator_code FROM users WHERE id = ? AND deleted_at IS NULL", [req.user.id], (err, user) => {
+        if (err) return res.status(500).json({ error: err.message });
+        if (!user) return res.status(404).json({ error: "Pengguna tidak ditemukan." });
 
-    const isPg = process.env.DB_TYPE === 'postgres';
+        const operator_code = user.operator_code;
+        const dNama = debet_nama || "Debit Account";
+        const dRek = debet_rekening || "";
+        const kNama = kredit_nama || "Credit Account";
+        const kRek = kredit_rekening || "";
 
-    db.serialize(() => {
-        if (!isPg) db.run("BEGIN EXCLUSIVE TRANSACTION;");
+        const isPg = process.env.DB_TYPE === 'postgres';
 
-        db.get("SELECT id FROM transactions WHERE ref_no = ?", [ref_no], (err, row) => {
-            if (row) {
-                if (!isPg) db.run("ROLLBACK;");
-                return res.status(400).json({ error: "Duplikasi nomor referensi terdeteksi!" });
-            }
+        db.serialize(() => {
+            if (!isPg) db.run("BEGIN EXCLUSIVE TRANSACTION;");
 
-            db.run(`INSERT INTO transactions
-                (id, ref_no, tanggal, operator_code, debet_nama, debet_rekening, kredit_nama, kredit_rekening,
-                 jenis_transaksi, nominal_utama, nominal_desimal, keterangan, terbilang)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-                [id, ref_no, now, operator_code, dNama, dRek, kNama, kRek,
-                 jenis_transaksi, nominal_utama, nominal_desimal, keterangan, terbilang],
-                function(err) {
-                    if (err) {
-                        if (!isPg) db.run("ROLLBACK;");
-
-                        // Tangkap unique constraint violation (dari race condition atau duplikat manual)
-                        // PostgreSQL: error code 23505 | SQLite: message UNIQUE constraint failed
-                        const isUniqueViolation =
-                            (err.code === '23505') ||
-                            (err.message && err.message.includes('UNIQUE constraint failed'));
-
-                        if (isUniqueViolation) {
-                            return res.status(400).json({ error: "Duplikasi nomor referensi terdeteksi! Muat ulang form untuk mendapatkan nomor baru." });
-                        }
-                        return res.status(500).json({ error: "Gagal menyimpan transaksi: " + err.message });
-                    }
-
-                    const afterCommit = () => {
-                        const logId = crypto.randomUUID();
-                        db.run("INSERT INTO audit_logs VALUES (?, ?, ?, ?, ?, ?)",
-                            [logId, now, req.user.nama, req.user.role,
-                             `Menyimpan slip: ${ref_no} senilai Rp ${nominal_utama},${nominal_desimal}`,
-                             req.ip || "127.0.0.1"]);
-
-                        db.run("UPDATE ref_counters SET counter = counter + 1 WHERE operator_code = ?", [operator_code]);
-
-                        const notifId = crypto.randomUUID();
-                        db.run("INSERT INTO notifications VALUES (?, ?, 'Kepala Bidang', ?, 0)",
-                            [notifId, now, `Slip baru: ${ref_no} (Operator: ${req.user.nama})`]);
-
-                        res.json({ success: true, id, ref_no });
-                    };
-
-                    if (!isPg) {
-                        db.run("COMMIT;", (err) => {
-                            if (err) {
-                                db.run("ROLLBACK;");
-                                return res.status(500).json({ error: "Gagal komit transaksi." });
-                            }
-                            afterCommit();
-                        });
-                    } else {
-                        afterCommit();
-                    }
+            db.get("SELECT id FROM transactions WHERE ref_no = ?", [ref_no], (err, row) => {
+                if (row) {
+                    if (!isPg) db.run("ROLLBACK;");
+                    return res.status(400).json({ error: "Duplikasi nomor referensi terdeteksi!" });
                 }
-            );
+
+                db.run(`INSERT INTO transactions
+                    (id, ref_no, tanggal, operator_code, debet_nama, debet_rekening, kredit_nama, kredit_rekening,
+                     jenis_transaksi, nominal_utama, nominal_desimal, keterangan, terbilang)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                    [id, ref_no, now, operator_code, dNama, dRek, kNama, kRek,
+                     jenis_transaksi, nominal_utama, nominal_desimal, keterangan, terbilang],
+                    function(err) {
+                        if (err) {
+                            if (!isPg) db.run("ROLLBACK;");
+
+                            // Tangkap unique constraint violation (dari race condition atau duplikat manual)
+                            const isUniqueViolation =
+                                (err.code === '23505') ||
+                                (err.message && err.message.includes('UNIQUE constraint failed'));
+
+                            if (isUniqueViolation) {
+                                return res.status(400).json({ error: "Duplikasi nomor referensi terdeteksi! Muat ulang form untuk mendapatkan nomor baru." });
+                            }
+                            return res.status(500).json({ error: "Gagal menyimpan transaksi: " + err.message });
+                        }
+
+                        const afterCommit = () => {
+                            const logId = crypto.randomUUID();
+                            db.run("INSERT INTO audit_logs VALUES (?, ?, ?, ?, ?, ?)",
+                                [logId, now, req.user.nama, req.user.role,
+                                 `Menyimpan slip: ${ref_no} senilai Rp ${nominal_utama},${nominal_desimal}`,
+                                 req.ip || "127.0.0.1"]);
+
+                            db.run("UPDATE ref_counters SET counter = counter + 1 WHERE operator_code = ?", [operator_code]);
+
+                            const notifId = crypto.randomUUID();
+                            db.run("INSERT INTO notifications VALUES (?, ?, 'Kepala Bidang', ?, 0)",
+                                [notifId, now, `Slip baru: ${ref_no} (Operator: ${req.user.nama})`]);
+
+                            res.json({ success: true, id, ref_no });
+                        };
+
+                        if (!isPg) {
+                            db.run("COMMIT;", (err) => {
+                                if (err) {
+                                    db.run("ROLLBACK;");
+                                    return res.status(500).json({ error: "Gagal komit transaksi." });
+                                }
+                                afterCommit();
+                            });
+                        } else {
+                            afterCommit();
+                        }
+                    }
+                );
+            });
         });
     });
 };
