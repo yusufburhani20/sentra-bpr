@@ -1,7 +1,7 @@
 import { state } from './js/state.js';
 import { showToast, escapeHtml, openModal, closeModal, authFetch } from './js/utils.js';
 import { showLoginScreen, hideLoginScreen, checkAuth, login, logout, changePassword } from './js/auth.js';
-import { fetchNextRef, renderInputView, updateLiveSlipPreview, resetTxForm, saveTransaction, printElement, initLayoutDragAndDrop } from './js/transactions.js';
+import { fetchNextRef, renderInputView, updateLiveSlipPreview, resetTxForm, saveTransaction, printElement, initLayoutDragAndDrop, saveAndPrintTransaction } from './js/transactions.js';
 import { renderRiwayatView, exportRiwayatToCSV, submitEditRequest } from './js/history.js';
 import { renderKodeBiayaView, resetCostCodeForm, submitCostCode, exportCostCodes, importCostCodes, downloadCostCodeTemplate, bulkDeleteSelectedCodes, clearAllCostCodes } from './js/costCodes.js';
 import { renderUsersView, openAddUserModal, submitUser, submitResetPassword } from './js/users.js';
@@ -407,7 +407,7 @@ window.addEventListener("DOMContentLoaded", async () => {
 
     document.getElementById("btn-reset-tx").addEventListener("click", resetTxForm);
     document.getElementById("btn-save-tx").addEventListener("click", saveTransaction);
-    document.getElementById("btn-print-slip").addEventListener("click", () => { printElement(document.getElementById("printable-voucher-slip")); });
+    document.getElementById("btn-print-slip").addEventListener("click", saveAndPrintTransaction);
     document.getElementById("btn-modal-print").addEventListener("click", () => { const s = document.querySelector("#modal-print-container .voucher-slip"); if (s) printElement(s); });
 
     const refreshAndRenderRiwayat = async () => {

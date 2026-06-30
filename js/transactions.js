@@ -197,7 +197,7 @@ export async function saveTransaction() {
     }
 }
 
-export function printElement(el) {
+export function printElement(el, onCleanup) {
     const printDataOnly = document.getElementById("print-data-only").checked;
     const offsetX = parseFloat(document.getElementById("cal-offset-x").value) || 0;
     const offsetY = parseFloat(document.getElementById("cal-offset-y").value) || 0;
@@ -300,9 +300,6 @@ export function printElement(el) {
     document.body.classList.add("printing-active");
 
     // Cleanup dijalankan setelah dialog print ditutup (afterprint),
-    // bukan langsung setelah window.print() — karena browser membuka
-    // dialog cetak secara async dan cleanup yang terlalu cepat
-    // menyebabkan halaman penuh yang tercetak (bukan slip).
     function cleanupAfterPrint() {
         document.body.classList.remove("printing-active");
 
@@ -337,6 +334,10 @@ export function printElement(el) {
         } else {
             parent.appendChild(el);
         }
+
+        if (typeof onCleanup === "function") {
+            onCleanup();
+        }
     }
 
     // { once: true } memastikan cleanup hanya berjalan satu kali
@@ -349,6 +350,73 @@ export function printElement(el) {
             window.print();
         });
     });
+}
+
+export async function saveAndPrintTransaction() {
+    const debetNama = document.getElementById("tx-debet-nama").value;
+    const debetRek = document.getElementById("tx-debet-rekening").value;
+    const kreditNama = document.getElementById("tx-kredit-nama").value;
+    const kreditRek = document.getElementById("tx-kredit-rekening").value;
+    const nominalUtama = parseFloat(document.getElementById("tx-nominal-utama").value) || 0;
+    const nominalDesimal = parseInt(document.getElementById("tx-nominal-desimal").value) || 0;
+    const keterangan = document.getElementById("tx-keterangan").value;
+
+    if (!debetNama || !debetRek) {
+        showToast("Isi Nama Perkiraan dan Rekening Debet!", "warning");
+        return;
+    }
+    if (!kreditNama || !kreditRek) {
+        showToast("Isi Nama Perkiraan dan Rekening Kredit/Lawan!", "warning");
+        return;
+    }
+    if (nominalUtama <= 0) {
+        showToast("Nominal Utama harus lebih besar dari 0!", "warning");
+        return;
+    }
+
+    if (!state.activeNextRef || state.activeNextRef.trim() === "") {
+        showToast("Nomor referensi belum dimuat atau kosong. Silakan muat ulang halaman.", "warning");
+        return;
+    }
+
+    const payload = {
+        ref_no: state.activeNextRef,
+        operator_code: state.currentUser.operator_code,
+        debet_nama: debetNama,
+        debet_rekening: debetRek,
+        kredit_nama: kreditNama,
+        kredit_rekening: kreditRek,
+        jenis_transaksi: kreditNama,
+        nominal_utama: nominalUtama,
+        nominal_desimal: nominalDesimal,
+        keterangan: keterangan,
+        terbilang: terbilang(nominalUtama, nominalDesimal),
+        username: state.currentUser.nama,
+        userRole: state.currentUser.role
+    };
+
+    try {
+        const res = await authFetch('/api/transactions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        }).then(r => r.json());
+
+        if (res.success) {
+            showToast("Transaksi berhasil disimpan ke database!", "success");
+            // Cetak slip dengan melemparkan callback untuk membersihkan form SETELAH cetak selesai
+            printElement(document.getElementById("printable-voucher-slip"), () => {
+                resetTxForm();
+            });
+        } else {
+            showToast(res.error || "Gagal menyimpan transaksi.", "danger");
+        }
+    } catch (e) {
+        if (e.message !== 'SESSION_EXPIRED') {
+            console.error(e);
+            showToast("Gagal menghubungi server backend.", "danger");
+        }
+    }
 }
 
 export function initLayoutDragAndDrop() {
