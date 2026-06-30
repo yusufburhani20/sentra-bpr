@@ -3,7 +3,7 @@ const router = express.Router();
 const userController = require('../controllers/userController');
 const { requireAuth, requireRole } = require('../middleware/auth');
 
-router.use(requireAuth, requireRole('Admin'));
+router.use(requireAuth);
 
 router.get('/', userController.getRefCounters);
 router.put('/:username', userController.updateRefCounter);
