@@ -161,6 +161,7 @@ export async function submitCostCode() {
 
         if (res.success) {
             showToast("Kode Biaya berhasil disimpan!", "success");
+            state.costCodesDB = []; // Reset cache agar ter-refresh
             resetCostCodeForm();
             await showSection("kodebiaya");
         } else {
@@ -189,6 +190,7 @@ export async function deleteCostCode(id) {
 
         if (res.success) {
             showToast("Kode Biaya berhasil dihapus!", "success");
+            state.costCodesDB = []; // Reset cache agar ter-refresh
             await showSection("kodebiaya");
         } else {
             showToast(res.error || "Gagal menghapus.", "danger");
@@ -215,6 +217,7 @@ export async function bulkDeleteSelectedCodes() {
 
         if (res.success) {
             showToast(`${res.count} kode biaya berhasil dihapus massal!`, 'success');
+            state.costCodesDB = []; // Reset cache agar ter-refresh
             await showSection("kodebiaya");
         } else {
             showToast(res.error || "Gagal menghapus secara massal.", 'danger');
@@ -301,6 +304,7 @@ export async function importCostCodes(file) {
             statusBar.style.background = "#d1e7dd";
             statusBar.style.color = "#0a3622";
             statusBar.innerText = `✅ Import selesai: ${res.imported} data berhasil ditambahkan, ${res.skipped} dilewati (duplikat/kosong).`;
+            state.costCodesDB = []; // Reset cache agar ter-refresh
             await showSection("kodebiaya");
         } else {
             statusBar.style.background = "#f8d7da";
@@ -327,6 +331,7 @@ export async function clearAllCostCodes() {
 
         if (res.success) {
             showToast("Semua kode biaya berhasil dikosongkan!", "success");
+            state.costCodesDB = []; // Reset cache agar ter-refresh
             await showSection("kodebiaya");
         } else {
             showToast(res.error || "Gagal mengosongkan kode biaya.", "danger");

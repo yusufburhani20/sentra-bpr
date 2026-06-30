@@ -46,14 +46,20 @@ export async function refreshData() {
 
         // Pemuatan data bersyarat sesuai dengan tab/view yang sedang aktif saja
         if (activeView === 'dashboard') {
-            promises.push(fetch('/api/cost-codes?limit=10000').then(r => r.json()));
-            keys.push('codes');
+            if (state.costCodesDB.length === 0) {
+                promises.push(fetch('/api/cost-codes?limit=10000').then(r => r.json()));
+                keys.push('codes');
+            }
         } else if (activeView === 'input') {
-            promises.push(fetch('/api/cost-codes?limit=10000').then(r => r.json()));
-            keys.push('codes');
+            if (state.costCodesDB.length === 0) {
+                promises.push(fetch('/api/cost-codes?limit=10000').then(r => r.json()));
+                keys.push('codes');
+            }
         } else if (activeView === 'riwayat') {
-            promises.push(fetch('/api/cost-codes?limit=10000').then(r => r.json()));
-            keys.push('codes');
+            if (state.costCodesDB.length === 0) {
+                promises.push(fetch('/api/cost-codes?limit=10000').then(r => r.json()));
+                keys.push('codes');
+            }
             promises.push(fetch(`/api/transactions?page=${state.currentTxPage}&limit=${state.paginationLimit}&search=${encodeURIComponent(searchVal)}&code=${encodeURIComponent(codeVal)}&date=${encodeURIComponent(dateVal)}`).then(r => r.json()));
             keys.push('transactions');
         } else if (activeView === 'kodebiaya') {
