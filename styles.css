@@ -1383,11 +1383,15 @@ body.printing-active > .print-wrapper {
 }
 
 @media print {
-    body.printing-active > *:not(.print-wrapper) {
+    /* Hide all main application containers during printing to prevent specificity conflicts */
+    #main-app,
+    .login-screen,
+    .toast-stack,
+    .modal-overlay {
         display: none !important;
     }
 
-    body.printing-active > .print-wrapper {
+    body > .print-wrapper {
         display: block !important;
         position: absolute !important;
         left: 0 !important;
@@ -1437,8 +1441,8 @@ body.printing-active > .print-wrapper {
         background: transparent !important;
     }
 
-    /* Hide yellow header band completely from the printed layout */
-    .print-wrapper .voucher-slip .slip-top-band {
+    /* Hide yellow header band completely from the printed layout only when pre-printed mode is active */
+    .print-wrapper .voucher-slip.print-data-only-active .slip-top-band {
         display: none !important;
     }
 

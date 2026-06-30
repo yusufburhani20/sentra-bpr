@@ -204,7 +204,7 @@ export function printElement(el) {
     const slipWidth = parseFloat(document.getElementById("cal-slip-width").value) || 15.5;
     const slipHeight = parseFloat(document.getElementById("cal-slip-height").value) || 10.5;
     
-    const printHeight = slipHeight - 1.6;
+    const printHeight = slipHeight;
     
     const slipScale = (parseFloat(document.getElementById("cal-slip-scale").value) || 100) / 100;
     const slipRotation = parseInt(document.getElementById("cal-slip-rotation").value) || 0;
@@ -290,7 +290,7 @@ export function printElement(el) {
         const y = parseFloat(document.getElementById(`cal-el-${id}-y`).value) || 0;
         const child = el.querySelector(detailSelectors[id]);
         if (child) {
-            const printY = y - 16;
+            const printY = y;
             child.style.setProperty("transform", `translate(${x}mm, ${printY}mm)`, "important");
         }
     });
