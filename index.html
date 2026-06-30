@@ -613,6 +613,20 @@
                                     <!-- Populated dynamically -->
                                 </select>
                                 <input type="month" id="riwayat-filter-month" class="form-control" style="width:160px;">
+                                <div style="display:flex; align-items:center; gap:8px;">
+                                    <label for="riwayat-limit"
+                                        style="font-size:13px; color:var(--text-muted); font-weight:600; white-space:nowrap; margin:0;">Tampilkan:</label>
+                                    <select id="riwayat-limit" class="form-control"
+                                        style="width:80px; padding:6px 10px; font-size:12px; height:34px;">
+                                        <option value="10">10</option>
+                                        <option value="25">25</option>
+                                        <option value="50" selected>50</option>
+                                        <option value="100">100</option>
+                                    </select>
+                                    <span
+                                        style="font-size:13px; color:var(--text-muted); font-weight:600; white-space:nowrap;">per
+                                        hal.</span>
+                                </div>
                             </div>
                             <button class="btn btn-success" id="btn-export-riwayat">
                                 <i data-lucide="file-spreadsheet"></i> Ekspor Rekap (CSV)

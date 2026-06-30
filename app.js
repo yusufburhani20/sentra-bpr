@@ -362,6 +362,12 @@ window.addEventListener("DOMContentLoaded", async () => {
         await refreshAndRenderRiwayat();
     });
     
+    document.getElementById("riwayat-limit").addEventListener("change", async (e) => {
+        state.paginationLimit = parseInt(e.target.value) || 50;
+        state.currentTxPage = 1;
+        await refreshAndRenderRiwayat();
+    });
+    
     document.getElementById("btn-first-riwayat").addEventListener("click", async () => {
         if (state.currentTxPage > 1) {
             state.currentTxPage = 1;
