@@ -353,7 +353,8 @@ window.addEventListener("DOMContentLoaded", async () => {
     });
 
     // Calibration saves
-    document.getElementById("btn-apply-calibration").addEventListener("click", () => {
+    // Calibration saves (Post to backend system settings API for global persistence)
+    document.getElementById("btn-apply-calibration").addEventListener("click", async () => {
         const printDataOnly = document.getElementById("print-data-only").checked;
         const offsetX = document.getElementById("cal-offset-x").value || "0";
         const offsetY = document.getElementById("cal-offset-y").value || "0";
@@ -362,45 +363,90 @@ window.addEventListener("DOMContentLoaded", async () => {
         const slipScale = document.getElementById("cal-slip-scale").value || "100";
         const slipRotation = document.getElementById("cal-slip-rotation").value || "0";
         const pageSize = document.getElementById("cal-page-size").value || "slip";
-        localStorage.setItem("simslip_cal_x", offsetX);
-        localStorage.setItem("simslip_cal_y", offsetY);
-        localStorage.setItem("simslip_width", slipWidth);
-        localStorage.setItem("simslip_height", slipHeight);
-        localStorage.setItem("simslip_scale", slipScale);
-        localStorage.setItem("simslip_rotation", slipRotation);
-        localStorage.setItem("simslip_page_size", pageSize);
-        localStorage.setItem("simslip_print_only", printDataOnly);
+
+        const payload = {
+            simslip_cal_x: offsetX,
+            simslip_cal_y: offsetY,
+            simslip_width: slipWidth,
+            simslip_height: slipHeight,
+            simslip_scale: slipScale,
+            simslip_rotation: slipRotation,
+            simslip_page_size: pageSize,
+            simslip_print_only: String(printDataOnly)
+        };
+
         const detailIds = ["date", "val", "debet", "kredit", "amount", "terbilang", "details"];
         detailIds.forEach(id => {
-            const xVal = document.getElementById(`cal-el-${id}-x`).value || "0";
-            const yVal = document.getElementById(`cal-el-${id}-y`).value || "0";
-            localStorage.setItem(`simslip_offset_${id}_x`, xVal);
-            localStorage.setItem(`simslip_offset_${id}_y`, yVal);
+            payload[`simslip_offset_${id}_x`] = document.getElementById(`cal-el-${id}-x`).value || "0";
+            payload[`simslip_offset_${id}_y`] = document.getElementById(`cal-el-${id}-y`).value || "0";
         });
-        showToast("Kalibrasi berhasil diterapkan!", "success");
+
+        try {
+            const res = await authFetch('/api/system/settings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            }).then(r => r.json());
+
+            if (res.success) {
+                showToast("Kalibrasi berhasil diterapkan secara global untuk semua user!", "success");
+            } else {
+                showToast(res.error || "Gagal menerapkan kalibrasi.", "danger");
+            }
+        } catch (e) {
+            showToast("Koneksi server terputus.", "danger");
+        }
     });
 
-    document.getElementById("btn-reset-calibration").addEventListener("click", () => {
-        document.getElementById("cal-offset-x").value = "0";
-        document.getElementById("cal-offset-y").value = "0";
-        document.getElementById("cal-slip-width").value = "15.5";
-        document.getElementById("cal-slip-height").value = "10.5";
-        document.getElementById("cal-slip-scale").value = "100";
-        document.getElementById("cal-slip-rotation").value = "0";
-        document.getElementById("cal-page-size").value = "slip";
-        document.getElementById("print-data-only").checked = true;
-        ["simslip_cal_x","simslip_cal_y","simslip_width","simslip_height","simslip_scale","simslip_rotation","simslip_page_size","simslip_print_only"].forEach(k => localStorage.removeItem(k));
+    document.getElementById("btn-reset-calibration").addEventListener("click", async () => {
+        const payload = {
+            simslip_cal_x: "0",
+            simslip_cal_y: "0",
+            simslip_width: "15.5",
+            simslip_height: "10.5",
+            simslip_scale: "100",
+            simslip_rotation: "0",
+            simslip_page_size: "slip",
+            simslip_print_only: "true"
+        };
         const detailIds = ["date", "val", "debet", "kredit", "amount", "terbilang", "details"];
-        const detailSels = { date:".meta-item-tanggal", val:".meta-item-validasi", debet:".debet-box", kredit:".kredit-box", amount:".row-rp", terbilang:".row-terbilang", details:".row-keterangan" };
         detailIds.forEach(id => {
-            document.getElementById(`cal-el-${id}-x`).value = "0";
-            document.getElementById(`cal-el-${id}-y`).value = "0";
-            localStorage.removeItem(`simslip_offset_${id}_x`);
-            localStorage.removeItem(`simslip_offset_${id}_y`);
-            const previewEl = document.querySelector(`#printable-voucher-slip ${detailSels[id]}`);
-            if (previewEl) previewEl.style.transform = "translate(0mm, 0mm)";
+            payload[`simslip_offset_${id}_x`] = "0";
+            payload[`simslip_offset_${id}_y`] = "0";
         });
-        showToast("Kalibrasi di-reset ke bawaan.", "info");
+
+        try {
+            const res = await authFetch('/api/system/settings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            }).then(r => r.json());
+
+            if (res.success) {
+                document.getElementById("cal-offset-x").value = "0";
+                document.getElementById("cal-offset-y").value = "0";
+                document.getElementById("cal-slip-width").value = "15.5";
+                document.getElementById("cal-slip-height").value = "10.5";
+                document.getElementById("cal-slip-scale").value = "100";
+                document.getElementById("cal-slip-rotation").value = "0";
+                document.getElementById("cal-page-size").value = "slip";
+                document.getElementById("print-data-only").checked = true;
+
+                const detailSels = { date:".meta-item-tanggal", val:".meta-item-validasi", debet:".debet-box", kredit:".kredit-box", amount:".row-rp", terbilang:".row-terbilang", details:".row-keterangan" };
+                detailIds.forEach(id => {
+                    document.getElementById(`cal-el-${id}-x`).value = "0";
+                    document.getElementById(`cal-el-${id}-y`).value = "0";
+                    const previewEl = document.querySelector(`#printable-voucher-slip ${detailSels[id]}`);
+                    if (previewEl) previewEl.style.transform = "translate(0mm, 0mm)";
+                });
+
+                showToast("Kalibrasi di-reset ke bawaan secara global!", "info");
+            } else {
+                showToast(res.error || "Gagal mereset kalibrasi.", "danger");
+            }
+        } catch (e) {
+            showToast("Koneksi server terputus.", "danger");
+        }
     });
 
     const detailIds = ["date", "val", "debet", "kredit", "amount", "terbilang", "details"];

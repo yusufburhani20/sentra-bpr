@@ -1,5 +1,6 @@
 const { exec } = require('child_process');
 const path = require('path');
+const db = require('../config/db');
 
 /**
  * POST /api/system/deploy
@@ -73,5 +74,49 @@ exports.deployUpdate = (req, res) => {
                 restarter.unref();
             }, 800);
         });
+    });
+};
+
+exports.getSettings = (req, res) => {
+    db.all("SELECT * FROM system_settings", [], (err, rows) => {
+        if (err) return res.status(500).json({ error: err.message });
+        const settings = {};
+        rows.forEach(r => {
+            settings[r.key] = r.value;
+        });
+        res.json(settings);
+    });
+};
+
+exports.saveSettings = (req, res) => {
+    const settings = req.body;
+    const isPg = process.env.DB_TYPE === 'postgres';
+
+    db.serialize(() => {
+        if (!isPg) db.run("BEGIN IMMEDIATE TRANSACTION");
+
+        const keys = Object.keys(settings);
+        const insertPromises = keys.map(key => {
+            return new Promise((resolve, reject) => {
+                const val = typeof settings[key] === 'object' ? JSON.stringify(settings[key]) : String(settings[key]);
+                const sql = isPg
+                    ? "INSERT INTO system_settings (key, value) VALUES ($1, $2) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value"
+                    : "INSERT OR REPLACE INTO system_settings (key, value) VALUES (?, ?)";
+                db.run(sql, [key, val], (err) => {
+                    if (err) reject(err);
+                    else resolve();
+                });
+            });
+        });
+
+        Promise.all(insertPromises)
+            .then(() => {
+                if (!isPg) db.run("COMMIT");
+                res.json({ success: true });
+            })
+            .catch(err => {
+                if (!isPg) db.run("ROLLBACK");
+                res.status(500).json({ error: err.message });
+            });
     });
 };

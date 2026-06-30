@@ -176,6 +176,12 @@ async function initializeDb(callback) {
             penerima_name TEXT DEFAULT NULL
         )`);
 
+        // 9. System Settings Table
+        await runAsync(`CREATE TABLE IF NOT EXISTS system_settings (
+            key TEXT PRIMARY KEY,
+            value TEXT
+        )`);
+
         // Migrations
         await runAsync("ALTER TABLE users ADD COLUMN deleted_at TEXT");
         await runAsync("ALTER TABLE cost_codes ADD COLUMN deleted_at TEXT");

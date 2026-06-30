@@ -33,14 +33,21 @@ export async function renderInputView() {
     const year = today.getFullYear();
     document.getElementById("slip-val-date").innerText = `${dayStr}/${monthStr}/${year}`;
     
-    const savedOffsetX = localStorage.getItem("simslip_cal_x") || "0";
-    const savedOffsetY = localStorage.getItem("simslip_cal_y") || "0";
-    const savedWidth = localStorage.getItem("simslip_width") || "15.5";
-    const savedHeight = localStorage.getItem("simslip_height") || "10.5";
-    const savedScale = localStorage.getItem("simslip_scale") || "100";
-    const savedRotation = localStorage.getItem("simslip_rotation") || "0";
-    const savedPageSize = localStorage.getItem("simslip_page_size") || "slip";
-    const printOnlyChecked = localStorage.getItem("simslip_print_only") !== "false";
+    let settings = {};
+    try {
+        settings = await authFetch('/api/system/settings').then(r => r.json());
+    } catch (e) {
+        console.error("Gagal mengambil konfigurasi cetak global:", e);
+    }
+
+    const savedOffsetX = settings.simslip_cal_x || "0";
+    const savedOffsetY = settings.simslip_cal_y || "0";
+    const savedWidth = settings.simslip_width || "15.5";
+    const savedHeight = settings.simslip_height || "10.5";
+    const savedScale = settings.simslip_scale || "100";
+    const savedRotation = settings.simslip_rotation || "0";
+    const savedPageSize = settings.simslip_page_size || "slip";
+    const printOnlyChecked = settings.simslip_print_only !== "false";
     
     document.getElementById("cal-offset-x").value = savedOffsetX;
     document.getElementById("cal-offset-y").value = savedOffsetY;
@@ -50,6 +57,22 @@ export async function renderInputView() {
     document.getElementById("cal-slip-rotation").value = savedRotation;
     document.getElementById("cal-page-size").value = savedPageSize;
     document.getElementById("print-data-only").checked = printOnlyChecked;
+
+    // Sembunyikan/nonaktifkan kontrol untuk non-Admin
+    const isAdmin = state.currentUser && state.currentUser.role === 'Admin';
+    const calInputs = [
+        "cal-offset-x", "cal-offset-y", "cal-slip-width", "cal-slip-height", 
+        "cal-slip-scale", "cal-slip-rotation", "cal-page-size", "cal-enable-drag"
+    ];
+    calInputs.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.disabled = !isAdmin;
+    });
+
+    const applyBtn = document.getElementById("btn-apply-calibration");
+    const resetBtn = document.getElementById("btn-reset-calibration");
+    if (applyBtn) applyBtn.style.display = isAdmin ? "inline-block" : "none";
+    if (resetBtn) resetBtn.style.display = isAdmin ? "inline-block" : "none";
 
     await fetchNextRef();
     updateLiveSlipPreview();
@@ -66,8 +89,8 @@ export async function renderInputView() {
     };
 
     detailElements.forEach(id => {
-        const savedX = localStorage.getItem(`simslip_offset_${id}_x`) || "0";
-        const savedY = localStorage.getItem(`simslip_offset_${id}_y`) || "0";
+        const savedX = settings[`simslip_offset_${id}_x`] || "0";
+        const savedY = settings[`simslip_offset_${id}_y`] || "0";
         
         document.getElementById(`cal-el-${id}-x`).value = savedX;
         document.getElementById(`cal-el-${id}-y`).value = savedY;
