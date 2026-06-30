@@ -504,40 +504,187 @@ export function initLayoutDragAndDrop() {
     });
 }
 
+/**
+ * Highlight matching text in a string (returns HTML string).
+ */
+function highlightMatch(text, query) {
+    if (!query) return escapeHtmlStr(text);
+    const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    return escapeHtmlStr(text).replace(new RegExp(`(${escaped})`, 'gi'), '<span class="pk-highlight">$1</span>');
+}
+
+function escapeHtmlStr(str) {
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+}
+
+/**
+ * Create a custom PK combobox that shows kode + nama in every row,
+ * syncs the paired field, and triggers updateLiveSlipPreview on selection.
+ *
+ * @param {string} inputId        - ID of the text input
+ * @param {string} dropdownId     - ID of the .pk-combo-dropdown div
+ * @param {'name'|'code'} mode    - whether this field shows nama or kode
+ * @param {string} pairedInputId  - ID of the other (paired) field to sync
+ */
+export function setupPKCombobox(inputId, dropdownId, mode, pairedInputId) {
+    const inputEl = document.getElementById(inputId);
+    const dropdown = document.getElementById(dropdownId);
+    const wrapper = inputEl ? inputEl.closest('.pk-combobox') : null;
+    const arrowBtn = wrapper ? wrapper.querySelector('.pk-combo-arrow') : null;
+    if (!inputEl || !dropdown || !wrapper) return;
+
+    let debounceTimer = null;
+    let currentQuery = '';
+    let activeIndex = -1;
+    let lastResults = [];
+
+    function openDropdown() {
+        wrapper.classList.add('open');
+    }
+
+    function closeDropdown() {
+        wrapper.classList.remove('open');
+        activeIndex = -1;
+    }
+
+    function renderResults(results, query) {
+        lastResults = results;
+        activeIndex = -1;
+        dropdown.innerHTML = '';
+
+        if (!results || results.length === 0) {
+            dropdown.innerHTML = `<div class="pk-combo-empty">Tidak ada hasil untuk <strong>"${escapeHtmlStr(query)}"</strong></div>`;
+            return;
+        }
+
+        results.forEach((cc, idx) => {
+            const item = document.createElement('div');
+            item.className = 'pk-combo-item';
+            item.dataset.index = idx;
+            item.innerHTML = `
+                <span class="pk-item-kode">${highlightMatch(cc.kode, query)}</span>
+                <span class="pk-item-nama">${highlightMatch(cc.deskripsi, query)}</span>
+            `;
+            item.addEventListener('mousedown', (e) => {
+                // use mousedown so blur doesn't close first
+                e.preventDefault();
+                selectItem(cc);
+            });
+            dropdown.appendChild(item);
+        });
+    }
+
+    function selectItem(cc) {
+        if (mode === 'name') {
+            inputEl.value = cc.deskripsi;
+        } else {
+            inputEl.value = cc.kode;
+        }
+
+        // Sync paired field
+        const pairedEl = pairedInputId ? document.getElementById(pairedInputId) : null;
+        if (pairedEl) {
+            pairedEl.value = (mode === 'name') ? cc.kode : cc.deskripsi;
+        }
+
+        closeDropdown();
+        inputEl.dispatchEvent(new Event('input', { bubbles: true }));
+        if (typeof updateLiveSlipPreview === 'function') updateLiveSlipPreview();
+        // trigger globally via custom event if updateLiveSlipPreview not in scope
+        inputEl.dispatchEvent(new CustomEvent('pk-selected', { bubbles: true, detail: cc }));
+    }
+
+    async function doSearch(q) {
+        dropdown.innerHTML = `<div class="pk-combo-loading"><svg class="animate-spin" xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> Mencari...</div>`;
+        openDropdown();
+        try {
+            const url = q.length > 0
+                ? `/api/cost-codes/search?query=${encodeURIComponent(q)}&limit=20`
+                : `/api/cost-codes/search?query=&limit=20`;
+            const results = await authFetch(url).then(r => r.json());
+            currentQuery = q;
+            renderResults(results, q);
+        } catch (err) {
+            dropdown.innerHTML = `<div class="pk-combo-empty">Gagal memuat data.</div>`;
+        }
+    }
+
+    // Input event: debounced search
+    inputEl.addEventListener('input', () => {
+        const val = inputEl.value.trim();
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => doSearch(val), 150);
+        openDropdown();
+    });
+
+    // Click on input: show top results immediately
+    inputEl.addEventListener('focus', () => {
+        if (!wrapper.classList.contains('open')) {
+            doSearch(inputEl.value.trim());
+        }
+    });
+
+    // Arrow button: toggle dropdown
+    if (arrowBtn) {
+        arrowBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (wrapper.classList.contains('open')) {
+                closeDropdown();
+            } else {
+                inputEl.focus();
+                doSearch(inputEl.value.trim());
+            }
+        });
+    }
+
+    // Keyboard navigation
+    inputEl.addEventListener('keydown', (e) => {
+        const items = dropdown.querySelectorAll('.pk-combo-item');
+        if (!wrapper.classList.contains('open')) return;
+
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            activeIndex = Math.min(activeIndex + 1, items.length - 1);
+            updateActiveItem(items);
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            activeIndex = Math.max(activeIndex - 1, 0);
+            updateActiveItem(items);
+        } else if (e.key === 'Enter') {
+            e.preventDefault();
+            if (activeIndex >= 0 && lastResults[activeIndex]) {
+                selectItem(lastResults[activeIndex]);
+            }
+        } else if (e.key === 'Escape') {
+            closeDropdown();
+        }
+    });
+
+    function updateActiveItem(items) {
+        items.forEach((el, i) => {
+            el.classList.toggle('active', i === activeIndex);
+        });
+        if (activeIndex >= 0) {
+            items[activeIndex].scrollIntoView({ block: 'nearest' });
+        }
+    }
+
+    // Close on outside click
+    document.addEventListener('click', (e) => {
+        if (!wrapper.contains(e.target)) {
+            closeDropdown();
+        }
+    }, true);
+}
+
+// Kept for backward compatibility — no-op for old datalist logic
 let debounceTimers = {};
 export function setupAutocompleteSearch(inputId, datalistId, mode) {
-    const inputEl = document.getElementById(inputId);
-    const dlEl = document.getElementById(datalistId);
-    if (!inputEl || !dlEl) return;
-
-    inputEl.addEventListener("input", (e) => {
-        const val = e.target.value.trim();
-        
-        clearTimeout(debounceTimers[inputId]);
-        debounceTimers[inputId] = setTimeout(async () => {
-            if (val.length < 1) {
-                dlEl.innerHTML = "";
-                return;
-            }
-            try {
-                const results = await authFetch(`/api/cost-codes/search?query=${encodeURIComponent(val)}&limit=15`).then(r => r.json());
-                dlEl.innerHTML = "";
-                results.forEach(cc => {
-                    const opt = document.createElement("option");
-                    if (mode === "name") {
-                        opt.value = cc.deskripsi;
-                        opt.label = cc.kode;
-                        opt.textContent = cc.kode;
-                    } else {
-                        opt.value = cc.kode;
-                        opt.label = cc.deskripsi;
-                        opt.textContent = cc.deskripsi;
-                    }
-                    dlEl.appendChild(opt);
-                });
-            } catch (err) {
-                console.error("Gagal melakukan pencarian autocomplete:", err);
-            }
-        }, 150);
-    });
+    // This function is replaced by setupPKCombobox.
+    // Retained as a no-op export so existing import statements don't break.
 }
+

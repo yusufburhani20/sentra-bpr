@@ -1,7 +1,7 @@
 import { state } from './js/state.js';
 import { showToast, escapeHtml, openModal, closeModal, authFetch } from './js/utils.js';
 import { showLoginScreen, hideLoginScreen, checkAuth, login, logout, changePassword } from './js/auth.js';
-import { fetchNextRef, renderInputView, updateLiveSlipPreview, resetTxForm, saveTransaction, printElement, initLayoutDragAndDrop, saveAndPrintTransaction, setupAutocompleteSearch } from './js/transactions.js';
+import { fetchNextRef, renderInputView, updateLiveSlipPreview, resetTxForm, saveTransaction, printElement, initLayoutDragAndDrop, saveAndPrintTransaction, setupAutocompleteSearch, setupPKCombobox } from './js/transactions.js';
 import { renderRiwayatView, exportRiwayatToCSV, submitEditRequest } from './js/history.js';
 import { renderKodeBiayaView, resetCostCodeForm, submitCostCode, exportCostCodes, importCostCodes, downloadCostCodeTemplate, bulkDeleteSelectedCodes, clearAllCostCodes } from './js/costCodes.js';
 import { renderUsersView, openAddUserModal, submitUser, submitResetPassword } from './js/users.js';
@@ -254,10 +254,10 @@ window.addEventListener("DOMContentLoaded", async () => {
     initTheme();
     initLayoutDragAndDrop();
 
-    setupAutocompleteSearch("tx-debet-nama", "debet-nama-list", "name");
-    setupAutocompleteSearch("tx-debet-rekening", "debet-rekening-list", "code");
-    setupAutocompleteSearch("tx-kredit-nama", "kredit-nama-list", "name");
-    setupAutocompleteSearch("tx-kredit-rekening", "kredit-rekening-list", "code");
+    setupPKCombobox("tx-debet-nama",     "combo-debet-nama-list",  "name", "tx-debet-rekening");
+    setupPKCombobox("tx-debet-rekening", "combo-debet-rek-list",   "code", "tx-debet-nama");
+    setupPKCombobox("tx-kredit-nama",    "combo-kredit-nama-list", "name", "tx-kredit-rekening");
+    setupPKCombobox("tx-kredit-rekening","combo-kredit-rek-list",  "code", "tx-kredit-nama");
 
     document.getElementById("btn-login").addEventListener("click", login);
     document.getElementById("login-password").addEventListener("keydown", (e) => {
@@ -335,21 +335,11 @@ window.addEventListener("DOMContentLoaded", async () => {
     document.getElementById("tx-nominal-desimal").addEventListener("input", updateLiveSlipPreview);
     document.getElementById("tx-keterangan").addEventListener("input", updateLiveSlipPreview);
 
-    document.getElementById("tx-debet-nama").addEventListener("input", (e) => {
-        const found = state.costCodesDB.find(cc => cc.deskripsi === e.target.value);
-        if (found) { document.getElementById("tx-debet-rekening").value = found.kode; updateLiveSlipPreview(); }
-    });
-    document.getElementById("tx-debet-rekening").addEventListener("input", (e) => {
-        const found = state.costCodesDB.find(cc => cc.kode === e.target.value);
-        if (found) { document.getElementById("tx-debet-nama").value = found.deskripsi; updateLiveSlipPreview(); }
-    });
-    document.getElementById("tx-kredit-nama").addEventListener("input", (e) => {
-        const found = state.costCodesDB.find(cc => cc.deskripsi === e.target.value);
-        if (found) { document.getElementById("tx-kredit-rekening").value = found.kode; updateLiveSlipPreview(); }
-    });
-    document.getElementById("tx-kredit-rekening").addEventListener("input", (e) => {
-        const found = state.costCodesDB.find(cc => cc.kode === e.target.value);
-        if (found) { document.getElementById("tx-kredit-nama").value = found.deskripsi; updateLiveSlipPreview(); }
+    // The combobox already syncs paired fields in selectItem.
+    // Listen to 'input' events for manual typing to update live preview.
+    ["tx-debet-nama", "tx-debet-rekening", "tx-kredit-nama", "tx-kredit-rekening"].forEach(id => {
+        document.getElementById(id).addEventListener("input", () => updateLiveSlipPreview());
+        document.getElementById(id).addEventListener("pk-selected", () => updateLiveSlipPreview());
     });
 
     // Calibration saves
