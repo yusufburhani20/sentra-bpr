@@ -120,7 +120,7 @@ exports.createTransaction = (req, res) => {
             db.get("SELECT id FROM transactions WHERE ref_no = ?", [ref_no], (err, row) => {
                 if (row) {
                     if (!isPg) db.run("ROLLBACK;");
-                    return res.status(400).json({ error: "Duplikasi nomor referensi terdeteksi!" });
+                    return res.status(400).json({ error: "Nomor referensi ganda terdeteksi!" });
                 }
 
                 db.run(`INSERT INTO transactions
@@ -139,7 +139,7 @@ exports.createTransaction = (req, res) => {
                                 (err.message && err.message.includes('UNIQUE constraint failed'));
 
                             if (isUniqueViolation) {
-                                return res.status(400).json({ error: "Duplikasi nomor referensi terdeteksi! Muat ulang form untuk mendapatkan nomor baru." });
+                                return res.status(400).json({ error: "Nomor referensi ganda terdeteksi!" });
                             }
                             return res.status(500).json({ error: "Gagal menyimpan transaksi: " + err.message });
                         }
