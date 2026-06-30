@@ -112,8 +112,8 @@ exports.impersonate = async (req, res) => {
         return res.status(400).json({ error: 'Username target diperlukan.' });
     }
 
-    if (req.user.role !== 'Admin' && req.user.role !== 'Supervisor') {
-        return res.status(403).json({ error: 'Akses ditolak. Hanya untuk Admin dan Supervisor.' });
+    if (req.user.role !== 'Admin' && req.user.role !== 'Kepala Bidang') {
+        return res.status(403).json({ error: 'Akses ditolak. Hanya untuk Admin dan Kepala Bidang.' });
     }
 
     db.get("SELECT * FROM users WHERE username = ? AND status = 'Aktif' AND deleted_at IS NULL", [username.trim()], (err, targetUser) => {

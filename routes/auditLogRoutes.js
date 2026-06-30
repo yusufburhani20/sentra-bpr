@@ -5,7 +5,7 @@ const { requireAuth, requireRole } = require('../middleware/auth');
 
 router.use(requireAuth);
 
-router.get('/', requireRole('Admin', 'Supervisor'), transactionController.getAuditLogs);
+router.get('/', requireRole('Admin', 'Kepala Bidang'), transactionController.getAuditLogs);
 router.delete('/', requireRole('Admin'), transactionController.deleteAuditLogs);
 
 module.exports = router;

@@ -33,13 +33,13 @@ describe('Login As (User Impersonation) API Integration Tests', () => {
             expect(res.statusCode).toBe(401);
         });
 
-        test('should block non-admin/supervisor impersonation requests', async () => {
+        test('should block non-admin/kepala-bidang impersonation requests', async () => {
             const res = await request(app)
                 .post('/api/auth/impersonate')
                 .set('Cookie', [tellerCookie])
                 .send({ username: 'spv1' });
             expect(res.statusCode).toBe(403);
-            expect(res.body.error).toContain('Hanya untuk Admin dan Supervisor');
+            expect(res.body.error).toContain('Hanya untuk Admin dan Kepala Bidang');
         });
 
         test('should reject impersonating non-existent username with 404', async () => {

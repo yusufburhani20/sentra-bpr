@@ -42,7 +42,7 @@ describe('Dashboard Controller / API Tests', () => {
         expect(res.body.kpis).toHaveProperty('yesterdayCount');
     });
 
-    test('GET /api/dashboard/stats should restrict non-admin/supervisor to their own transactions', async () => {
+    test('GET /api/dashboard/stats should restrict non-admin/kepala-bidang to their own transactions', async () => {
         // 1. Log in as teller1
         const resTeller = await request(app)
             .post('/api/auth/login')

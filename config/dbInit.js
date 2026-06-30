@@ -136,6 +136,12 @@ async function initializeDb(callback) {
         await runAsync("ALTER TABLE cost_codes ADD COLUMN deleted_at TEXT");
         await runAsync("ALTER TABLE transactions ADD COLUMN deleted_at TEXT");
         await runAsync("ALTER TABLE users ADD COLUMN password_hash TEXT");
+        
+        // Migrate existing user roles & notifications to new names
+        await runAsync("UPDATE users SET role = 'Kepala Bidang' WHERE role = 'Supervisor'");
+        await runAsync("UPDATE users SET role = 'SDMU' WHERE role = 'SDM'");
+        await runAsync("UPDATE users SET role = 'Customer Service' WHERE role = 'Kas'");
+        await runAsync("UPDATE notifications SET user_role = 'Kepala Bidang' WHERE user_role = 'Supervisor'");
 
         // Hash default password
         const defaultHash = await bcrypt.hash(DEFAULT_PASSWORD, SALT_ROUNDS);
@@ -151,10 +157,10 @@ async function initializeDb(callback) {
         };
 
         await seedUser("USR-001", "admin1", "Agus Setiawan", "Administrasi", "Admin", "Aktif", "CSSPA0146", defaultHash);
-        await seedUser("USR-002", "spv1", "Heri Kiswanto", "Supervisor", "Supervisor", "Aktif", "CSSPA0147", defaultHash);
+        await seedUser("USR-002", "spv1", "Heri Kiswanto", "Supervisor", "Kepala Bidang", "Aktif", "CSSPA0147", defaultHash);
         await seedUser("USR-003", "teller1", "Budi Utomo", "Teller", "Teller", "Aktif", "CSSPA0148", defaultHash);
-        await seedUser("USR-004", "sdm1", "Siti Rahma", "SDM", "SDM", "Aktif", "CSSPA0149", defaultHash);
-        await seedUser("USR-005", "kas1", "Rian Hidayat", "Kantor Kas", "Kas", "Aktif", "CSSPA0150", defaultHash);
+        await seedUser("USR-004", "sdm1", "Siti Rahma", "SDMU", "SDMU", "Aktif", "CSSPA0149", defaultHash);
+        await seedUser("USR-005", "kas1", "Rian Hidayat", "Customer Service", "Customer Service", "Aktif", "CSSPA0150", defaultHash);
 
         // Force-seed default cost codes
         const seedCc = async (id, kode, deskripsi) => {

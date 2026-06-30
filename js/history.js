@@ -240,7 +240,7 @@ export function viewSlipDetails(id) {
         });
 
         document.getElementById("btn-modal-req-delete").addEventListener('click', () => {
-            if (confirm(`Apakah Anda yakin ingin mengajukan penghapusan untuk slip ${tx.ref_no} ke Supervisor/Admin?`)) {
+            if (confirm(`Apakah Anda yakin ingin mengajukan penghapusan untuk slip ${tx.ref_no} ke Kepala Bidang/Admin?`)) {
                 submitDeleteRequest(tx.id, tx.ref_no);
             }
         });
@@ -351,7 +351,7 @@ export async function submitEditRequest() {
         }
 
         if (res.success) {
-            showToast(isAdmin ? "Transaksi berhasil diubah langsung!" : "Permintaan koreksi slip berhasil dikirim ke Supervisor!", "success");
+            showToast(isAdmin ? "Transaksi berhasil diubah langsung!" : "Permintaan koreksi slip berhasil dikirim ke Kepala Bidang!", "success");
             closeModal("modal-request-edit");
             await showSection("riwayat");
         } else {
@@ -379,7 +379,7 @@ async function submitDeleteRequest(id, refNo) {
         }).then(r => r.json());
 
         if (res.success) {
-            showToast(`Permintaan hapus slip ${refNo} dikirim ke Supervisor!`, "success");
+            showToast(`Permintaan hapus slip ${refNo} dikirim ke Kepala Bidang!`, "success");
             closeModal("modal-detail-slip");
             await showSection("riwayat");
         } else {

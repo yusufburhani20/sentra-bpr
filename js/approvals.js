@@ -3,7 +3,7 @@ import { formatDate, formatRupiah, escapeHtml, showToast } from './utils.js';
 import { showSection } from '../app.js';
 
 export async function fetchPendingApprovalsCount() {
-    if (!state.currentUser || (state.currentUser.role !== 'Admin' && state.currentUser.role !== 'Supervisor')) {
+    if (!state.currentUser || (state.currentUser.role !== 'Admin' && state.currentUser.role !== 'Kepala Bidang')) {
         const badge = document.getElementById("approvals-badge");
         if (badge) badge.style.display = "none";
         return;
@@ -39,7 +39,7 @@ export async function renderApprovalsView() {
     const historyTbody = document.getElementById("approvals-history-table-body");
     if (historyTbody) historyTbody.innerHTML = "";
 
-    const isAdminOrSpv = state.currentUser && (state.currentUser.role === 'Admin' || state.currentUser.role === 'Supervisor');
+    const isAdminOrSpv = state.currentUser && (state.currentUser.role === 'Admin' || state.currentUser.role === 'Kepala Bidang');
     const pendingCard = document.getElementById("approvals-pending-card");
     
     if (pendingCard) {

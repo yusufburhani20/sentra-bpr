@@ -9,7 +9,7 @@ export function renderUsersView() {
 
     state.usersDB.forEach(user => {
         const isSelf = state.currentUser && state.currentUser.id === user.id;
-        const canImpersonate = (state.currentRole === 'Admin' || state.currentRole === 'Supervisor') && !isSelf && user.status === 'Aktif';
+        const canImpersonate = (state.currentRole === 'Admin' || state.currentRole === 'Kepala Bidang') && !isSelf && user.status === 'Aktif';
 
         const impersonateBtn = canImpersonate ? `
             <button class="btn btn-secondary btn-impersonate-user" style="padding: 4px 8px; font-size:11px; color:var(--primary); border-color:var(--primary-light);" title="Masuk sebagai user ini">

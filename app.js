@@ -13,14 +13,14 @@ import { fetchSubmissions, setupSlipSubmissionForm, submitSlipSubmission, submit
 // Check Permissions
 function checkPermission(view, role) {
     const permissions = {
-        "dashboard": ["Admin", "Supervisor", "Teller", "SDM", "Kas"],
-        "input": ["Admin", "Supervisor", "Teller", "SDM", "Kas"],
-        "riwayat": ["Admin", "Supervisor", "Teller", "SDM", "Kas"],
+        "dashboard": ["Admin", "Kepala Bidang", "Teller", "SDMU", "Customer Service"],
+        "input": ["Admin", "Kepala Bidang", "Teller", "SDMU", "Customer Service"],
+        "riwayat": ["Admin", "Kepala Bidang", "Teller", "SDMU", "Customer Service"],
         "kodebiaya": ["Admin"],
-        "kirimslip": ["Admin", "Supervisor", "Teller", "SDM", "Kas"],
+        "kirimslip": ["Admin", "Kepala Bidang", "Teller", "SDMU", "Customer Service"],
         "users": ["Admin"],
-        "audit": ["Admin", "Supervisor"],
-        "approvals": ["Admin", "Supervisor", "Teller", "SDM", "Kas"]
+        "audit": ["Admin", "Kepala Bidang"],
+        "approvals": ["Admin", "Kepala Bidang", "Teller", "SDMU", "Customer Service"]
     };
     return permissions[view] ? permissions[view].includes(role) : false;
 }

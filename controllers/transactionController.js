@@ -145,7 +145,7 @@ exports.createTransaction = (req, res) => {
                         db.run("UPDATE ref_counters SET counter = counter + 1 WHERE operator_code = ?", [operator_code]);
 
                         const notifId = crypto.randomUUID();
-                        db.run("INSERT INTO notifications VALUES (?, ?, 'Supervisor', ?, 0)",
+                        db.run("INSERT INTO notifications VALUES (?, ?, 'Kepala Bidang', ?, 0)",
                             [notifId, now, `Slip baru: ${ref_no} (Operator: ${req.user.nama})`]);
 
                         res.json({ success: true, id, ref_no });
@@ -243,7 +243,7 @@ exports.markNotificationsAsRead = (req, res) => {
     let params = [userRole];
 
     if (userRole === "Admin") {
-        query = "UPDATE notifications SET dibaca = 1 WHERE user_role = 'all' OR user_role = 'Supervisor' OR user_role = 'Admin'";
+        query = "UPDATE notifications SET dibaca = 1 WHERE user_role = 'all' OR user_role = 'Kepala Bidang' OR user_role = 'Admin'";
         params = [];
     }
 

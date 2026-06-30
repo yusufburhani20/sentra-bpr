@@ -111,7 +111,7 @@ export function renderSubmissionsTable() {
 
     // Toggle Laporan Container based on Role (Admin/Supervisor only)
     const laporanContainer = document.getElementById("laporan-slip-container");
-    const isReportAuthorized = state.currentRole === 'Admin' || state.currentRole === 'Supervisor';
+    const isReportAuthorized = state.currentRole === 'Admin' || state.currentRole === 'Kepala Bidang';
     
     if (laporanContainer) {
         if (isReportAuthorized) {

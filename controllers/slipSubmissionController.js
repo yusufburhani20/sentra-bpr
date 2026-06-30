@@ -6,7 +6,7 @@ exports.getSubmissions = (req, res) => {
     let query = "SELECT * FROM slip_submissions ORDER BY tanggal_kirim DESC";
     let params = [];
 
-    if (req.user.role !== 'Admin' && req.user.role !== 'Supervisor') {
+    if (req.user.role !== 'Admin' && req.user.role !== 'Kepala Bidang') {
         query = "SELECT * FROM slip_submissions WHERE operator_code = ? OR operator_name = ? ORDER BY tanggal_kirim DESC";
         params = [req.user.operator_code || '', req.user.nama || ''];
     }

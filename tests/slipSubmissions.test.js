@@ -32,7 +32,7 @@ describe('Slip Submissions Integration Tests', () => {
             expect(Array.isArray(res.body)).toBe(true);
         });
 
-        test('should restrict non-admin/supervisor to see only their own submissions', async () => {
+        test('should restrict non-admin/kepala-bidang to see only their own submissions', async () => {
             // 1. Login as teller
             const resTellerLogin = await request(app)
                 .post('/api/auth/login')

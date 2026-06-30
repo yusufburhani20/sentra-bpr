@@ -38,7 +38,7 @@ exports.createRequest = (req, res) => {
 
                 // Add in-app notification to supervisors
                 const notifId = crypto.randomUUID();
-                db.run("INSERT INTO notifications VALUES (?, ?, 'Supervisor', ?, 0)",
+                db.run("INSERT INTO notifications VALUES (?, ?, 'Kepala Bidang', ?, 0)",
                     [notifId, now, `Pengajuan ${request_type} baru: ${tx.ref_no} (Operator: ${operatorName})`]);
 
                 res.json({ success: true, id });
@@ -220,7 +220,7 @@ exports.getRequestHistory = (req, res) => {
     let query = "SELECT * FROM approval_requests";
     let params = [];
 
-    if (req.user.role !== 'Admin' && req.user.role !== 'Supervisor') {
+    if (req.user.role !== 'Admin' && req.user.role !== 'Kepala Bidang') {
         query += " WHERE operator_code = ?";
         params.push(req.user.operator_code);
     }

@@ -6,7 +6,7 @@ exports.getStats = (req, res) => {
     yesterday.setDate(yesterday.getDate() - 1);
     const yesterdayStr = yesterday.toISOString().split('T')[0];
 
-    const isFiltered = req.user.role !== 'Admin' && req.user.role !== 'Supervisor';
+    const isFiltered = req.user.role !== 'Admin' && req.user.role !== 'Kepala Bidang';
     const filterClause = isFiltered ? "AND operator_code = ?" : "";
     const filterParams = isFiltered ? [req.user.operator_code] : [];
 
