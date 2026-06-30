@@ -101,6 +101,20 @@ export async function refreshData() {
     }
 }
 
+// Helper to display loading indicator inside table body
+function showTableLoading(tbodyId, colspan) {
+    const tbody = document.getElementById(tbodyId);
+    if (tbody) {
+        tbody.innerHTML = `<tr><td colspan="${colspan}" style="text-align:center; padding: 32px; color: var(--text-muted);">
+            <div style="display:inline-flex; align-items:center; gap:8px;">
+                <i data-lucide="loader-2" class="animate-spin" style="width:18px; height:18px;"></i>
+                <span>Memuat data dari server...</span>
+            </div>
+        </td></tr>`;
+        if (window.lucide) window.lucide.createIcons();
+    }
+}
+
 // Core routing and section displays
 export async function showSection(sectionId) {
     if (sectionId !== "access-denied" && !checkPermission(sectionId, state.currentRole)) {
@@ -108,6 +122,13 @@ export async function showSection(sectionId) {
     }
 
     state.activeView = sectionId;
+
+    // Show loading state immediately for tables in the selected tab
+    if (sectionId === "kodebiaya") showTableLoading("codes-table-body", 4);
+    else if (sectionId === "riwayat") showTableLoading("riwayat-table-body", 7);
+    else if (sectionId === "users") showTableLoading("user-table-body", 7);
+    else if (sectionId === "audit") showTableLoading("audit-table-body", 5);
+    else if (sectionId === "kirimslip") showTableLoading("submissions-table-body", 7);
 
     document.querySelectorAll(".view-section").forEach(view => {
         view.style.display = "none";
