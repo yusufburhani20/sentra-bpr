@@ -172,10 +172,7 @@
                     <span id="current-system-time"
                         style="font-size: 13px; font-weight: 600; color: var(--text-muted);">25 Juni 2026 12:00</span>
 
-                    <!-- Theme Toggle -->
-                    <button class="action-btn" id="theme-toggle-btn" title="Ubah Tema">
-                        <i data-lucide="moon" id="theme-icon"></i>
-                    </button>
+
 
                     <!-- Notifications -->
                     <div style="position: relative;">
@@ -1026,23 +1023,23 @@
 
                     <!-- System Update Card (Admin Only) -->
                     <div id="deploy-card" class="card"
-                        style="margin-bottom:18px; border:1.5px solid rgba(26,115,232,0.25); background: linear-gradient(135deg, rgba(26,115,232,0.05) 0%, rgba(15,52,96,0.08) 100%);">
+                        style="margin-bottom:18px; border:2px solid var(--primary);">
                         <div
                             style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:16px;">
                             <div style="display:flex; align-items:center; gap:14px;">
                                 <div
-                                    style="width:48px; height:48px; background:linear-gradient(135deg,#1a73e8,#0f3460); border-radius:12px; display:flex; align-items:center; justify-content:center; flex-shrink:0; box-shadow:0 4px 12px rgba(26,115,232,0.3);">
+                                    style="width:48px; height:48px; background:var(--primary); border-radius:12px; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
                                     <i data-lucide="cloud-download" style="width:22px; height:22px; color:#fff;"></i>
                                 </div>
                                 <div>
                                     <h4 style="margin:0; font-size:15px; font-weight:700; color:var(--text-primary);">
                                         Pembaruan Sistem</h4>
                                     <p style="margin:2px 0 0; font-size:13px; color:var(--text-muted);">Tarik kode
-                                        terbaru dari GitHub & restart server secara otomatis</p>
+                                        terbaru dari GitHub &amp; restart server secara otomatis</p>
                                 </div>
                             </div>
                             <button id="btn-open-deploy" class="btn btn-primary"
-                                style="background:linear-gradient(135deg,#1a73e8,#0f3460); border:none; padding:10px 22px; font-weight:600; box-shadow:0 4px 12px rgba(26,115,232,0.3); white-space:nowrap;">
+                                style="padding:10px 22px; font-weight:600; white-space:nowrap;">
                                 <i data-lucide="rocket" style="width:15px; height:15px;"></i> Deploy Update
                             </button>
                         </div>
@@ -1115,23 +1112,23 @@
                 <!-- DEPLOY MODAL -->
                 <div id="modal-deploy" class="modal-overlay">
                     <div class="modal-box"
-                        style="max-width:680px; width:95%; background:var(--bg-card); border-radius:12px; overflow:hidden; border:1px solid var(--border-color); box-shadow:0 25px 60px rgba(0,0,0,0.4);">
+                        style="max-width:680px; width:95%; background:var(--bg-card); border-radius:12px; overflow:hidden; border:1px solid var(--border-color);">
                         <div class="modal-header"
-                            style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%); border-radius:12px 12px 0 0; padding:20px 24px; margin-bottom:0;">
+                            style="background:var(--primary); border-radius:12px 12px 0 0; padding:20px 24px; margin-bottom:0;">
                             <div style="display:flex; align-items:center; gap:12px;">
                                 <div
-                                    style="width:36px; height:36px; background:rgba(99,179,237,0.2); border-radius:8px; display:flex; align-items:center; justify-content:center; border:1px solid rgba(99,179,237,0.3);">
-                                    <i data-lucide="terminal" style="width:18px; height:18px; color:#63b3ed;"></i>
+                                    style="width:36px; height:36px; background:rgba(255,255,255,0.2); border-radius:8px; display:flex; align-items:center; justify-content:center; border:1px solid rgba(255,255,255,0.3);">
+                                    <i data-lucide="terminal" style="width:18px; height:18px; color:#fff;"></i>
                                 </div>
                                 <div>
                                     <h3 style="color:#fff; margin:0; font-size:16px; font-weight:700;">Deploy Pembaruan
                                         Sistem</h3>
-                                    <p style="color:#a0aec0; margin:0; font-size:12px;">Menarik kode terbaru dari GitHub
+                                    <p style="color:rgba(255,255,255,0.7); margin:0; font-size:12px;">Menarik kode terbaru dari GitHub
                                         dan merestart server</p>
                                 </div>
                             </div>
                             <button onclick="document.getElementById('modal-deploy').classList.remove('active')"
-                                style="background:none;border:none;cursor:pointer;color:#a0aec0;padding:4px;"><i
+                                style="background:none;border:none;cursor:pointer;color:rgba(255,255,255,0.8);padding:4px;"><i
                                     data-lucide="x" style="width:18px;height:18px;"></i></button>
                         </div>
                         <div style="padding:0; background:#0d1117;">
@@ -1161,7 +1158,7 @@
                                     Tutup
                                 </button>
                                 <button id="btn-deploy-run" class="btn btn-primary"
-                                    style="background: linear-gradient(135deg, #1a73e8, #0f3460); border:none; min-width:140px;">
+                                    style="min-width:140px;">
                                     <i data-lucide="rocket" style="width:15px; height:15px;"></i> Mulai Deploy
                                 </button>
                             </div>

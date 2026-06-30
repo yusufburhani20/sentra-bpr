@@ -208,8 +208,6 @@ window.addEventListener("DOMContentLoaded", async () => {
     document.getElementById("btn-submit-change-password").addEventListener("click", changePassword);
     document.getElementById("btn-submit-reset-password").addEventListener("click", submitResetPassword);
 
-    document.getElementById("theme-toggle-btn").addEventListener("click", toggleTheme);
-
     const notifBtn = document.getElementById("notif-btn");
     const notifDropdown = document.getElementById("notification-dropdown");
     notifBtn.addEventListener("click", (e) => {
