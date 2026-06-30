@@ -35,28 +35,66 @@ export async function refreshData() {
         const auditSearchVal = document.getElementById("audit-search") ? document.getElementById("audit-search").value : "";
         const auditRoleVal = document.getElementById("audit-filter-role") ? document.getElementById("audit-filter-role").value : "";
 
-        const [usersRes, codesRes, txRes, logsRes, notifRes, countersRes] = await Promise.all([
-            fetch('/api/users').then(r => r.json()),
-            fetch('/api/cost-codes?limit=10000').then(r => r.json()),
-            fetch(`/api/transactions?page=${state.currentTxPage}&limit=${state.paginationLimit}&search=${encodeURIComponent(searchVal)}&code=${encodeURIComponent(codeVal)}&date=${encodeURIComponent(dateVal)}`).then(r => r.json()),
-            fetch(`/api/audit-logs?page=${state.currentAuditPage}&limit=${state.paginationLimit}&search=${encodeURIComponent(auditSearchVal)}&role=${encodeURIComponent(auditRoleVal)}`).then(r => r.json()),
-            fetch('/api/notifications').then(r => r.json()),
-            fetch('/api/ref-counters').then(r => r.json())
-        ]);
-        
-        state.usersDB = usersRes;
-        state.costCodesDB = codesRes.data || [];
-        
-        state.transactionsDB = txRes.data || [];
-        state.totalTxPages = txRes.totalPages || 1;
-        state.totalTxCount = txRes.totalCount || 0;
-        
-        state.auditDB = logsRes.data || [];
-        state.totalAuditPages = logsRes.totalPages || 1;
-        state.totalAuditCount = logsRes.totalCount || 0;
-        
-        state.notifDB = notifRes;
-        state.refCountersDB = Array.isArray(countersRes) ? countersRes : [];
+        const promises = [];
+        const keys = [];
+
+        // Selalu ambil notifikasi untuk header
+        promises.push(fetch('/api/notifications').then(r => r.json()));
+        keys.push('notifications');
+
+        const activeView = state.activeView || 'dashboard';
+
+        // Pemuatan data bersyarat sesuai dengan tab/view yang sedang aktif saja
+        if (activeView === 'dashboard') {
+            promises.push(fetch('/api/cost-codes?limit=10000').then(r => r.json()));
+            keys.push('codes');
+        } else if (activeView === 'input') {
+            promises.push(fetch('/api/cost-codes?limit=10000').then(r => r.json()));
+            keys.push('codes');
+        } else if (activeView === 'riwayat') {
+            promises.push(fetch('/api/cost-codes?limit=10000').then(r => r.json()));
+            keys.push('codes');
+            promises.push(fetch(`/api/transactions?page=${state.currentTxPage}&limit=${state.paginationLimit}&search=${encodeURIComponent(searchVal)}&code=${encodeURIComponent(codeVal)}&date=${encodeURIComponent(dateVal)}`).then(r => r.json()));
+            keys.push('transactions');
+        } else if (activeView === 'kodebiaya') {
+            promises.push(fetch(`/api/cost-codes?page=${state.currentCcPage}&limit=${state.ccLimit}&search=${encodeURIComponent(searchVal)}`).then(r => r.json()));
+            keys.push('cc_paginated');
+        } else if (activeView === 'users') {
+            promises.push(fetch('/api/users').then(r => r.json()));
+            keys.push('users');
+            promises.push(fetch('/api/ref-counters').then(r => r.json()));
+            keys.push('counters');
+        } else if (activeView === 'audit') {
+            promises.push(fetch(`/api/audit-logs?page=${state.currentAuditPage}&limit=${state.paginationLimit}&search=${encodeURIComponent(auditSearchVal)}&role=${encodeURIComponent(auditRoleVal)}`).then(r => r.json()));
+            keys.push('audit');
+        }
+
+        const results = await Promise.all(promises);
+
+        results.forEach((res, index) => {
+            const key = keys[index];
+            if (key === 'notifications') {
+                state.notifDB = res;
+            } else if (key === 'codes') {
+                state.costCodesDB = res.data || [];
+            } else if (key === 'transactions') {
+                state.transactionsDB = res.data || [];
+                state.totalTxPages = res.totalPages || 1;
+                state.totalTxCount = res.totalCount || 0;
+            } else if (key === 'cc_paginated') {
+                state.costCodesDB = res.data || [];
+                state.totalCcPages = res.totalPages || 1;
+                state.totalCcCount = res.totalCount || 0;
+            } else if (key === 'users') {
+                state.usersDB = res;
+            } else if (key === 'counters') {
+                state.refCountersDB = Array.isArray(res) ? res : [];
+            } else if (key === 'audit') {
+                state.auditDB = res.data || [];
+                state.totalAuditPages = res.totalPages || 1;
+                state.totalAuditCount = res.totalCount || 0;
+            }
+        });
     } catch (e) {
         console.error("Gagal sinkronisasi data dari server API:", e);
         showToast("Koneksi server terputus!", "danger");
