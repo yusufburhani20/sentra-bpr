@@ -1,79 +1,58 @@
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
 
 :root {
-    /* Color Palette - Light Mode */
-    --primary-hsl: 250, 84%, 54%;
-    --primary: hsl(var(--primary-hsl));
-    --primary-hover: hsl(250, 84%, 48%);
-    --primary-light: hsla(var(--primary-hsl), 0.1);
-    
-    --success-hsl: 142, 72%, 29%;
-    --success: hsl(var(--success-hsl));
-    --success-light: hsla(var(--success-hsl), 0.1);
-    
-    --warning-hsl: 38, 92%, 50%;
-    --warning: hsl(var(--warning-hsl));
-    --warning-light: hsla(var(--warning-hsl), 0.1);
-    
-    --danger-hsl: 350, 89%, 60%;
-    --danger: hsl(var(--danger-hsl));
-    --danger-light: hsla(var(--danger-hsl), 0.1);
-    
-    --info-hsl: 199, 89%, 48%;
-    --info: hsl(var(--info-hsl));
-    --info-light: hsla(var(--info-hsl), 0.1);
+    /* ── Primary: BPR Blue #1B5DAD ──────────────────── */
+    --primary-hsl: 215, 73%, 39%;
+    --primary: #1B5DAD;
+    --primary-hover: #164d94;
+    --primary-light: #dce9f7;
 
-    --bg-app: #f8fafc;
-    --bg-card: rgba(255, 255, 255, 0.85);
-    --border-color: rgba(226, 232, 240, 0.8);
+    /* ── Accent: BPR Gold #F8AF18 ────────────────────── */
+    --accent: #F8AF18;
+    --accent-hover: #e09e10;
+    --accent-light: #fef6e0;
+
+    /* ── Semantic Colors ─────────────────────────────── */
+    --success-hsl: 145, 63%, 28%;
+    --success: #1a7340;
+    --success-light: #e6f4ec;
+
+    --warning-hsl: 38, 90%, 50%;
+    --warning: #c97d10;
+    --warning-light: #fef3cd;
+
+    --danger-hsl: 4, 68%, 47%;
+    --danger: #c0392b;
+    --danger-light: #fdecea;
+
+    --info-hsl: 199, 89%, 35%;
+    --info: #0077a8;
+    --info-light: #e0f3fa;
+
+    /* ── Layout ──────────────────────────────────────── */
+    --bg-app: #eef2f7;
+    --bg-card: #ffffff;
+    --border-color: #cdd8e8;
     --text-main: #0f172a;
-    --text-muted: #64748b;
+    --text-muted: #5a6e8a;
     --text-on-primary: #ffffff;
-    
-    --glass-blur: 16px;
-    --card-shadow: 0 4px 20px -2px rgba(148, 163, 184, 0.12), 0 2px 8px -1px rgba(148, 163, 184, 0.08);
+
+    /* ── Tidak ada shadow atau glassmorphism ─────────── */
+    --card-shadow: none;
+    --glass-blur: 0px;
+
     --sidebar-width: 260px;
     --header-height: 70px;
     --role-banner-height: 48px;
     --radius-lg: 16px;
     --radius-md: 10px;
     --radius-sm: 6px;
-    
+
     --transition-fast: 0.15s ease;
     --transition-normal: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-[data-theme="dark"] {
-    /* Color Palette - Dark Mode */
-    --primary-hsl: 250, 95%, 68%;
-    --primary: hsl(var(--primary-hsl));
-    --primary-hover: hsl(250, 95%, 62%);
-    --primary-light: hsla(var(--primary-hsl), 0.15);
-    
-    --success-hsl: 142, 70%, 45%;
-    --success: hsl(var(--success-hsl));
-    --success-light: hsla(var(--success-hsl), 0.15);
-    
-    --warning-hsl: 38, 90%, 55%;
-    --warning: hsl(var(--warning-hsl));
-    --warning-light: hsla(var(--warning-hsl), 0.15);
-    
-    --danger-hsl: 350, 90%, 65%;
-    --danger: hsl(var(--danger-hsl));
-    --danger-light: hsla(var(--danger-hsl), 0.15);
-    
-    --info-hsl: 199, 90%, 58%;
-    --info: hsl(var(--info-hsl));
-    --info-light: hsla(var(--info-hsl), 0.15);
-
-    --bg-app: #090d16;
-    --bg-card: rgba(17, 24, 39, 0.7);
-    --border-color: rgba(255, 255, 255, 0.06);
-    --text-main: #f3f4f6;
-    --text-muted: #9ca3af;
-    
-    --card-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.7);
-}
+/* Dark mode dihapus — aplikasi menggunakan mode cerah permanen */
 
 * {
     box-sizing: border-box;
@@ -96,8 +75,8 @@ body {
 
 /* Simulation Role Banner */
 .role-simulation-banner {
-    background: linear-gradient(90deg, #1e1b4b 0%, #311042 50%, #1e1b4b 100%);
-    color: #f3f4f6;
+    background-color: #164d94;
+    color: #ffffff;
     height: var(--role-banner-height);
     display: flex;
     align-items: center;
@@ -106,8 +85,7 @@ body {
     font-size: 13px;
     z-index: 1000;
     position: relative;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+    border-bottom: 2px solid var(--accent);
 }
 
 .sim-info {
@@ -118,8 +96,8 @@ body {
 }
 
 .sim-badge {
-    background: linear-gradient(135deg, #a855f7 0%, #6366f1 100%);
-    color: white;
+    background: var(--accent);
+    color: #0f172a;
     padding: 2px 8px;
     border-radius: 12px;
     font-size: 11px;
@@ -208,14 +186,14 @@ body {
     width: 38px;
     height: 38px;
     border-radius: 10px;
-    background: linear-gradient(135deg, var(--primary) 0%, hsl(270, 89%, 60%) 100%);
+    background: var(--primary);
     display: flex;
     align-items: center;
     justify-content: center;
     color: white;
     font-weight: 800;
     font-size: 20px;
-    box-shadow: 0 4px 14px hsla(var(--primary-hsl), 0.3);
+    border: 2px solid var(--accent);
 }
 
 .brand-title-wrap {
@@ -266,8 +244,8 @@ body {
 
 .nav-item-link.active {
     color: var(--text-on-primary);
-    background: linear-gradient(135deg, var(--primary) 0%, hsl(260, 84%, 58%) 100%);
-    box-shadow: 0 4px 15px hsla(var(--primary-hsl), 0.25);
+    background-color: var(--primary);
+    border-left: 3px solid var(--accent);
 }
 
 .nav-item-link svg {
@@ -294,7 +272,7 @@ body {
     width: 36px;
     height: 36px;
     border-radius: 50%;
-    background: linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%);
+    background: var(--primary);
     color: white;
     font-weight: 700;
     display: flex;
@@ -418,8 +396,7 @@ body {
 }
 
 .card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 12px 30px -5px rgba(148, 163, 184, 0.18);
+    border-color: var(--primary);
 }
 
 /* Grid Layouts */
@@ -500,7 +477,7 @@ body {
 }
 
 .form-control {
-    background-color: rgba(255, 255, 255, 0.05);
+    background-color: #f8fafc;
     border: 1px solid var(--border-color);
     border-radius: var(--radius-md);
     padding: 10px 14px;
@@ -514,7 +491,7 @@ body {
 
 .form-control:focus {
     border-color: var(--primary);
-    box-shadow: 0 0 0 3px var(--primary-light);
+    border-width: 2px;
     background-color: var(--bg-card);
 }
 
@@ -616,14 +593,14 @@ body {
 }
 
 .btn-primary {
-    background: linear-gradient(135deg, var(--primary) 0%, hsl(260, 84%, 58%) 100%);
+    background: var(--primary);
     color: var(--text-on-primary);
-    box-shadow: 0 4px 12px hsla(var(--primary-hsl), 0.2);
+    border-color: var(--primary);
 }
 
 .btn-primary:hover {
     background: var(--primary-hover);
-    box-shadow: 0 6px 16px hsla(var(--primary-hsl), 0.3);
+    border-color: var(--primary-hover);
 }
 
 .btn-secondary {
@@ -682,7 +659,6 @@ body {
     width: 90%;
     max-width: 550px;
     padding: 28px;
-    box-shadow: 0 20px 50px -12px rgba(0,0,0,0.5);
     transform: scale(0.95);
     transition: transform var(--transition-normal);
     max-height: 90vh;
@@ -800,7 +776,6 @@ body {
     border-left: 4px solid var(--primary);
     border-radius: var(--radius-md);
     padding: 14px 20px;
-    box-shadow: 0 10px 25px -5px rgba(0,0,0,0.15);
     display: flex;
     align-items: center;
     gap: 12px;
@@ -836,7 +811,7 @@ body {
 
 .kpi-bar {
     height: 100%;
-    background: linear-gradient(90deg, var(--primary) 0%, var(--success) 100%);
+    background: var(--primary);
     border-radius: 3px;
     transition: width 0.5s ease-out;
 }
@@ -962,9 +937,9 @@ body {
 
 .timeline-step.active .step-node {
     background-color: var(--primary);
-    border-color: var(--primary);
+    border-color: var(--accent);
     color: white;
-    box-shadow: 0 0 0 4px var(--primary-light);
+    outline: 3px solid var(--primary-light);
 }
 
 .step-label {
@@ -1079,7 +1054,6 @@ body {
     padding: 2px 6px;
     border-radius: 4px;
     letter-spacing: 0.5px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
 
 .slip-type-title {
@@ -1526,10 +1500,9 @@ body.printing-active > .print-wrapper {
 
 .draggable-print-element.dragging-active {
     outline: 2px solid var(--primary) !important;
-    background-color: rgba(var(--primary-hsl), 0.15) !important;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.15) !important;
+    background-color: rgba(27, 93, 173, 0.12) !important;
     z-index: 9999 !important;
-    transition: none !important; /* Extremely smooth mouse follow */
+    transition: none !important;
 }
 
 
@@ -1543,17 +1516,18 @@ body.printing-active > .print-wrapper {
     display: flex;
     align-items: center;
     justify-content: center;
-    background: linear-gradient(135deg, hsl(250,84%,12%) 0%, hsl(250,60%,22%) 50%, hsl(200,80%,18%) 100%);
+    background-color: #1B5DAD;
     overflow: hidden;
 }
 
+/* Dekorasi sudut tanpa gradient */
 .login-screen::before {
     content: '';
     position: absolute;
-    width: 600px; height: 600px;
-    top: -200px; left: -150px;
-    background: radial-gradient(circle, hsla(250,84%,60%,0.3) 0%, transparent 70%);
-    animation: loginPulse 6s ease-in-out infinite;
+    width: 400px; height: 400px;
+    top: -150px; left: -100px;
+    background-color: rgba(248, 175, 24, 0.15);
+    border-radius: 50%;
 }
 
 .login-screen::after {
@@ -1573,16 +1547,14 @@ body.printing-active > .print-wrapper {
 .login-card {
     position: relative;
     z-index: 1;
-    background: rgba(255,255,255,0.07);
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
-    border: 1px solid rgba(255,255,255,0.18);
-    border-radius: 24px;
+    background: #ffffff;
+    border: 1px solid #cdd8e8;
+    border-top: 4px solid var(--accent);
+    border-radius: 16px;
     padding: 48px 44px;
     width: 100%;
     max-width: 420px;
-    box-shadow: 0 32px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.2);
-    animation: loginSlideIn 0.5s cubic-bezier(0.34,1.56,0.64,1);
+    animation: loginSlideIn 0.4s cubic-bezier(0.34,1.56,0.64,1);
 }
 
 @keyframes loginSlideIn {
@@ -1598,15 +1570,14 @@ body.printing-active > .print-wrapper {
 .login-logo-icon {
     width: 72px; height: 72px;
     margin: 0 auto 16px;
-    background: linear-gradient(135deg, hsl(var(--primary-hsl)), hsl(200,80%,55%));
+    background: var(--accent);
     border-radius: 20px;
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 36px;
     font-weight: 900;
-    color: #fff;
-    box-shadow: 0 8px 32px hsla(var(--primary-hsl), 0.5);
+    color: #0f172a;
     animation: logoFloat 3s ease-in-out infinite;
 }
 
@@ -1618,20 +1589,20 @@ body.printing-active > .print-wrapper {
 .login-title {
     font-size: 26px;
     font-weight: 800;
-    color: #fff;
+    color: var(--text-main);
     letter-spacing: 2px;
     margin: 0 0 8px;
 }
 
 .login-subtitle {
     font-size: 12px;
-    color: rgba(255,255,255,0.6);
+    color: var(--text-muted);
     line-height: 1.6;
     margin: 0;
 }
 
 .login-form-area .form-label {
-    color: rgba(255,255,255,0.8);
+    color: var(--text-main);
     font-size: 12px;
     font-weight: 600;
     letter-spacing: 0.5px;
@@ -1647,14 +1618,14 @@ body.printing-active > .print-wrapper {
     position: absolute;
     left: 14px;
     width: 16px; height: 16px;
-    color: rgba(255,255,255,0.5);
+    color: var(--text-muted);
     pointer-events: none;
 }
 
 .login-input {
-    background: rgba(255,255,255,0.1) !important;
-    border: 1px solid rgba(255,255,255,0.2) !important;
-    color: #fff !important;
+    background: #f0f4f8 !important;
+    border: 1px solid var(--border-color) !important;
+    color: var(--text-main) !important;
     padding-left: 44px !important;
     padding-right: 44px !important;
     height: 48px;
@@ -1663,12 +1634,12 @@ body.printing-active > .print-wrapper {
     transition: all 0.2s;
 }
 
-.login-input::placeholder { color: rgba(255,255,255,0.35) !important; }
+.login-input::placeholder { color: #94a3b8 !important; }
 
 .login-input:focus {
-    background: rgba(255,255,255,0.15) !important;
-    border-color: rgba(255,255,255,0.5) !important;
-    box-shadow: 0 0 0 3px hsla(var(--primary-hsl), 0.3) !important;
+    background: #ffffff !important;
+    border-color: var(--primary) !important;
+    border-width: 2px !important;
     outline: none;
 }
 
@@ -1678,18 +1649,18 @@ body.printing-active > .print-wrapper {
     background: none;
     border: none;
     cursor: pointer;
-    color: rgba(255,255,255,0.5);
+    color: var(--text-muted);
     padding: 4px;
     display: flex;
     align-items: center;
 }
 
-.login-eye-btn:hover { color: rgba(255,255,255,0.9); }
+.login-eye-btn:hover { color: var(--text-main); }
 
 .login-error {
-    background: rgba(239,68,68,0.2);
-    border: 1px solid rgba(239,68,68,0.4);
-    color: #fca5a5;
+    background: var(--danger-light);
+    border: 1px solid var(--danger);
+    color: var(--danger);
     border-radius: 8px;
     padding: 10px 14px;
     font-size: 12px;
@@ -1700,7 +1671,7 @@ body.printing-active > .print-wrapper {
 .login-footer-note {
     text-align: center;
     margin-top: 28px;
-    color: rgba(255,255,255,0.35);
+    color: var(--text-muted);
 }
 
 /* ─── Auth Bar Action Buttons ─────────────────── */
@@ -1980,7 +1951,7 @@ body.printing-active > .print-wrapper {
         width: 280px !important;
         height: 100vh !important;
         z-index: 1010 !important;
-        box-shadow: 5px 0 25px rgba(0, 0, 0, 0.3) !important;
+        border-right: 2px solid var(--border-color) !important;
         transition: left 0.3s ease !important;
     }
     
