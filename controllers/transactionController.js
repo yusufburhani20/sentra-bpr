@@ -70,16 +70,29 @@ exports.getNextRef = (req, res) => {
 
         const operator = user.operator_code || "";
 
-        // Gunakan atomic increment agar aman dari race condition saat multi-user
-        db.atomicIncrementRef(operator, operator, (err, row) => {
+        // Cari counter referensi yang saat ini terdaftar tanpa melakukan penambahan (increment)
+        db.get("SELECT counter, prefix FROM ref_counters WHERE operator_code = ?", [operator], (err, row) => {
             if (err) return res.status(500).json({ error: err.message });
-            if (!row) return res.status(500).json({ error: "Gagal membaca counter referensi." });
+            if (row) {
+                const { counter, prefix } = row;
+                const seq = String(counter).padStart(3, '0');
+                const nextRef = `${(prefix || operator || "")}${seq}`;
+                res.json({ nextRef, counter, prefix: prefix || operator || "" });
+            } else {
+                // Jika belum ada row counter untuk operator ini, buat default counter = 1
+                db.run("INSERT OR IGNORE INTO ref_counters (operator_code, counter, prefix) VALUES (?, 1, ?)", [operator, operator], (err2) => {
+                    if (err2) return res.status(500).json({ error: err2.message });
 
-            const { counter, prefix } = row;
-            const seq = String(counter).padStart(3, '0');
-            const nextRef = `${(prefix || operator || "")}${seq}`;
-
-            res.json({ nextRef, counter, prefix: prefix || operator || "" });
+                    db.get("SELECT counter, prefix FROM ref_counters WHERE operator_code = ?", [operator], (err3, newRow) => {
+                        if (err3) return res.status(500).json({ error: err3.message });
+                        const cnt = newRow ? newRow.counter : 1;
+                        const prfx = newRow ? newRow.prefix : operator;
+                        const seq = String(cnt).padStart(3, '0');
+                        const nextRef = `${(prfx || operator || "")}${seq}`;
+                        res.json({ nextRef, counter: cnt, prefix: prfx || operator || "" });
+                    });
+                });
+            }
         });
     });
 };
