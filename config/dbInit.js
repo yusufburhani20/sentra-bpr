@@ -93,12 +93,53 @@ async function initializeDb(callback) {
             dibaca INTEGER DEFAULT 0
         )`);
 
-        // 6. Reference Counters Table
-        await runAsync(`CREATE TABLE IF NOT EXISTS ref_counters (
-            operator_code TEXT PRIMARY KEY,
-            counter INTEGER DEFAULT 1,
-            prefix TEXT
-        )`);
+        // 6. Reference Counters Table (Migrated from operator_code to username)
+        let needsMigration = false;
+        try {
+            const tempRow = await getAsync("SELECT operator_code FROM ref_counters LIMIT 1");
+            needsMigration = true;
+        } catch (e) {
+            // Table doesn't exist or already migrated
+        }
+
+        if (needsMigration) {
+            // Fetch old records
+            const oldRows = await new Promise((resolve) => {
+                db.all("SELECT * FROM ref_counters", [], (err, rows) => {
+                    resolve(rows || []);
+                });
+            });
+
+            // Drop old table
+            await runAsync("DROP TABLE ref_counters");
+
+            // Create new table
+            await runAsync(`CREATE TABLE IF NOT EXISTS ref_counters (
+                username TEXT PRIMARY KEY,
+                counter INTEGER DEFAULT 1,
+                prefix TEXT
+            )`);
+
+            // Migrate rows
+            for (const row of oldRows) {
+                const user = await getAsync("SELECT username FROM users WHERE operator_code = ? AND deleted_at IS NULL", [row.operator_code]);
+                const targetUsername = user ? user.username : row.operator_code;
+                if (targetUsername) {
+                    // Translate INSERT OR IGNORE for postgres compatibility in migration if needed
+                    const isPg = process.env.DB_TYPE === 'postgres';
+                    const sql = isPg
+                        ? "INSERT INTO ref_counters (username, counter, prefix) VALUES ($1, $2, $3) ON CONFLICT (username) DO NOTHING"
+                        : "INSERT OR IGNORE INTO ref_counters (username, counter, prefix) VALUES (?, ?, ?)";
+                    await runAsync(sql, [targetUsername, row.counter, row.prefix]);
+                }
+            }
+        } else {
+            await runAsync(`CREATE TABLE IF NOT EXISTS ref_counters (
+                username TEXT PRIMARY KEY,
+                counter INTEGER DEFAULT 1,
+                prefix TEXT
+            )`);
+        }
 
         // 7. Approval Requests Table
         await runAsync(`CREATE TABLE IF NOT EXISTS approval_requests (
@@ -210,11 +251,11 @@ async function initializeDb(callback) {
 
         // Fill ref counters for existing/seeded users
         await new Promise((resolve) => {
-            db.all("SELECT operator_code FROM users WHERE deleted_at IS NULL", [], (err, rows) => {
+            db.all("SELECT username, operator_code FROM users WHERE deleted_at IS NULL", [], (err, rows) => {
                 if (!err && rows) {
                     rows.forEach(row => {
-                        db.run(`INSERT OR IGNORE INTO ref_counters (operator_code, counter, prefix) VALUES (?, 1, ?)`,
-                            [row.operator_code, row.operator_code]);
+                        db.run(`INSERT OR IGNORE INTO ref_counters (username, counter, prefix) VALUES (?, 1, ?)`,
+                            [row.username, row.operator_code || ""]);
                     });
                 }
                 resolve();

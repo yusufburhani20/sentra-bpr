@@ -103,18 +103,18 @@ exports.resetPassword = async (req, res) => {
 };
 
 exports.getRefCounters = (req, res) => {
-    db.all("SELECT operator_code FROM users WHERE operator_code IS NOT NULL AND operator_code != '' AND deleted_at IS NULL", [], (err, users) => {
+    db.all("SELECT username, operator_code FROM users WHERE deleted_at IS NULL", [], (err, users) => {
         if (err) return res.status(500).json({ error: err.message });
 
         const insertPromises = users.map(u => new Promise(resolve => {
-            db.run(`INSERT OR IGNORE INTO ref_counters (operator_code, counter, prefix) VALUES (?, 1, ?)`,
-                [u.operator_code, u.operator_code], resolve);
+            db.run(`INSERT OR IGNORE INTO ref_counters (username, counter, prefix) VALUES (?, 1, ?)`,
+                [u.username, u.operator_code || ""], resolve);
         }));
 
         Promise.all(insertPromises).then(() => {
-            db.all(`SELECT rc.operator_code, rc.counter, rc.prefix, u.nama
+            db.all(`SELECT rc.username, rc.counter, rc.prefix, u.nama, u.operator_code
                     FROM ref_counters rc
-                    INNER JOIN users u ON u.operator_code = rc.operator_code
+                    INNER JOIN users u ON u.username = rc.username
                     WHERE u.deleted_at IS NULL
                     ORDER BY u.nama ASC`, [], (err, rows) => {
                 if (err) return res.status(500).json({ error: err.message });
@@ -125,24 +125,24 @@ exports.getRefCounters = (req, res) => {
 };
 
 exports.updateRefCounter = (req, res) => {
-    const { operator_code } = req.params;
+    const { username } = req.params;
     const { counter, prefix } = req.body;
 
     const newCounter = parseInt(counter);
     if (isNaN(newCounter) || newCounter < 1) {
         return res.status(400).json({ error: "Nilai counter tidak valid (harus >= 1)" });
     }
-    const newPrefix = prefix || operator_code;
+    const newPrefix = prefix !== undefined ? prefix.trim() : "";
 
-    db.run(`INSERT INTO ref_counters (operator_code, counter, prefix) VALUES (?, ?, ?)
-            ON CONFLICT(operator_code) DO UPDATE SET counter = excluded.counter, prefix = excluded.prefix`,
-        [operator_code, newCounter, newPrefix], function(err) {
+    db.run(`INSERT INTO ref_counters (username, counter, prefix) VALUES (?, ?, ?)
+            ON CONFLICT(username) DO UPDATE SET counter = excluded.counter, prefix = excluded.prefix`,
+        [username, newCounter, newPrefix], function(err) {
             if (err) return res.status(500).json({ error: err.message });
 
             const logId = "LOG-" + Date.now();
             db.run("INSERT INTO audit_logs VALUES (?, ?, ?, ?, ?, ?)",
                 [logId, new Date().toISOString(), req.user.nama, req.user.role,
-                 `Mengatur counter referensi ${operator_code}: counter=${newCounter}, prefix=${newPrefix}`,
+                 `Mengatur counter referensi ${username}: counter=${newCounter}, prefix=${newPrefix}`,
                  "127.0.0.1"]);
 
             res.json({ success: true });
@@ -151,15 +151,15 @@ exports.updateRefCounter = (req, res) => {
 };
 
 exports.resetRefCounter = (req, res) => {
-    const { operator_code } = req.params;
+    const { username } = req.params;
 
-    db.run("UPDATE ref_counters SET counter = 1 WHERE operator_code = ?", [operator_code], function(err) {
+    db.run("UPDATE ref_counters SET counter = 1 WHERE username = ?", [username], function(err) {
         if (err) return res.status(500).json({ error: err.message });
 
         const logId = "LOG-" + Date.now();
         db.run("INSERT INTO audit_logs VALUES (?, ?, ?, ?, ?, ?)",
             [logId, new Date().toISOString(), req.user.nama, req.user.role,
-             `Me-reset counter referensi ${operator_code} ke 1`, "127.0.0.1"]);
+             `Me-reset counter referensi ${username} ke 1`, "127.0.0.1"]);
 
         res.json({ success: true });
     });

@@ -39,7 +39,7 @@ function translateSql(sql) {
 
     // Translate INSERT OR IGNORE for ref_counters
     pgSql = pgSql.replace(/INSERT OR IGNORE INTO ref_counters\s*\(([^)]+)\)\s*VALUES\s*\(([^)]+)\)/gi,
-        'INSERT INTO ref_counters ($1) VALUES ($2) ON CONFLICT (operator_code) DO NOTHING');
+        'INSERT INTO ref_counters ($1) VALUES ($2) ON CONFLICT (username) DO NOTHING');
 
     // Translate INSERT OR IGNORE for cost_codes
     pgSql = pgSql.replace(/INSERT OR IGNORE INTO cost_codes\s*\(([^)]+)\)\s*VALUES\s*\(([^)]+)\)/gi,
@@ -173,16 +173,16 @@ const db = {
      * SQLite: gunakan BEGIN EXCLUSIVE TRANSACTION.
      * Callback: (err, { counter, prefix })
      */
-    atomicIncrementRef(operator_code, prefix, callback) {
+    atomicIncrementRef(username, prefix, callback) {
         if (DB_TYPE === 'postgres') {
             const sql = `
-                INSERT INTO ref_counters (operator_code, counter, prefix)
+                INSERT INTO ref_counters (username, counter, prefix)
                 VALUES ($1, 1, $2)
-                ON CONFLICT (operator_code)
+                ON CONFLICT (username)
                 DO UPDATE SET counter = ref_counters.counter + 1
                 RETURNING counter, prefix
             `;
-            pgPool.query(sql, [operator_code, prefix], (err, result) => {
+            pgPool.query(sql, [username, prefix], (err, result) => {
                 if (err) return callback(err, null);
                 callback(null, result.rows[0]);
             });
@@ -191,16 +191,16 @@ const db = {
             sqliteDb.serialize(() => {
                 sqliteDb.run('BEGIN EXCLUSIVE TRANSACTION');
                 sqliteDb.run(
-                    `INSERT OR IGNORE INTO ref_counters (operator_code, counter, prefix) VALUES (?, 0, ?)`,
-                    [operator_code, prefix]
+                    `INSERT OR IGNORE INTO ref_counters (username, counter, prefix) VALUES (?, 0, ?)`,
+                    [username, prefix]
                 );
                 sqliteDb.run(
-                    `UPDATE ref_counters SET counter = counter + 1 WHERE operator_code = ?`,
-                    [operator_code]
+                    `UPDATE ref_counters SET counter = counter + 1 WHERE username = ?`,
+                    [username]
                 );
                 sqliteDb.get(
-                    `SELECT counter, prefix FROM ref_counters WHERE operator_code = ?`,
-                    [operator_code],
+                    `SELECT counter, prefix FROM ref_counters WHERE username = ?`,
+                    [username],
                     (err, row) => {
                         sqliteDb.run('COMMIT');
                         callback(err, row);

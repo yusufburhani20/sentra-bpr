@@ -161,22 +161,22 @@ export function renderRefCountersTable() {
     }
 
     state.refCountersDB.forEach(rc => {
-        const exampleRef = `${rc.prefix || rc.operator_code}${String(rc.counter).padStart(3, '0')}`;
+        const exampleRef = `${rc.prefix || rc.operator_code || ""}${String(rc.counter).padStart(3, '0')}`;
         const tr = document.createElement("tr");
         tr.innerHTML = `
-            <td><code>${rc.operator_code}</code></td>
-            <td><strong>${rc.nama || '-'}</strong></td>
+            <td><code>${rc.operator_code || '-'}</code></td>
+            <td><strong>${rc.nama || '-'}</strong> <span style="font-size: 11px; color: var(--text-muted);">(${rc.username})</span></td>
             <td>
-                <input type="text" id="rc-prefix-${rc.operator_code}" value="${escapeHtml(rc.prefix || rc.operator_code)}" 
+                <input type="text" id="rc-prefix-${rc.username}" value="${escapeHtml(rc.prefix || '')}" 
                     class="form-control" style="width:130px; padding:4px 8px; font-size:12px; display:inline-block;" 
                     placeholder="Prefix...">
             </td>
             <td>
-                <input type="number" id="rc-counter-${rc.operator_code}" value="${rc.counter}" min="1"
+                <input type="number" id="rc-counter-${rc.username}" value="${rc.counter}" min="1"
                     class="form-control" style="width:90px; padding:4px 8px; font-size:12px; display:inline-block;">
             </td>
             <td>
-                <code id="rc-example-${rc.operator_code}" style="font-size:12px; color:var(--primary); font-weight:700;">${exampleRef}</code>
+                <code id="rc-example-${rc.username}" style="font-size:12px; color:var(--primary); font-weight:700;">${exampleRef}</code>
             </td>
             <td style="display:flex; gap:6px; flex-wrap:wrap;">
                 <button class="btn btn-primary btn-save-counter" style="padding:3px 10px; font-size:11px;">
@@ -188,16 +188,16 @@ export function renderRefCountersTable() {
             </td>
         `;
         
-        tr.querySelector('.btn-save-counter').addEventListener('click', () => saveRefCounter(rc.operator_code));
-        tr.querySelector('.btn-reset-counter').addEventListener('click', () => resetRefCounter(rc.operator_code));
+        tr.querySelector('.btn-save-counter').addEventListener('click', () => saveRefCounter(rc.username));
+        tr.querySelector('.btn-reset-counter').addEventListener('click', () => resetRefCounter(rc.username));
         tbody.appendChild(tr);
 
-        const prefixEl = document.getElementById(`rc-prefix-${rc.operator_code}`);
-        const counterEl = document.getElementById(`rc-counter-${rc.operator_code}`);
-        const exampleEl = document.getElementById(`rc-example-${rc.operator_code}`);
+        const prefixEl = document.getElementById(`rc-prefix-${rc.username}`);
+        const counterEl = document.getElementById(`rc-counter-${rc.username}`);
+        const exampleEl = document.getElementById(`rc-example-${rc.username}`);
         if (prefixEl && counterEl && exampleEl) {
             const updatePreview = () => {
-                const p = prefixEl.value || rc.operator_code;
+                const p = prefixEl.value || rc.operator_code || "";
                 const c = parseInt(counterEl.value) || 1;
                 exampleEl.textContent = `${p}${String(c).padStart(3, '0')}`;
             };
@@ -207,9 +207,9 @@ export function renderRefCountersTable() {
     });
 }
 
-export async function saveRefCounter(operatorCode) {
-    const prefixEl = document.getElementById(`rc-prefix-${operatorCode}`);
-    const counterEl = document.getElementById(`rc-counter-${operatorCode}`);
+export async function saveRefCounter(username) {
+    const prefixEl = document.getElementById(`rc-prefix-${username}`);
+    const counterEl = document.getElementById(`rc-counter-${username}`);
     if (!prefixEl || !counterEl) return;
 
     const payload = {
@@ -220,16 +220,16 @@ export async function saveRefCounter(operatorCode) {
     };
 
     try {
-        const res = await fetch(`/api/ref-counters/${encodeURIComponent(operatorCode)}`, {
+        const res = await fetch(`/api/ref-counters/${encodeURIComponent(username)}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
         }).then(r => r.json());
 
         if (res.success) {
-            showToast(`Counter ${operatorCode} berhasil disimpan!`, "success");
+            showToast(`Counter ${username} berhasil disimpan!`, "success");
             await showSection("users"); // will automatically fetch new ref data and render tables
-            if (state.currentUser && state.currentUser.operator_code === operatorCode) {
+            if (state.currentUser && state.currentUser.username === username) {
                 await fetchNextRef();
             }
         } else {
@@ -240,20 +240,20 @@ export async function saveRefCounter(operatorCode) {
     }
 }
 
-export async function resetRefCounter(operatorCode) {
-    if (!confirm(`Reset counter nomor referensi ${operatorCode} ke angka 1?\nTransaksi berikutnya akan menggunakan nomor 0001.`)) return;
+export async function resetRefCounter(username) {
+    if (!confirm(`Reset counter nomor referensi ${username} ke angka 1?\nTransaksi berikutnya akan menggunakan nomor 0001.`)) return;
 
     try {
-        const res = await fetch(`/api/ref-counters/${encodeURIComponent(operatorCode)}/reset`, {
+        const res = await fetch(`/api/ref-counters/${encodeURIComponent(username)}/reset`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ activeUser: state.currentUser.nama, activeRole: state.currentUser.role })
         }).then(r => r.json());
 
         if (res.success) {
-            showToast(`Counter ${operatorCode} di-reset ke 1!`, "success");
+            showToast(`Counter ${username} di-reset ke 1!`, "success");
             await showSection("users");
-            if (state.currentUser && state.currentUser.operator_code === operatorCode) {
+            if (state.currentUser && state.currentUser.username === username) {
                 await fetchNextRef();
             }
         } else {

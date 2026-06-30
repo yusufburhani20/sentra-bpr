@@ -63,15 +63,16 @@ exports.getTransactions = (req, res) => {
 };
 
 exports.getNextRef = (req, res) => {
-    // Ambil operator_code terupdate langsung dari database untuk menghindari ketidaksesuaian cookie session
-    db.get("SELECT operator_code FROM users WHERE id = ? AND deleted_at IS NULL", [req.user.id], (err, user) => {
+    // Ambil operator_code dan username terupdate langsung dari database untuk menghindari ketidaksesuaian cookie session
+    db.get("SELECT username, operator_code FROM users WHERE id = ? AND deleted_at IS NULL", [req.user.id], (err, user) => {
         if (err) return res.status(500).json({ error: err.message });
         if (!user) return res.status(404).json({ error: "Pengguna tidak ditemukan." });
 
+        const username = user.username;
         const operator = user.operator_code || "";
 
         // Cari counter referensi yang saat ini terdaftar tanpa melakukan penambahan (increment)
-        db.get("SELECT counter, prefix FROM ref_counters WHERE operator_code = ?", [operator], (err, row) => {
+        db.get("SELECT counter, prefix FROM ref_counters WHERE username = ?", [username], (err, row) => {
             if (err) return res.status(500).json({ error: err.message });
             if (row) {
                 const { counter, prefix } = row;
@@ -80,10 +81,10 @@ exports.getNextRef = (req, res) => {
                 res.json({ nextRef, counter, prefix: prefix || operator || "" });
             } else {
                 // Jika belum ada row counter untuk operator ini, buat default counter = 1
-                db.run("INSERT OR IGNORE INTO ref_counters (operator_code, counter, prefix) VALUES (?, 1, ?)", [operator, operator], (err2) => {
+                db.run("INSERT OR IGNORE INTO ref_counters (username, counter, prefix) VALUES (?, 1, ?)", [username, operator], (err2) => {
                     if (err2) return res.status(500).json({ error: err2.message });
 
-                    db.get("SELECT counter, prefix FROM ref_counters WHERE operator_code = ?", [operator], (err3, newRow) => {
+                    db.get("SELECT counter, prefix FROM ref_counters WHERE username = ?", [username], (err3, newRow) => {
                         if (err3) return res.status(500).json({ error: err3.message });
                         const cnt = newRow ? newRow.counter : 1;
                         const prfx = newRow ? newRow.prefix : operator;
@@ -115,7 +116,7 @@ exports.createTransaction = (req, res) => {
     const now = new Date().toISOString();
 
     // Pastikan operator_code dibaca yang paling baru dari database
-    db.get("SELECT operator_code FROM users WHERE id = ? AND deleted_at IS NULL", [req.user.id], (err, user) => {
+    db.get("SELECT username, operator_code FROM users WHERE id = ? AND deleted_at IS NULL", [req.user.id], (err, user) => {
         if (err) return res.status(500).json({ error: err.message });
         if (!user) return res.status(404).json({ error: "Pengguna tidak ditemukan." });
 
@@ -164,7 +165,7 @@ exports.createTransaction = (req, res) => {
                                  `Menyimpan slip: ${ref_no} senilai Rp ${nominal_utama},${nominal_desimal}`,
                                  req.ip || "127.0.0.1"]);
 
-                            db.run("UPDATE ref_counters SET counter = counter + 1 WHERE operator_code = ?", [operator_code]);
+                            db.run("UPDATE ref_counters SET counter = counter + 1 WHERE username = ?", [user.username]);
 
                             const notifId = crypto.randomUUID();
                             db.run("INSERT INTO notifications VALUES (?, ?, 'Kepala Bidang', ?, 0)",

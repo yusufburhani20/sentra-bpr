@@ -6,7 +6,7 @@ const { requireAuth, requireRole } = require('../middleware/auth');
 router.use(requireAuth, requireRole('Admin'));
 
 router.get('/', userController.getRefCounters);
-router.put('/:operator_code', userController.updateRefCounter);
-router.post('/:operator_code/reset', userController.resetRefCounter);
+router.put('/:username', userController.updateRefCounter);
+router.post('/:username/reset', userController.resetRefCounter);
 
 module.exports = router;
