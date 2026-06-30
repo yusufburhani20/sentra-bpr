@@ -18,8 +18,9 @@ if (DB_TYPE === 'postgres') {
         user: process.env.PGUSER || 'postgres',
         password: process.env.PGPASSWORD || 'postgres',
         database: process.env.PGDATABASE || 'sim_slip_ref',
-        max: 5,
-        idleTimeoutMillis: 1000
+        max: 20,                    // Cukup untuk 20 concurrent requests
+        idleTimeoutMillis: 30000,   // Tutup koneksi idle setelah 30 detik
+        connectionTimeoutMillis: 5000 // Gagal cepat jika DB tidak bisa dijangkau
     });
 } else {
     console.log("Database Engine: SQLite");
@@ -163,6 +164,49 @@ const db = {
             pgPool.end(callback);
         } else {
             sqliteDb.close(callback);
+        }
+    },
+
+    /**
+     * Atomic increment untuk ref_counters — aman dari race condition.
+     * PostgreSQL: gunakan INSERT ... ON CONFLICT DO UPDATE RETURNING (atomic).
+     * SQLite: gunakan BEGIN EXCLUSIVE TRANSACTION.
+     * Callback: (err, { counter, prefix })
+     */
+    atomicIncrementRef(operator_code, prefix, callback) {
+        if (DB_TYPE === 'postgres') {
+            const sql = `
+                INSERT INTO ref_counters (operator_code, counter, prefix)
+                VALUES ($1, 1, $2)
+                ON CONFLICT (operator_code)
+                DO UPDATE SET counter = ref_counters.counter + 1
+                RETURNING counter, prefix
+            `;
+            pgPool.query(sql, [operator_code, prefix], (err, result) => {
+                if (err) return callback(err, null);
+                callback(null, result.rows[0]);
+            });
+        } else {
+            // SQLite: pakai exclusive transaction agar tidak ada interleaving
+            sqliteDb.serialize(() => {
+                sqliteDb.run('BEGIN EXCLUSIVE TRANSACTION');
+                sqliteDb.run(
+                    `INSERT OR IGNORE INTO ref_counters (operator_code, counter, prefix) VALUES (?, 0, ?)`,
+                    [operator_code, prefix]
+                );
+                sqliteDb.run(
+                    `UPDATE ref_counters SET counter = counter + 1 WHERE operator_code = ?`,
+                    [operator_code]
+                );
+                sqliteDb.get(
+                    `SELECT counter, prefix FROM ref_counters WHERE operator_code = ?`,
+                    [operator_code],
+                    (err, row) => {
+                        sqliteDb.run('COMMIT');
+                        callback(err, row);
+                    }
+                );
+            });
         }
     }
 };

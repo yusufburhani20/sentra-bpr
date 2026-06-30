@@ -66,38 +66,17 @@ exports.getNextRef = (req, res) => {
     const operator = req.user.operator_code;
     if (!operator) return res.status(400).json({ error: "Operator code tidak ditemukan di sesi pengguna." });
 
-    db.run(`INSERT OR IGNORE INTO ref_counters (operator_code, counter, prefix) VALUES (?, 1, ?)`,
-        [operator, operator], () => {
-            findUniqueRef();
-        }
-    );
+    // Gunakan atomic increment agar aman dari race condition saat multi-user
+    db.atomicIncrementRef(operator, operator, (err, row) => {
+        if (err) return res.status(500).json({ error: err.message });
+        if (!row) return res.status(500).json({ error: "Gagal membaca counter referensi." });
 
-    function findUniqueRef() {
-        db.get("SELECT counter, prefix FROM ref_counters WHERE operator_code = ?", [operator], (err, row) => {
-            if (err) return res.status(500).json({ error: err.message });
-            
-            const currentCounter = row ? row.counter : 1;
-            const prefix = (row && row.prefix) ? row.prefix : operator;
-            const seq = String(currentCounter).padStart(3, '0');
-            const nextRef = `${prefix}${seq}`;
+        const { counter, prefix } = row;
+        const seq = String(counter).padStart(3, '0');
+        const nextRef = `${(prefix || operator)}${seq}`;
 
-            // Check if this ref_no is already taken
-            db.get("SELECT id FROM transactions WHERE ref_no = ?", [nextRef], (err, tx) => {
-                if (err) return res.status(500).json({ error: err.message });
-                
-                if (tx) {
-                    // Ref is taken, increment counter and try again
-                    db.run("UPDATE ref_counters SET counter = counter + 1 WHERE operator_code = ?", [operator], (err) => {
-                        if (err) return res.status(500).json({ error: err.message });
-                        findUniqueRef();
-                    });
-                } else {
-                    // Ref is unique! Return it
-                    res.json({ nextRef, counter: currentCounter, prefix });
-                }
-            });
-        });
-    }
+        res.json({ nextRef, counter, prefix: prefix || operator });
+    });
 };
 
 exports.createTransaction = (req, res) => {
@@ -143,6 +122,16 @@ exports.createTransaction = (req, res) => {
                 function(err) {
                     if (err) {
                         if (!isPg) db.run("ROLLBACK;");
+
+                        // Tangkap unique constraint violation (dari race condition atau duplikat manual)
+                        // PostgreSQL: error code 23505 | SQLite: message UNIQUE constraint failed
+                        const isUniqueViolation =
+                            (err.code === '23505') ||
+                            (err.message && err.message.includes('UNIQUE constraint failed'));
+
+                        if (isUniqueViolation) {
+                            return res.status(400).json({ error: "Duplikasi nomor referensi terdeteksi! Muat ulang form untuk mendapatkan nomor baru." });
+                        }
                         return res.status(500).json({ error: "Gagal menyimpan transaksi: " + err.message });
                     }
 
