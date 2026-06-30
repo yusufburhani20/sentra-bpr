@@ -141,7 +141,7 @@ body {
 
 /* App Layout Grid */
 #main-app {
-    display: flex !important;
+    display: flex;
     flex-direction: column;
     height: 100vh;
     height: 100dvh;
