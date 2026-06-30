@@ -12,7 +12,7 @@
 | **Versi** | v2.0 |
 | **Repositori GitHub** | https://github.com/yusufburhani20/sentra-bpr.git |
 | **Workspace Lokal** | `e:\Y\slip` |
-| **Server Produksi** | `http://slip.nusambasingaparna.com` (IP: `192.168.1.29`) |
+| **Server Produksi** | `https://sentra.nusambasingaparna.com` (via Cloudflare Tunnel) |
 | **Path Produksi** | `/home/nsbspa/apps/slip/` |
 
 ---
@@ -193,7 +193,7 @@ DB_TYPE=postgres
 | Detail | Nilai |
 |---|---|
 | **IP Lokal** | `192.168.1.29` |
-| **Domain** | `http://slip.nusambasingaparna.com` |
+| **Domain** | `https://sentra.nusambasingaparna.com` (via Cloudflare Tunnel) |
 | **OS** | Ubuntu 22.04 LTS |
 | **Web Server** | Apache (reverse proxy ke port `3000`) |
 | **Node Process** | Berjalan via `nohup` sebagai user `nsbspa` |
