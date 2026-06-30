@@ -541,6 +541,7 @@ export function setupPKCombobox(inputId, dropdownId, mode, pairedInputId) {
     let currentQuery = '';
     let activeIndex = -1;
     let lastResults = [];
+    let suppressNextInput = false; // Prevent search re-trigger after programmatic selection
 
     function openDropdown() {
         wrapper.classList.add('open');
@@ -579,22 +580,27 @@ export function setupPKCombobox(inputId, dropdownId, mode, pairedInputId) {
     }
 
     function selectItem(cc) {
+        // Suppress the next 'input' event so the search doesn't re-trigger
+        suppressNextInput = true;
+
         if (mode === 'name') {
             inputEl.value = cc.deskripsi;
         } else {
             inputEl.value = cc.kode;
         }
 
-        // Sync paired field
+        // Sync paired field (no input dispatch needed — it's a programmatic set)
         const pairedEl = pairedInputId ? document.getElementById(pairedInputId) : null;
         if (pairedEl) {
             pairedEl.value = (mode === 'name') ? cc.kode : cc.deskripsi;
         }
 
         closeDropdown();
-        inputEl.dispatchEvent(new Event('input', { bubbles: true }));
-        if (typeof updateLiveSlipPreview === 'function') updateLiveSlipPreview();
-        // trigger globally via custom event if updateLiveSlipPreview not in scope
+
+        // Update live preview directly (function is in same module scope)
+        updateLiveSlipPreview();
+
+        // Notify app.js listeners via custom event (does NOT trigger 'input' listener)
         inputEl.dispatchEvent(new CustomEvent('pk-selected', { bubbles: true, detail: cc }));
     }
 
@@ -613,16 +619,21 @@ export function setupPKCombobox(inputId, dropdownId, mode, pairedInputId) {
         }
     }
 
-    // Input event: debounced search
+    // Input event: debounced search — skip if we just programmatically selected
     inputEl.addEventListener('input', () => {
+        if (suppressNextInput) {
+            suppressNextInput = false;
+            return;
+        }
         const val = inputEl.value.trim();
         clearTimeout(debounceTimer);
         debounceTimer = setTimeout(() => doSearch(val), 150);
         openDropdown();
     });
 
-    // Click on input: show top results immediately
+    // Click/focus on input: show top results immediately (but not right after a selection)
     inputEl.addEventListener('focus', () => {
+        if (suppressNextInput) return;
         if (!wrapper.classList.contains('open')) {
             doSearch(inputEl.value.trim());
         }
