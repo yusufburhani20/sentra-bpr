@@ -4,48 +4,59 @@ import { showSection } from '../app.js';
 import { fetchNextRef } from './transactions.js';
 
 export function renderUsersView() {
-    const tbody = document.getElementById("user-table-body");
-    tbody.innerHTML = "";
+    const listCard = document.getElementById("user-list-card");
+    const isAdmin = state.currentRole === 'Admin';
 
-    state.usersDB.forEach(user => {
-        const isSelf = state.currentUser && state.currentUser.id === user.id;
-        const canImpersonate = (state.currentRole === 'Admin' || state.currentRole === 'Kepala Bidang') && !isSelf && user.status === 'Aktif';
+    if (listCard) {
+        listCard.style.display = isAdmin ? "block" : "none";
+    }
 
-        const impersonateBtn = canImpersonate ? `
-            <button class="btn btn-secondary btn-impersonate-user" style="padding: 4px 8px; font-size:11px; color:var(--primary); border-color:var(--primary-light);" title="Masuk sebagai user ini">
-                <i data-lucide="user-check" style="width:11px; height:11px;"></i> Login As
-            </button>
-        ` : '';
+    if (isAdmin && state.usersDB) {
+        const tbody = document.getElementById("user-table-body");
+        if (tbody) {
+            tbody.innerHTML = "";
 
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-            <td><strong>${user.nama}</strong></td>
-            <td><code>${user.username}</code></td>
-            <td>${user.bagian}</td>
-            <td><span class="badge badge-info">${user.role}</span></td>
-            <td><span class="badge badge-primary">${user.operator_code || '-'}</span></td>
-            <td><span class="badge ${user.status === 'Aktif' ? 'badge-success' : 'badge-danger'}">${user.status}</span></td>
-            <td>
-                <button class="btn btn-secondary btn-edit-user" style="padding: 4px 8px; font-size:11px;">
-                    <i data-lucide="edit" style="width:11px; height:11px;"></i> Edit
-                </button>
-                <button class="btn btn-secondary btn-password-user" style="padding: 4px 8px; font-size:11px; color:var(--warning); border-color:var(--warning-light);">
-                    <i data-lucide="key-round" style="width:11px; height:11px;"></i> Password
-                </button>
-                ${impersonateBtn}
-                <button class="btn btn-secondary btn-delete-user" style="padding: 4px 8px; font-size:11px; color:var(--danger); border-color:var(--danger-light);">
-                    <i data-lucide="trash-2" style="width:11px; height:11px;"></i> Hapus
-                </button>
-            </td>
-        `;
-        tr.querySelector('.btn-edit-user').addEventListener('click', () => openEditUserModal(user.id));
-        tr.querySelector('.btn-password-user').addEventListener('click', () => openResetPasswordModal(user.id, user.nama));
-        if (canImpersonate) {
-            tr.querySelector('.btn-impersonate-user').addEventListener('click', () => impersonateUser(user.username));
+            state.usersDB.forEach(user => {
+                const isSelf = state.currentUser && state.currentUser.id === user.id;
+                const canImpersonate = (state.currentRole === 'Admin' || state.currentRole === 'Kepala Bidang') && !isSelf && user.status === 'Aktif';
+
+                const impersonateBtn = canImpersonate ? `
+                    <button class="btn btn-secondary btn-impersonate-user" style="padding: 4px 8px; font-size:11px; color:var(--primary); border-color:var(--primary-light);" title="Masuk sebagai user ini">
+                        <i data-lucide="user-check" style="width:11px; height:11px;"></i> Login As
+                    </button>
+                ` : '';
+
+                const tr = document.createElement("tr");
+                tr.innerHTML = `
+                    <td><strong>${user.nama}</strong></td>
+                    <td><code>${user.username}</code></td>
+                    <td>${user.bagian}</td>
+                    <td><span class="badge badge-info">${user.role}</span></td>
+                    <td><span class="badge badge-primary">${user.operator_code || '-'}</span></td>
+                    <td><span class="badge ${user.status === 'Aktif' ? 'badge-success' : 'badge-danger'}">${user.status}</span></td>
+                    <td>
+                        <button class="btn btn-secondary btn-edit-user" style="padding: 4px 8px; font-size:11px;">
+                            <i data-lucide="edit" style="width:11px; height:11px;"></i> Edit
+                        </button>
+                        <button class="btn btn-secondary btn-password-user" style="padding: 4px 8px; font-size:11px; color:var(--warning); border-color:var(--warning-light);">
+                            <i data-lucide="key-round" style="width:11px; height:11px;"></i> Password
+                        </button>
+                        ${impersonateBtn}
+                        <button class="btn btn-secondary btn-delete-user" style="padding: 4px 8px; font-size:11px; color:var(--danger); border-color:var(--danger-light);">
+                            <i data-lucide="trash-2" style="width:11px; height:11px;"></i> Hapus
+                        </button>
+                    </td>
+                `;
+                tr.querySelector('.btn-edit-user').addEventListener('click', () => openEditUserModal(user.id));
+                tr.querySelector('.btn-password-user').addEventListener('click', () => openResetPasswordModal(user.id, user.nama));
+                if (canImpersonate) {
+                    tr.querySelector('.btn-impersonate-user').addEventListener('click', () => impersonateUser(user.username));
+                }
+                tr.querySelector('.btn-delete-user').addEventListener('click', () => deleteUser(user.id, user.nama));
+                tbody.appendChild(tr);
+            });
         }
-        tr.querySelector('.btn-delete-user').addEventListener('click', () => deleteUser(user.id, user.nama));
-        tbody.appendChild(tr);
-    });
+    }
 
     renderRefCountersTable();
     if (window.lucide) window.lucide.createIcons();
@@ -163,33 +174,40 @@ export function renderRefCountersTable() {
     state.refCountersDB.forEach(rc => {
         const exampleRef = `${rc.prefix || rc.operator_code || ""}${String(rc.counter).padStart(3, '0')}`;
         const tr = document.createElement("tr");
+
+        const isAllowedToEdit = (state.currentRole === 'Admin' || state.currentRole === 'Kepala Bidang') || (state.currentUser && state.currentUser.username === rc.username);
+        const disabledAttr = isAllowedToEdit ? "" : "disabled";
+        const pointerEvents = isAllowedToEdit ? "" : "pointer-events:none; opacity:0.6;";
+
         tr.innerHTML = `
             <td><code>${rc.operator_code || '-'}</code></td>
             <td><strong>${rc.nama || '-'}</strong> <span style="font-size: 11px; color: var(--text-muted);">(${rc.username})</span></td>
             <td>
                 <input type="text" id="rc-prefix-${rc.username}" value="${escapeHtml(rc.prefix || '')}" 
                     class="form-control" style="width:130px; padding:4px 8px; font-size:12px; display:inline-block;" 
-                    placeholder="Prefix...">
+                    placeholder="Prefix..." ${disabledAttr}>
             </td>
             <td>
                 <input type="number" id="rc-counter-${rc.username}" value="${rc.counter}" min="1"
-                    class="form-control" style="width:90px; padding:4px 8px; font-size:12px; display:inline-block;">
+                    class="form-control" style="width:90px; padding:4px 8px; font-size:12px; display:inline-block;" ${disabledAttr}>
             </td>
             <td>
                 <code id="rc-example-${rc.username}" style="font-size:12px; color:var(--primary); font-weight:700;">${exampleRef}</code>
             </td>
             <td style="display:flex; gap:6px; flex-wrap:wrap;">
-                <button class="btn btn-primary btn-save-counter" style="padding:3px 10px; font-size:11px;">
+                <button class="btn btn-primary btn-save-counter" style="padding:3px 10px; font-size:11px; ${pointerEvents}" ${disabledAttr}>
                     <i data-lucide="save" style="width:11px; height:11px;"></i> Simpan
                 </button>
-                <button class="btn btn-secondary btn-reset-counter" style="padding:3px 10px; font-size:11px; color:var(--danger); border-color:var(--danger-light);">
+                <button class="btn btn-secondary btn-reset-counter" style="padding:3px 10px; font-size:11px; color:var(--danger); border-color:var(--danger-light); ${pointerEvents}" ${disabledAttr}>
                     <i data-lucide="rotate-ccw" style="width:11px; height:11px;"></i> Reset ke 1
                 </button>
             </td>
         `;
         
-        tr.querySelector('.btn-save-counter').addEventListener('click', () => saveRefCounter(rc.username));
-        tr.querySelector('.btn-reset-counter').addEventListener('click', () => resetRefCounter(rc.username));
+        if (isAllowedToEdit) {
+            tr.querySelector('.btn-save-counter').addEventListener('click', () => saveRefCounter(rc.username));
+            tr.querySelector('.btn-reset-counter').addEventListener('click', () => resetRefCounter(rc.username));
+        }
         tbody.appendChild(tr);
 
         const prefixEl = document.getElementById(`rc-prefix-${rc.username}`);

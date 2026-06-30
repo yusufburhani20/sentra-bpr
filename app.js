@@ -18,7 +18,7 @@ function checkPermission(view, role) {
         "riwayat": ["Admin", "Kepala Bidang", "Teller", "SDMU", "Customer Service"],
         "kodebiaya": ["Admin"],
         "kirimslip": ["Admin", "Kepala Bidang", "Teller", "SDMU", "Customer Service"],
-        "users": ["Admin"],
+        "users": ["Admin", "Kepala Bidang", "Teller", "SDMU", "Customer Service"],
         "audit": ["Admin", "Kepala Bidang"],
         "approvals": ["Admin", "Kepala Bidang", "Teller", "SDMU", "Customer Service"]
     };
@@ -66,8 +66,10 @@ export async function refreshData() {
             promises.push(fetch(`/api/cost-codes?page=${state.currentCcPage}&limit=${state.ccLimit}&search=${encodeURIComponent(searchVal)}`).then(r => r.json()));
             keys.push('cc_paginated');
         } else if (activeView === 'users') {
-            promises.push(fetch('/api/users').then(r => r.json()));
-            keys.push('users');
+            if (state.currentRole === 'Admin') {
+                promises.push(fetch('/api/users').then(r => r.json()));
+                keys.push('users');
+            }
             promises.push(fetch('/api/ref-counters').then(r => r.json()));
             keys.push('counters');
         } else if (activeView === 'audit') {
