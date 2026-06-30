@@ -101,10 +101,14 @@ export function updateCcPaginationUI(shownCount, totalCount) {
         indicatorEl.innerText = `Halaman ${state.currentCcPage} / ${state.totalCcPages}`;
     }
     
+    const btnFirst = document.getElementById("btn-first-codes");
     const btnPrev = document.getElementById("btn-prev-codes");
     const btnNext = document.getElementById("btn-next-codes");
+    const btnLast = document.getElementById("btn-last-codes");
+    if (btnFirst) btnFirst.disabled = state.currentCcPage <= 1;
     if (btnPrev) btnPrev.disabled = state.currentCcPage <= 1;
     if (btnNext) btnNext.disabled = state.currentCcPage >= state.totalCcPages;
+    if (btnLast) btnLast.disabled = state.currentCcPage >= state.totalCcPages;
 }
 
 export function editCostCode(id) {

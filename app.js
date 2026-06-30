@@ -399,6 +399,13 @@ window.addEventListener("DOMContentLoaded", async () => {
         await refreshAndRenderCodes();
     });
 
+    document.getElementById("btn-first-codes").addEventListener("click", async () => {
+        if (state.currentCcPage > 1) {
+            state.currentCcPage = 1;
+            await refreshAndRenderCodes();
+        }
+    });
+
     document.getElementById("btn-prev-codes").addEventListener("click", async () => {
         if (state.currentCcPage > 1) {
             state.currentCcPage--;
@@ -409,6 +416,13 @@ window.addEventListener("DOMContentLoaded", async () => {
     document.getElementById("btn-next-codes").addEventListener("click", async () => {
         if (state.currentCcPage < state.totalCcPages) {
             state.currentCcPage++;
+            await refreshAndRenderCodes();
+        }
+    });
+
+    document.getElementById("btn-last-codes").addEventListener("click", async () => {
+        if (state.currentCcPage < state.totalCcPages) {
+            state.currentCcPage = state.totalCcPages;
             await refreshAndRenderCodes();
         }
     });
