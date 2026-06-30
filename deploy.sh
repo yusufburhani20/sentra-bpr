@@ -27,21 +27,43 @@ echo "[2/3] Memeriksa dependensi (npm install)..."
 npm install --omit=dev --silent
 echo "      OK - Dependensi sudah terkini."
 
-# 3. Restart server (jalankan di background, lepas dari parent process)
+# 3. Restart server
 echo ""
 echo "[3/3] Merestart server SENTRA..."
-# Matikan proses yang berjalan di port target
-OLD_PID=$(lsof -t -i :$PORT 2>/dev/null || true)
-if [ -n "$OLD_PID" ]; then
-    kill "$OLD_PID" 2>/dev/null || true
-    sleep 1
-    echo "      OK - Proses lama (PID: $OLD_PID) dihentikan."
+
+# Deteksi apakah aplikasi dikelola oleh Systemd (slip.service)
+USING_SYSTEMD=false
+if systemctl status slip.service >/dev/null 2>&1; then
+    USING_SYSTEMD=true
 fi
 
-# Jalankan ulang server sebagai proses terpisah
-nohup node "$APP_DIR/server.js" >> "$LOG_FILE" 2>&1 &
-NEW_PID=$!
-echo "      OK - Server baru berjalan (PID: $NEW_PID)."
+if [ "$USING_SYSTEMD" = true ]; then
+    echo "      Sistem mendeteksi slip.service (Systemd)."
+    # Coba restart resmi via systemctl
+    if sudo systemctl restart slip 2>/dev/null; then
+        echo "      OK - Server berhasil direstart via Systemd."
+    else
+        # Jika butuh password sudo/gagal, bunuh PID dan biarkan Systemd melakukan auto-restart (Restart=on-failure)
+        echo "      Peringatan: Gagal merestart via systemctl (akses ditolak). Mencoba membunuh PID..."
+        OLD_PID=$(lsof -t -i :$PORT 2>/dev/null || true)
+        if [ -n "$OLD_PID" ]; then
+            kill "$OLD_PID" 2>/dev/null || true
+            sleep 2
+            echo "      OK - Proses lama dihentikan, membiarkan Systemd menyalakan ulang server."
+        fi
+    fi
+else
+    # Jalankan manual jika tidak memakai systemd
+    OLD_PID=$(lsof -t -i :$PORT 2>/dev/null || true)
+    if [ -n "$OLD_PID" ]; then
+        kill "$OLD_PID" 2>/dev/null || true
+        sleep 1
+        echo "      OK - Proses lama (PID: $OLD_PID) dihentikan."
+    fi
+    nohup node "$APP_DIR/server.js" >> "$LOG_FILE" 2>&1 &
+    NEW_PID=$!
+    echo "      OK - Server baru berjalan manual di background (PID: $NEW_PID)."
+fi
 
 echo ""
 echo "========================================"

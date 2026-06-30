@@ -7,6 +7,7 @@ const helmet = require('helmet');
 const { apiLimiter } = require('./middleware/limiter');
 
 const app = express();
+app.set('trust proxy', 1); // Trust first proxy (Cloudflare)
 const PORT = process.env.PORT || 3000;
 const DEFAULT_PASSWORD = 'slip1234';
 
