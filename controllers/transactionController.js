@@ -68,10 +68,7 @@ exports.getNextRef = (req, res) => {
         if (err) return res.status(500).json({ error: err.message });
         if (!user) return res.status(404).json({ error: "Pengguna tidak ditemukan." });
 
-        const operator = user.operator_code;
-        if (!operator || operator.trim() === "") {
-            return res.status(400).json({ error: "Operator code tidak ditemukan atau kosong untuk akun Anda." });
-        }
+        const operator = user.operator_code || "";
 
         // Gunakan atomic increment agar aman dari race condition saat multi-user
         db.atomicIncrementRef(operator, operator, (err, row) => {
@@ -80,9 +77,9 @@ exports.getNextRef = (req, res) => {
 
             const { counter, prefix } = row;
             const seq = String(counter).padStart(3, '0');
-            const nextRef = `${(prefix || operator)}${seq}`;
+            const nextRef = `${(prefix || operator || "")}${seq}`;
 
-            res.json({ nextRef, counter, prefix: prefix || operator });
+            res.json({ nextRef, counter, prefix: prefix || operator || "" });
         });
     });
 };
@@ -109,7 +106,7 @@ exports.createTransaction = (req, res) => {
         if (err) return res.status(500).json({ error: err.message });
         if (!user) return res.status(404).json({ error: "Pengguna tidak ditemukan." });
 
-        const operator_code = user.operator_code;
+        const operator_code = user.operator_code || "";
         const dNama = debet_nama || "Debit Account";
         const dRek = debet_rekening || "";
         const kNama = kredit_nama || "Credit Account";
