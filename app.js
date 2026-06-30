@@ -123,12 +123,23 @@ export async function showSection(sectionId) {
 
     state.activeView = sectionId;
 
-    // Show loading state immediately for tables in the selected tab
-    if (sectionId === "kodebiaya") showTableLoading("codes-table-body", 4);
-    else if (sectionId === "riwayat") showTableLoading("riwayat-table-body", 7);
-    else if (sectionId === "users") showTableLoading("user-table-body", 7);
-    else if (sectionId === "audit") showTableLoading("audit-table-body", 5);
-    else if (sectionId === "kirimslip") showTableLoading("submissions-table-body", 7);
+    // Render data lama dari memory secara instan (jika ada) agar transisi tab terasa cepat (0ms),
+    // jika data belum dimuat sama sekali baru tampilkan loading spinner.
+    if (sectionId === "kodebiaya") {
+        if (state.costCodesDB && state.costCodesDB.length > 0) renderKodeBiayaView();
+        else showTableLoading("codes-table-body", 4);
+    } else if (sectionId === "riwayat") {
+        if (state.transactionsDB && state.transactionsDB.length > 0) renderRiwayatView();
+        else showTableLoading("riwayat-table-body", 7);
+    } else if (sectionId === "users") {
+        if (state.usersDB && state.usersDB.length > 0) renderUsersView();
+        else showTableLoading("user-table-body", 7);
+    } else if (sectionId === "audit") {
+        if (state.auditDB && state.auditDB.length > 0) renderAuditTrailView();
+        else showTableLoading("audit-table-body", 5);
+    } else if (sectionId === "kirimslip") {
+        showTableLoading("submissions-table-body", 7);
+    }
 
     document.querySelectorAll(".view-section").forEach(view => {
         view.style.display = "none";
