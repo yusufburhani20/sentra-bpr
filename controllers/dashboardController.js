@@ -7,8 +7,23 @@ exports.getStats = (req, res) => {
     const yesterdayStr = yesterday.toISOString().split('T')[0];
 
     const isFiltered = req.user.role !== 'Admin' && req.user.role !== 'Kepala Bidang';
-    const filterClause = isFiltered ? "AND (username = ? OR (username IS NULL AND operator_code = ?))" : "";
-    const filterParams = isFiltered ? [req.user.username, req.user.operator_code] : [];
+    const opCode = (req.user.operator_code || "").trim();
+
+    let filterClause = "";
+    let filterParams = [];
+    let operatorFilterClause = "";
+
+    if (isFiltered) {
+        if (opCode) {
+            filterClause = "AND (username = ? OR (username IS NULL AND operator_code = ?))";
+            operatorFilterClause = "AND (t.username = ? OR (t.username IS NULL AND t.operator_code = ?))";
+            filterParams = [req.user.username, opCode];
+        } else {
+            filterClause = "AND username = ?";
+            operatorFilterClause = "AND t.username = ?";
+            filterParams = [req.user.username];
+        }
+    }
 
     // Queries
     const kpiQuery = `
@@ -56,7 +71,7 @@ exports.getStats = (req, res) => {
         LEFT JOIN users u ON 
             (t.username IS NOT NULL AND u.username = t.username) OR 
             (t.username IS NULL AND t.operator_code = u.operator_code AND t.operator_code IS NOT NULL AND t.operator_code != '')
-        WHERE t.deleted_at IS NULL ${isFiltered ? "AND (t.username = ? OR (t.username IS NULL AND t.operator_code = ?))" : ""}
+        WHERE t.deleted_at IS NULL ${operatorFilterClause}
         GROUP BY COALESCE(u.operator_code, t.operator_code, '-'), COALESCE(u.nama, '-')
         ORDER BY count DESC
     `;
