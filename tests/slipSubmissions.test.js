@@ -164,4 +164,46 @@ describe('Slip Submissions Integration Tests', () => {
             expect(updatedItem.bukti_sampai_path).not.toBeNull();
         });
     });
+
+    describe('DELETE /api/slip-submissions/:id', () => {
+        test('should block non-authorized users (e.g. Teller) from deleting submissions', async () => {
+            const resTellerLogin = await request(app)
+                .post('/api/auth/login')
+                .send({ username: 'teller1', password: 'slip1234' });
+            const tellerCookie = resTellerLogin.headers['set-cookie'][0];
+
+            const res = await request(app)
+                .delete('/api/slip-submissions/some-random-id')
+                .set('Cookie', [tellerCookie]);
+            
+            expect(res.statusCode).toBe(403);
+            expect(res.body.error).toContain('Akses ditolak');
+        });
+
+        test('should allow Admin to delete a submission', async () => {
+            const mockBuffer = Buffer.from('mock image data');
+            const createRes = await request(app)
+                .post('/api/slip-submissions')
+                .set('Cookie', [authCookie])
+                .field('kantor_kas', 'Kas Temporary')
+                .attach('bukti_kirim', mockBuffer, 'temp_kirim.jpg');
+            
+            const submissionId = createRes.body.id;
+
+            const deleteRes = await request(app)
+                .delete(`/api/slip-submissions/${submissionId}`)
+                .set('Cookie', [authCookie]);
+
+            expect(deleteRes.statusCode).toBe(200);
+            expect(deleteRes.body).toHaveProperty('success', true);
+
+            // Verify via GET that it is physically deleted
+            const getRes = await request(app)
+                .get('/api/slip-submissions')
+                .set('Cookie', [authCookie]);
+            
+            const deletedItem = getRes.body.find(item => item.id === submissionId);
+            expect(deletedItem).toBeUndefined();
+        });
+    });
 });

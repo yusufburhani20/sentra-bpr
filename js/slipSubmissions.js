@@ -205,6 +205,13 @@ export function renderSubmissionsTable() {
             `;
         }
 
+        const canDelete = state.currentRole === 'Admin' || state.currentRole === 'Kepala Bidang';
+        const deleteBtnHTML = canDelete ? `
+            <button class="btn btn-secondary btn-delete-submission" style="padding: 6px 10px; font-size:11px; color:var(--danger); border-color:var(--danger-light);" data-id="${item.id}">
+                <i data-lucide="trash-2" style="width:12px; height:12px; margin-right:4px;"></i> Hapus
+            </button>
+        ` : '';
+
         tr.innerHTML = `
             <td><strong>${formatDate(item.tanggal_kirim)}</strong></td>
             <td>
@@ -222,7 +229,12 @@ export function renderSubmissionsTable() {
                 <span class="badge ${statusBadgeClass}">${statusText}</span>
                 ${statusInfo}
             </td>
-            <td style="text-align: center;">${actionBtnHTML}</td>
+            <td style="text-align: center;">
+                <div style="display:flex; gap:6px; justify-content:center; align-items:center;">
+                    ${actionBtnHTML}
+                    ${deleteBtnHTML}
+                </div>
+            </td>
         `;
 
         // Wire View Image Click handlers
@@ -245,6 +257,14 @@ export function renderSubmissionsTable() {
                 document.getElementById("confirm-arrival-error").style.display = "none";
                 compressedSampaiBlob = null;
                 openModal("modal-confirm-arrival");
+            });
+        }
+
+        // Wire Delete Submission Click handler
+        const btnDelete = tr.querySelector(".btn-delete-submission");
+        if (btnDelete) {
+            btnDelete.addEventListener("click", () => {
+                deleteSubmission(item.id, item.kantor_kas);
             });
         }
 
@@ -483,4 +503,24 @@ export function exportSubmissionsCSV() {
     link.click();
     document.body.removeChild(link);
     showToast("Laporan CSV berhasil diunduh!", "success");
+}
+
+export async function deleteSubmission(id, name) {
+    if (!confirm(`Apakah Anda yakin ingin menghapus pengiriman berkas dari "${name}"?`)) return;
+
+    try {
+        const res = await authFetch(`/api/slip-submissions/${id}`, {
+            method: 'DELETE'
+        }).then(r => r.json());
+
+        if (res.success) {
+            showToast("Pengiriman berkas berhasil dihapus.", "success");
+            await fetchSubmissions();
+        } else {
+            showToast(res.error || "Gagal menghapus pengiriman berkas.", "danger");
+        }
+    } catch(e) {
+        console.error(e);
+        showToast("Koneksi server terputus.", "danger");
+    }
 }

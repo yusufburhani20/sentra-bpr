@@ -33,5 +33,6 @@ router.use(requireAuth);
 router.get('/', slipSubmissionController.getSubmissions);
 router.post('/', upload.single('bukti_kirim'), slipSubmissionController.createSubmission);
 router.put('/:id/confirm-arrival', upload.single('bukti_sampai'), slipSubmissionController.confirmArrival);
+router.delete('/:id', slipSubmissionController.deleteSubmission);
 
 module.exports = router;

@@ -129,3 +129,41 @@ exports.confirmArrival = (req, res) => {
         });
     });
 };
+
+// Delete a submission
+exports.deleteSubmission = (req, res) => {
+    const { id } = req.params;
+
+    if (req.user.role !== 'Admin' && req.user.role !== 'Kepala Bidang') {
+        return res.status(403).json({ error: "Akses ditolak. Hanya Admin dan Kepala Bidang yang dapat menghapus pengiriman." });
+    }
+
+    db.get("SELECT id, kantor_kas, bukti_kirim_path, bukti_sampai_path FROM slip_submissions WHERE id = ?", [id], (err, row) => {
+        if (err) return res.status(500).json({ error: err.message });
+        if (!row) return res.status(404).json({ error: "Data pengiriman tidak ditemukan!" });
+
+        db.run("DELETE FROM slip_submissions WHERE id = ?", [id], function(errDel) {
+            if (errDel) return res.status(500).json({ error: errDel.message });
+
+            // Optional: delete associated files from disk
+            const fs = require('fs');
+            const path = require('path');
+            [row.bukti_kirim_path, row.bukti_sampai_path].forEach(p => {
+                if (p) {
+                    const filePath = path.join(__dirname, '..', p);
+                    if (fs.existsSync(filePath)) {
+                        try { fs.unlinkSync(filePath); } catch(e) {}
+                    }
+                }
+            });
+
+            // Add to audit logs
+            const logId = crypto.randomUUID();
+            db.run("INSERT INTO audit_logs VALUES (?, ?, ?, ?, ?, ?)",
+                [logId, new Date().toISOString(), req.user.nama, req.user.role,
+                 `Menghapus Pengiriman Berkas Slip: ID ${id} (${row.kantor_kas})`, req.ip || "127.0.0.1"]);
+
+            res.json({ success: true });
+        });
+    });
+};
