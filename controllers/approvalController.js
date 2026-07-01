@@ -96,7 +96,8 @@ exports.approveRequest = (req, res) => {
  
             if (requestRow.request_type === 'DELETE') {
                 // Soft delete transaction
-                db.run("UPDATE transactions SET deleted_at = ? WHERE id = ?", [now, requestRow.transaction_id], function(err) {
+                const delSuffix = `_del_${Date.now()}`;
+                db.run("UPDATE transactions SET deleted_at = ?, ref_no = ref_no || ? WHERE id = ?", [now, delSuffix, requestRow.transaction_id], function(err) {
                     if (err) {
                         if (!isPg) db.run("ROLLBACK;");
                         return res.status(500).json({ error: "Gagal menghapus transaksi." });

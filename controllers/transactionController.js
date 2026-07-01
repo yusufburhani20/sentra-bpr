@@ -155,7 +155,7 @@ exports.createTransaction = (req, res) => {
         db.serialize(() => {
             if (!isPg) db.run("BEGIN EXCLUSIVE TRANSACTION;");
 
-            db.get("SELECT id FROM transactions WHERE ref_no = ?", [ref_no], (err, row) => {
+            db.get("SELECT id FROM transactions WHERE ref_no = ? AND deleted_at IS NULL", [ref_no], (err, row) => {
                 if (row) {
                     if (!isPg) db.run("ROLLBACK;");
                     return res.status(400).json({ error: "Nomor referensi ganda terdeteksi!" });
@@ -354,7 +354,8 @@ exports.deleteTransactionDirectly = (req, res) => {
         if (err) return res.status(500).json({ error: err.message });
         if (!tx) return res.status(404).json({ error: "Transaksi tidak ditemukan." });
 
-        db.run("UPDATE transactions SET deleted_at = ? WHERE id = ?", [now, id], function(err) {
+        const delSuffix = `_del_${Date.now()}`;
+        db.run("UPDATE transactions SET deleted_at = ?, ref_no = ref_no || ? WHERE id = ?", [now, delSuffix, id], function(err) {
             if (err) return res.status(500).json({ error: err.message });
 
             // Log direct delete to audit trail

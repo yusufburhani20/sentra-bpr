@@ -149,6 +149,32 @@ describe('Express REST API Authentication & Security Integration Tests', () => {
             expect(res.body).toHaveProperty('success', true);
         });
 
+        test('Can reuse reference number of a deleted transaction', async () => {
+            const res = await request(app)
+                .post('/api/transactions')
+                .set('Cookie', adminCookie)
+                .send({
+                    ref_no: 'TXREFDIRECT',
+                    operator_code: 'CSSPA0146',
+                    debet_nama: 'Kas Kantor',
+                    debet_rekening: '10101',
+                    kredit_nama: 'Pendapatan',
+                    kredit_rekening: '40101',
+                    jenis_transaksi: 'debet',
+                    nominal_utama: 5000,
+                    nominal_desimal: 0,
+                    keterangan: 'Reused ref no test',
+                    terbilang: 'Lima Ribu Rupiah'
+                });
+            expect(res.statusCode).toBe(200);
+            expect(res.body).toHaveProperty('success', true);
+
+            // Clean up the created reused transaction
+            await new Promise((resolve) => {
+                db.run("DELETE FROM transactions WHERE ref_no = 'TXREFDIRECT'", [], () => resolve());
+            });
+        });
+
         test('Teller must be blocked from importing users', async () => {
             const res = await request(app)
                 .post('/api/users/import')
