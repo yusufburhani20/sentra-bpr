@@ -7,8 +7,8 @@ exports.getStats = (req, res) => {
     const yesterdayStr = yesterday.toISOString().split('T')[0];
 
     const isFiltered = req.user.role !== 'Admin' && req.user.role !== 'Kepala Bidang';
-    const filterClause = isFiltered ? "AND operator_code = ?" : "";
-    const filterParams = isFiltered ? [req.user.operator_code] : [];
+    const filterClause = isFiltered ? "AND (username = ? OR (username IS NULL AND operator_code = ?))" : "";
+    const filterParams = isFiltered ? [req.user.username, req.user.operator_code] : [];
 
     // Queries
     const kpiQuery = `
@@ -54,7 +54,7 @@ exports.getStats = (req, res) => {
             COALESCE(SUM(t.nominal_utama), 0) as volume
         FROM transactions t
         LEFT JOIN users u ON u.operator_code = t.operator_code
-        WHERE t.deleted_at IS NULL ${isFiltered ? "AND t.operator_code = ?" : ""}
+        WHERE t.deleted_at IS NULL ${isFiltered ? "AND (t.username = ? OR (t.username IS NULL AND t.operator_code = ?))" : ""}
         GROUP BY t.operator_code, u.nama
         ORDER BY count DESC
     `;
