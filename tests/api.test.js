@@ -193,7 +193,7 @@ describe('Express REST API Authentication & Security Integration Tests', () => {
             expect(userRow.operator_code).toBe('ATEST1');
 
             const counterRow = await new Promise((resolve) => {
-                db.get("SELECT * FROM ref_counters WHERE username = ?", ['test_imp_admin'], (err, row) => resolve(row));
+                db.get("SELECT * FROM ref_counters WHERE username = ? AND slip_type = 'debet'", ['test_imp_admin'], (err, row) => resolve(row));
             });
             expect(counterRow).toBeDefined();
             expect(counterRow.prefix).toBe('ATEST1');

@@ -130,6 +130,10 @@ export function viewSlipDetails(id) {
         slipTitle = "slip kewajiban lainnya";
         bandBgColor = "#8b5cf6";
         bandBorderBottom = "2px solid #7c3aed";
+    } else if (slipType === 'umb') {
+        slipTitle = "slip uang muka biaya (umb)";
+        bandBgColor = "#f97316";
+        bandBorderBottom = "2px solid #ea580c";
     }
 
     const modalContainer = document.getElementById("modal-print-container");

@@ -273,7 +273,8 @@ async function initializeDb(callback) {
                             { type: 'debet', prefix: op },
                             { type: 'kredit', prefix: op ? op + 'K' : '' },
                             { type: 'tagihan_lainnya', prefix: op ? op + 'T' : '' },
-                            { type: 'kewajiban_lainnya', prefix: op ? op + 'KW' : '' }
+                            { type: 'kewajiban_lainnya', prefix: op ? op + 'KW' : '' },
+                            { type: 'umb', prefix: op ? op + 'UMB' : '' }
                         ];
                         types.forEach(t => {
                             promises.push(new Promise(res => {

@@ -80,6 +80,7 @@ exports.getNextRef = (req, res) => {
             if (type === 'kredit') return op + 'K';
             if (type === 'tagihan_lainnya') return op + 'T';
             if (type === 'kewajiban_lainnya') return op + 'KW';
+            if (type === 'umb') return op + 'UMB';
             return op;
         };
         const defPrefix = getDefPrefix(operator, slipType);
@@ -127,7 +128,7 @@ exports.createTransaction = (req, res) => {
     } = req.body;
 
     let slipType = (jenis_transaksi || "debet").toLowerCase();
-    if (!['debet', 'kredit', 'tagihan_lainnya', 'kewajiban_lainnya'].includes(slipType)) {
+    if (!['debet', 'kredit', 'tagihan_lainnya', 'kewajiban_lainnya', 'umb'].includes(slipType)) {
         slipType = 'debet'; // Fallback
     }
 

@@ -124,6 +124,7 @@ export function updateLiveSlipPreview() {
         else if (slipType === 'kredit') titleEl.innerText = "slip kredit";
         else if (slipType === 'tagihan_lainnya') titleEl.innerText = "slip tagihan lainnya";
         else if (slipType === 'kewajiban_lainnya') titleEl.innerText = "slip kewajiban lainnya";
+        else if (slipType === 'umb') titleEl.innerText = "slip uang muka biaya (umb)";
     }
 
     if (topBandEl) {
@@ -139,6 +140,9 @@ export function updateLiveSlipPreview() {
         } else if (slipType === 'kewajiban_lainnya') {
             topBandEl.style.backgroundColor = "#8b5cf6";
             topBandEl.style.borderBottom = "2px solid #7c3aed";
+        } else if (slipType === 'umb') {
+            topBandEl.style.backgroundColor = "#f97316";
+            topBandEl.style.borderBottom = "2px solid #ea580c";
         }
     }
 

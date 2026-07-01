@@ -26,7 +26,8 @@ exports.createUser = async (req, res) => {
                 { type: 'debet', prefix: op },
                 { type: 'kredit', prefix: op ? op + 'K' : '' },
                 { type: 'tagihan_lainnya', prefix: op ? op + 'T' : '' },
-                { type: 'kewajiban_lainnya', prefix: op ? op + 'KW' : '' }
+                { type: 'kewajiban_lainnya', prefix: op ? op + 'KW' : '' },
+                { type: 'umb', prefix: op ? op + 'UMB' : '' }
             ];
             const isPg = process.env.DB_TYPE === 'postgres';
             types.forEach(t => {
@@ -128,7 +129,8 @@ exports.getRefCounters = (req, res) => {
                 { type: 'debet', prefix: op },
                 { type: 'kredit', prefix: op ? op + 'K' : '' },
                 { type: 'tagihan_lainnya', prefix: op ? op + 'T' : '' },
-                { type: 'kewajiban_lainnya', prefix: op ? op + 'KW' : '' }
+                { type: 'kewajiban_lainnya', prefix: op ? op + 'KW' : '' },
+                { type: 'umb', prefix: op ? op + 'UMB' : '' }
             ];
             types.forEach(t => {
                 insertPromises.push(new Promise(resolve => {
@@ -281,7 +283,8 @@ exports.importUsers = async (req, res) => {
                             { type: 'debet', prefix: op },
                             { type: 'kredit', prefix: op ? op + 'K' : '' },
                             { type: 'tagihan_lainnya', prefix: op ? op + 'T' : '' },
-                            { type: 'kewajiban_lainnya', prefix: op ? op + 'KW' : '' }
+                            { type: 'kewajiban_lainnya', prefix: op ? op + 'KW' : '' },
+                            { type: 'umb', prefix: op ? op + 'UMB' : '' }
                         ];
                         const isPg = process.env.DB_TYPE === 'postgres';
                         const promises = types.map(t => new Promise(resolve => {

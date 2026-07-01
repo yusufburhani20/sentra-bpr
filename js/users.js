@@ -206,7 +206,8 @@ export function renderRefCountersTable() {
         const slipTypeLabel = rc.slip_type === 'debet' ? 'Debet' :
                              rc.slip_type === 'kredit' ? 'Kredit' :
                              rc.slip_type === 'tagihan_lainnya' ? 'Tagihan Lainnya' :
-                             rc.slip_type === 'kewajiban_lainnya' ? 'Kewajiban Lainnya' : rc.slip_type;
+                             rc.slip_type === 'kewajiban_lainnya' ? 'Kewajiban Lainnya' :
+                             rc.slip_type === 'umb' ? 'Uang Muka Biaya (UMB)' : rc.slip_type;
 
         tr.innerHTML = `
             <td><code>${rc.operator_code || '-'}</code></td>
