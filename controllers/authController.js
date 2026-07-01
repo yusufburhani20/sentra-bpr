@@ -72,6 +72,9 @@ exports.me = (req, res) => {
             res.clearCookie('authToken');
             return res.status(401).json({ error: 'Akun tidak aktif atau tidak ditemukan.' });
         }
+        if (req.user.impersonator) {
+            user.impersonator = req.user.impersonator;
+        }
         res.json({ user });
     });
 };
