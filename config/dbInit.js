@@ -292,7 +292,23 @@ async function initializeDb(callback) {
                 }
             });
         });
-
+        // Migration to clean up existing soft-deleted transactions that don't have the '_del_' suffix in ref_no
+        await new Promise((resolve) => {
+            db.all("SELECT id, ref_no FROM transactions WHERE deleted_at IS NOT NULL AND ref_no NOT LIKE '%_del_%'", [], (err, rows) => {
+                if (!err && rows && rows.length > 0) {
+                    const promises = rows.map(row => new Promise(res => {
+                        const suffix = `_del_${Date.now()}_mig`;
+                        db.run("UPDATE transactions SET ref_no = ref_no || ? WHERE id = ?", [suffix, row.id], () => res());
+                    }));
+                    Promise.all(promises).then(() => {
+                        console.log(`Migrated ${rows.length} existing soft-deleted transactions to free up reference numbers.`);
+                        resolve();
+                    });
+                } else {
+                    resolve();
+                }
+            });
+        });
         console.log("Database initialized & default credentials verified.");
         if (callback) callback();
     } catch (e) {
