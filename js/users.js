@@ -5,13 +5,26 @@ import { fetchNextRef } from './transactions.js';
 
 export function renderUsersView() {
     const listCard = document.getElementById("user-list-card");
+    const canSeeUserList = state.currentRole === 'Admin' || state.currentRole === 'Kepala Bidang';
     const isAdmin = state.currentRole === 'Admin';
 
     if (listCard) {
-        listCard.style.display = isAdmin ? "block" : "none";
+        listCard.style.display = canSeeUserList ? "block" : "none";
     }
 
-    if (isAdmin && state.usersDB) {
+    // Hide/show admin specific user management controls
+    const addBtn = document.getElementById("btn-add-user");
+    const exportBtn = document.getElementById("btn-export-users");
+    const importFileInput = document.getElementById("import-users-file");
+    const importLabel = importFileInput ? importFileInput.closest("label") : null;
+    const csvHint = document.getElementById("csv-import-hint");
+
+    if (addBtn) addBtn.style.display = isAdmin ? "inline-flex" : "none";
+    if (exportBtn) exportBtn.style.display = isAdmin ? "inline-flex" : "none";
+    if (importLabel) importLabel.style.display = isAdmin ? "inline-flex" : "none";
+    if (csvHint) csvHint.style.display = isAdmin ? "block" : "none";
+
+    if (canSeeUserList && state.usersDB) {
         const tbody = document.getElementById("user-table-body");
         if (tbody) {
             tbody.innerHTML = "";
@@ -26,6 +39,21 @@ export function renderUsersView() {
                     </button>
                 ` : '';
 
+                const adminActions = isAdmin ? `
+                    <button class="btn btn-secondary btn-edit-user" style="padding: 4px 8px; font-size:11px;">
+                        <i data-lucide="edit" style="width:11px; height:11px;"></i> Edit
+                    </button>
+                    <button class="btn btn-secondary btn-password-user" style="padding: 4px 8px; font-size:11px; color:var(--warning); border-color:var(--warning-light);">
+                        <i data-lucide="key-round" style="width:11px; height:11px;"></i> Password
+                    </button>
+                ` : '';
+
+                const deleteBtn = isAdmin ? `
+                    <button class="btn btn-secondary btn-delete-user" style="padding: 4px 8px; font-size:11px; color:var(--danger); border-color:var(--danger-light);">
+                        <i data-lucide="trash-2" style="width:11px; height:11px;"></i> Hapus
+                    </button>
+                ` : '';
+
                 const tr = document.createElement("tr");
                 tr.innerHTML = `
                     <td><strong>${user.nama}</strong></td>
@@ -35,24 +63,19 @@ export function renderUsersView() {
                     <td><span class="badge badge-primary">${user.operator_code || '-'}</span></td>
                     <td><span class="badge ${user.status === 'Aktif' ? 'badge-success' : 'badge-danger'}">${user.status}</span></td>
                     <td>
-                        <button class="btn btn-secondary btn-edit-user" style="padding: 4px 8px; font-size:11px;">
-                            <i data-lucide="edit" style="width:11px; height:11px;"></i> Edit
-                        </button>
-                        <button class="btn btn-secondary btn-password-user" style="padding: 4px 8px; font-size:11px; color:var(--warning); border-color:var(--warning-light);">
-                            <i data-lucide="key-round" style="width:11px; height:11px;"></i> Password
-                        </button>
+                        ${adminActions}
                         ${impersonateBtn}
-                        <button class="btn btn-secondary btn-delete-user" style="padding: 4px 8px; font-size:11px; color:var(--danger); border-color:var(--danger-light);">
-                            <i data-lucide="trash-2" style="width:11px; height:11px;"></i> Hapus
-                        </button>
+                        ${deleteBtn}
                     </td>
                 `;
-                tr.querySelector('.btn-edit-user').addEventListener('click', () => openEditUserModal(user.id));
-                tr.querySelector('.btn-password-user').addEventListener('click', () => openResetPasswordModal(user.id, user.nama));
+                if (isAdmin) {
+                    tr.querySelector('.btn-edit-user').addEventListener('click', () => openEditUserModal(user.id));
+                    tr.querySelector('.btn-password-user').addEventListener('click', () => openResetPasswordModal(user.id, user.nama));
+                    tr.querySelector('.btn-delete-user').addEventListener('click', () => deleteUser(user.id, user.nama));
+                }
                 if (canImpersonate) {
                     tr.querySelector('.btn-impersonate-user').addEventListener('click', () => impersonateUser(user.username));
                 }
-                tr.querySelector('.btn-delete-user').addEventListener('click', () => deleteUser(user.id, user.nama));
                 tbody.appendChild(tr);
             });
         }
