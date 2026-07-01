@@ -48,14 +48,16 @@ exports.getStats = (req, res) => {
 
     const operatorQuery = `
         SELECT 
-            t.operator_code,
+            COALESCE(u.operator_code, t.operator_code, '-') as operator_code,
             COALESCE(u.nama, '-') as operator_name,
             COUNT(*) as count,
             COALESCE(SUM(t.nominal_utama), 0) as volume
         FROM transactions t
-        LEFT JOIN users u ON u.operator_code = t.operator_code
+        LEFT JOIN users u ON 
+            (t.username IS NOT NULL AND u.username = t.username) OR 
+            (t.username IS NULL AND t.operator_code = u.operator_code AND t.operator_code IS NOT NULL AND t.operator_code != '')
         WHERE t.deleted_at IS NULL ${isFiltered ? "AND (t.username = ? OR (t.username IS NULL AND t.operator_code = ?))" : ""}
-        GROUP BY t.operator_code, u.nama
+        GROUP BY COALESCE(u.operator_code, t.operator_code, '-'), COALESCE(u.nama, '-')
         ORDER BY count DESC
     `;
 
