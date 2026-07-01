@@ -95,17 +95,26 @@ async function initializeDb(callback) {
             dibaca INTEGER DEFAULT 0
         )`);
 
-        // 6. Reference Counters Table (Migrated from operator_code to username)
-        let needsMigration = false;
+        // 6. Reference Counters Table (Migrated to username + slip_type composite key)
+        // Ensure table exists first in composite key format
+        await runAsync(`CREATE TABLE IF NOT EXISTS ref_counters (
+            username TEXT,
+            slip_type TEXT,
+            counter INTEGER DEFAULT 1,
+            prefix TEXT,
+            PRIMARY KEY (username, slip_type)
+        )`);
+
+        // Check if we need to migrate existing ref_counters table to include slip_type
+        let needsSlipTypeMigration = false;
         try {
-            const tempRow = await getAsync("SELECT operator_code FROM ref_counters LIMIT 1");
-            needsMigration = true;
+            await getAsync("SELECT slip_type FROM ref_counters LIMIT 1");
         } catch (e) {
-            // Table doesn't exist or already migrated
+            needsSlipTypeMigration = true;
         }
 
-        if (needsMigration) {
-            // Fetch old records
+        if (needsSlipTypeMigration) {
+            // Fetch old records (which only have username, counter, prefix)
             const oldRows = await new Promise((resolve) => {
                 db.all("SELECT * FROM ref_counters", [], (err, rows) => {
                     resolve(rows || []);
@@ -115,32 +124,25 @@ async function initializeDb(callback) {
             // Drop old table
             await runAsync("DROP TABLE ref_counters");
 
-            // Create new table
+            // Re-create new table
             await runAsync(`CREATE TABLE IF NOT EXISTS ref_counters (
-                username TEXT PRIMARY KEY,
+                username TEXT,
+                slip_type TEXT,
                 counter INTEGER DEFAULT 1,
-                prefix TEXT
+                prefix TEXT,
+                PRIMARY KEY (username, slip_type)
             )`);
 
-            // Migrate rows
+            // Migrate old rows as 'debet'
             for (const row of oldRows) {
-                const user = await getAsync("SELECT username FROM users WHERE operator_code = ? AND deleted_at IS NULL", [row.operator_code]);
-                const targetUsername = user ? user.username : row.operator_code;
-                if (targetUsername) {
-                    // Translate INSERT OR IGNORE for postgres compatibility in migration if needed
+                if (row.username) {
                     const isPg = process.env.DB_TYPE === 'postgres';
                     const sql = isPg
-                        ? "INSERT INTO ref_counters (username, counter, prefix) VALUES ($1, $2, $3) ON CONFLICT (username) DO NOTHING"
-                        : "INSERT OR IGNORE INTO ref_counters (username, counter, prefix) VALUES (?, ?, ?)";
-                    await runAsync(sql, [targetUsername, row.counter, row.prefix]);
+                        ? "INSERT INTO ref_counters (username, slip_type, counter, prefix) VALUES ($1, $2, $3, $4) ON CONFLICT (username, slip_type) DO NOTHING"
+                        : "INSERT OR IGNORE INTO ref_counters (username, slip_type, counter, prefix) VALUES (?, ?, ?, ?)";
+                    await runAsync(sql, [row.username, 'debet', row.counter, row.prefix]);
                 }
             }
-        } else {
-            await runAsync(`CREATE TABLE IF NOT EXISTS ref_counters (
-                username TEXT PRIMARY KEY,
-                counter INTEGER DEFAULT 1,
-                prefix TEXT
-            )`);
         }
 
         // 7. Approval Requests Table
@@ -260,16 +262,33 @@ async function initializeDb(callback) {
                 ["LOG-001", "2026-06-24T08:00:00", "System", "System", "Inisialisasi database & seed data awal", "127.0.0.1"]);
         }
 
-        // Fill ref counters for existing/seeded users
+        // Fill ref counters for existing/seeded users (debet, kredit, tagihan_lainnya, kewajiban_lainnya)
         await new Promise((resolve) => {
             db.all("SELECT username, operator_code FROM users WHERE deleted_at IS NULL", [], (err, rows) => {
                 if (!err && rows) {
+                    const promises = [];
                     rows.forEach(row => {
-                        db.run(`INSERT OR IGNORE INTO ref_counters (username, counter, prefix) VALUES (?, 1, ?)`,
-                            [row.username, row.operator_code || ""]);
+                        const op = row.operator_code || "";
+                        const types = [
+                            { type: 'debet', prefix: op },
+                            { type: 'kredit', prefix: op ? op + 'K' : '' },
+                            { type: 'tagihan_lainnya', prefix: op ? op + 'T' : '' },
+                            { type: 'kewajiban_lainnya', prefix: op ? op + 'KW' : '' }
+                        ];
+                        types.forEach(t => {
+                            promises.push(new Promise(res => {
+                                const isPg = process.env.DB_TYPE === 'postgres';
+                                const sql = isPg
+                                    ? "INSERT INTO ref_counters (username, slip_type, counter, prefix) VALUES ($1, $2, 1, $3) ON CONFLICT (username, slip_type) DO NOTHING"
+                                    : "INSERT OR IGNORE INTO ref_counters (username, slip_type, counter, prefix) VALUES (?, ?, 1, ?)";
+                                db.run(sql, [row.username, t.type, t.prefix], () => res());
+                            }));
+                        });
                     });
+                    Promise.all(promises).then(() => resolve());
+                } else {
+                    resolve();
                 }
-                resolve();
             });
         });
 

@@ -113,16 +113,35 @@ export function viewSlipDetails(id) {
     const [year, month, dayT] = tx.tanggal.split('T')[0].split('-');
     const formattedDate = `${dayT}/${month}/${year}`;
 
+    const slipType = (tx.jenis_transaksi || "debet").toLowerCase();
+    let slipTitle = "slip debet";
+    let bandBgColor = "#ffcc00";
+    let bandBorderBottom = "2px solid #eab308";
+
+    if (slipType === 'kredit') {
+        slipTitle = "slip kredit";
+        bandBgColor = "#10b981";
+        bandBorderBottom = "2px solid #059669";
+    } else if (slipType === 'tagihan_lainnya') {
+        slipTitle = "slip tagihan lainnya";
+        bandBgColor = "#3b82f6";
+        bandBorderBottom = "2px solid #2563eb";
+    } else if (slipType === 'kewajiban_lainnya') {
+        slipTitle = "slip kewajiban lainnya";
+        bandBgColor = "#8b5cf6";
+        bandBorderBottom = "2px solid #7c3aed";
+    }
+
     const modalContainer = document.getElementById("modal-print-container");
     modalContainer.innerHTML = `
         <div class="voucher-slip" id="reprint-voucher-slip">
-            <!-- Top Yellow Band -->
-            <div class="slip-top-band">
+            <!-- Top Band -->
+            <div class="slip-top-band" style="background-color: ${bandBgColor}; border-bottom: ${bandBorderBottom};">
                 <div class="logo-wrap">
                     <span class="logo-text-large">bank <strong>nusamba</strong></span>
                     <span class="logo-text-sub">bpr bank nusamba jabar</span>
                 </div>
-                <div class="slip-type-title">slip debet</div>
+                <div class="slip-type-title">${slipTitle}</div>
             </div>
 
             <!-- Metadata validasi / tanggal -->

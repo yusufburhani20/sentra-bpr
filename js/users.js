@@ -179,20 +179,32 @@ export function renderRefCountersTable() {
         const disabledAttr = isAllowedToEdit ? "" : "disabled";
         const pointerEvents = isAllowedToEdit ? "" : "pointer-events:none; opacity:0.6;";
 
+        const idSuffix = `${rc.username}-${rc.slip_type}`;
+        const slipTypeLabel = rc.slip_type === 'debet' ? 'Debet' :
+                             rc.slip_type === 'kredit' ? 'Kredit' :
+                             rc.slip_type === 'tagihan_lainnya' ? 'Tagihan Lainnya' :
+                             rc.slip_type === 'kewajiban_lainnya' ? 'Kewajiban Lainnya' : rc.slip_type;
+
         tr.innerHTML = `
             <td><code>${rc.operator_code || '-'}</code></td>
-            <td><strong>${rc.nama || '-'}</strong> <span style="font-size: 11px; color: var(--text-muted);">(${rc.username})</span></td>
             <td>
-                <input type="text" id="rc-prefix-${rc.username}" value="${escapeHtml(rc.prefix || '')}" 
+                <strong>${rc.nama || '-'}</strong> 
+                <span style="font-size: 11px; color: var(--text-muted);">(${rc.username})</span>
+                <span style="font-size: 10px; padding: 2px 6px; background-color: var(--primary-light); color: var(--primary); border-radius: 4px; font-weight: 600; margin-left: 6px; display: inline-block;">
+                    ${slipTypeLabel}
+                </span>
+            </td>
+            <td>
+                <input type="text" id="rc-prefix-${idSuffix}" value="${escapeHtml(rc.prefix || '')}" 
                     class="form-control" style="width:130px; padding:4px 8px; font-size:12px; display:inline-block;" 
                     placeholder="Prefix..." ${disabledAttr}>
             </td>
             <td>
-                <input type="number" id="rc-counter-${rc.username}" value="${rc.counter}" min="1"
+                <input type="number" id="rc-counter-${idSuffix}" value="${rc.counter}" min="1"
                     class="form-control" style="width:90px; padding:4px 8px; font-size:12px; display:inline-block;" ${disabledAttr}>
             </td>
             <td>
-                <code id="rc-example-${rc.username}" style="font-size:12px; color:var(--primary); font-weight:700;">${exampleRef}</code>
+                <code id="rc-example-${idSuffix}" style="font-size:12px; color:var(--primary); font-weight:700;">${exampleRef}</code>
             </td>
             <td style="display:flex; gap:6px; flex-wrap:wrap;">
                 <button class="btn btn-primary btn-save-counter" style="padding:3px 10px; font-size:11px; ${pointerEvents}" ${disabledAttr}>
@@ -205,14 +217,14 @@ export function renderRefCountersTable() {
         `;
         
         if (isAllowedToEdit) {
-            tr.querySelector('.btn-save-counter').addEventListener('click', () => saveRefCounter(rc.username));
-            tr.querySelector('.btn-reset-counter').addEventListener('click', () => resetRefCounter(rc.username));
+            tr.querySelector('.btn-save-counter').addEventListener('click', () => saveRefCounter(rc.username, rc.slip_type));
+            tr.querySelector('.btn-reset-counter').addEventListener('click', () => resetRefCounter(rc.username, rc.slip_type));
         }
         tbody.appendChild(tr);
 
-        const prefixEl = document.getElementById(`rc-prefix-${rc.username}`);
-        const counterEl = document.getElementById(`rc-counter-${rc.username}`);
-        const exampleEl = document.getElementById(`rc-example-${rc.username}`);
+        const prefixEl = document.getElementById(`rc-prefix-${idSuffix}`);
+        const counterEl = document.getElementById(`rc-counter-${idSuffix}`);
+        const exampleEl = document.getElementById(`rc-example-${idSuffix}`);
         if (prefixEl && counterEl && exampleEl) {
             const updatePreview = () => {
                 const p = prefixEl.value || rc.operator_code || "";
@@ -225,9 +237,11 @@ export function renderRefCountersTable() {
     });
 }
 
-export async function saveRefCounter(username) {
-    const prefixEl = document.getElementById(`rc-prefix-${username}`);
-    const counterEl = document.getElementById(`rc-counter-${username}`);
+export async function saveRefCounter(username, slipType) {
+    const sType = slipType || 'debet';
+    const idSuffix = `${username}-${sType}`;
+    const prefixEl = document.getElementById(`rc-prefix-${idSuffix}`);
+    const counterEl = document.getElementById(`rc-counter-${idSuffix}`);
     if (!prefixEl || !counterEl) return;
 
     const payload = {
@@ -238,14 +252,14 @@ export async function saveRefCounter(username) {
     };
 
     try {
-        const res = await fetch(`/api/ref-counters/${encodeURIComponent(username)}`, {
+        const res = await fetch(`/api/ref-counters/${encodeURIComponent(username)}/${encodeURIComponent(sType)}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
         }).then(r => r.json());
 
         if (res.success) {
-            showToast(`Counter ${username} berhasil disimpan!`, "success");
+            showToast(`Counter ${username} (${sType}) berhasil disimpan!`, "success");
             await showSection("users"); // will automatically fetch new ref data and render tables
             if (state.currentUser && state.currentUser.username === username) {
                 await fetchNextRef();
@@ -258,18 +272,19 @@ export async function saveRefCounter(username) {
     }
 }
 
-export async function resetRefCounter(username) {
-    if (!confirm(`Reset counter nomor referensi ${username} ke angka 1?\nTransaksi berikutnya akan menggunakan nomor 0001.`)) return;
+export async function resetRefCounter(username, slipType) {
+    const sType = slipType || 'debet';
+    if (!confirm(`Reset counter nomor referensi ${username} (${sType}) ke angka 1?\nTransaksi berikutnya akan menggunakan nomor 0001.`)) return;
 
     try {
-        const res = await fetch(`/api/ref-counters/${encodeURIComponent(username)}/reset`, {
+        const res = await fetch(`/api/ref-counters/${encodeURIComponent(username)}/${encodeURIComponent(sType)}/reset`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ activeUser: state.currentUser.nama, activeRole: state.currentUser.role })
         }).then(r => r.json());
 
         if (res.success) {
-            showToast(`Counter ${username} di-reset ke 1!`, "success");
+            showToast(`Counter ${username} (${sType}) di-reset ke 1!`, "success");
             await showSection("users");
             if (state.currentUser && state.currentUser.username === username) {
                 await fetchNextRef();

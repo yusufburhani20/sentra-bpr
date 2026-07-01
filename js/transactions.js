@@ -4,7 +4,9 @@ import { formatRupiah, terbilang, showToast, authFetch } from './utils.js';
 export async function fetchNextRef() {
     if (!state.currentUser) return;
     try {
-        const res = await fetch(`/api/transactions/next-ref?operator=${state.currentUser.operator_code}`).then(r => r.json());
+        const slipTypeEl = document.getElementById("tx-jenis-slip");
+        const slipType = slipTypeEl ? slipTypeEl.value : "debet";
+        const res = await fetch(`/api/transactions/next-ref?slip_type=${slipType}`).then(r => r.json());
         state.activeNextRef = res.nextRef;
         const validationEl = document.getElementById("slip-val-validation");
         if (validationEl) validationEl.innerText = state.activeNextRef;
@@ -111,6 +113,35 @@ export function updateLiveSlipPreview() {
     const nominalDesimal = parseInt(document.getElementById("tx-nominal-desimal").value) || 0;
     const keterangan = document.getElementById("tx-keterangan").value;
 
+    const slipTypeEl = document.getElementById("tx-jenis-slip");
+    const slipType = slipTypeEl ? slipTypeEl.value : "debet";
+
+    const titleEl = document.querySelector("#printable-voucher-slip .slip-type-title");
+    const topBandEl = document.querySelector("#printable-voucher-slip .slip-top-band");
+
+    if (titleEl) {
+        if (slipType === 'debet') titleEl.innerText = "slip debet";
+        else if (slipType === 'kredit') titleEl.innerText = "slip kredit";
+        else if (slipType === 'tagihan_lainnya') titleEl.innerText = "slip tagihan lainnya";
+        else if (slipType === 'kewajiban_lainnya') titleEl.innerText = "slip kewajiban lainnya";
+    }
+
+    if (topBandEl) {
+        if (slipType === 'debet') {
+            topBandEl.style.backgroundColor = "#ffcc00";
+            topBandEl.style.borderBottom = "2px solid #eab308";
+        } else if (slipType === 'kredit') {
+            topBandEl.style.backgroundColor = "#10b981";
+            topBandEl.style.borderBottom = "2px solid #059669";
+        } else if (slipType === 'tagihan_lainnya') {
+            topBandEl.style.backgroundColor = "#3b82f6";
+            topBandEl.style.borderBottom = "2px solid #2563eb";
+        } else if (slipType === 'kewajiban_lainnya') {
+            topBandEl.style.backgroundColor = "#8b5cf6";
+            topBandEl.style.borderBottom = "2px solid #7c3aed";
+        }
+    }
+
     document.getElementById("slip-val-debet-nama").innerText = debetNama || "-";
     document.getElementById("slip-val-debet-rekening").innerText = debetRek || "-";
     document.getElementById("slip-val-kredit-nama").innerText = kreditNama || "-";
@@ -133,6 +164,8 @@ export function resetTxForm(e) {
     document.getElementById("tx-nominal-utama").value = "";
     document.getElementById("tx-nominal-desimal").value = "";
     document.getElementById("tx-keterangan").value = "";
+    const slipTypeEl = document.getElementById("tx-jenis-slip");
+    if (slipTypeEl) slipTypeEl.value = "debet";
     updateLiveSlipPreview();
     fetchNextRef();
     showToast("Formulir isian dikosongkan.", "info");
@@ -165,6 +198,7 @@ export async function saveTransaction() {
         return;
     }
 
+    const slipType = document.getElementById("tx-jenis-slip").value;
     const payload = {
         ref_no: state.activeNextRef,
         operator_code: state.currentUser.operator_code,
@@ -172,7 +206,7 @@ export async function saveTransaction() {
         debet_rekening: debetRek,
         kredit_nama: kreditNama,
         kredit_rekening: kreditRek,
-        jenis_transaksi: kreditNama,
+        jenis_transaksi: slipType,
         nominal_utama: nominalUtama,
         nominal_desimal: nominalDesimal,
         keterangan: keterangan,
@@ -384,6 +418,7 @@ export async function saveAndPrintTransaction() {
         return;
     }
 
+    const slipType = document.getElementById("tx-jenis-slip").value;
     const payload = {
         ref_no: state.activeNextRef,
         operator_code: state.currentUser.operator_code,
@@ -391,7 +426,7 @@ export async function saveAndPrintTransaction() {
         debet_rekening: debetRek,
         kredit_nama: kreditNama,
         kredit_rekening: kreditRek,
-        jenis_transaksi: kreditNama,
+        jenis_transaksi: slipType,
         nominal_utama: nominalUtama,
         nominal_desimal: nominalDesimal,
         keterangan: keterangan,

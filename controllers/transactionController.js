@@ -73,27 +73,37 @@ exports.getNextRef = (req, res) => {
 
         const username = user.username;
         const operator = user.operator_code || "";
+        const slipType = req.query.slip_type || 'debet';
+
+        const getDefPrefix = (op, type) => {
+            if (!op) return "";
+            if (type === 'kredit') return op + 'K';
+            if (type === 'tagihan_lainnya') return op + 'T';
+            if (type === 'kewajiban_lainnya') return op + 'KW';
+            return op;
+        };
+        const defPrefix = getDefPrefix(operator, slipType);
 
         // Cari counter referensi yang saat ini terdaftar tanpa melakukan penambahan (increment)
-        db.get("SELECT counter, prefix FROM ref_counters WHERE username = ?", [username], (err, row) => {
+        db.get("SELECT counter, prefix FROM ref_counters WHERE username = ? AND slip_type = ?", [username, slipType], (err, row) => {
             if (err) return res.status(500).json({ error: err.message });
             if (row) {
                 const { counter, prefix } = row;
                 const seq = String(counter).padStart(3, '0');
-                const nextRef = `${(prefix || operator || "")}${seq}`;
-                res.json({ nextRef, counter, prefix: prefix || operator || "" });
+                const nextRef = `${(prefix || defPrefix)}${seq}`;
+                res.json({ nextRef, counter, prefix: prefix || defPrefix });
             } else {
                 // Jika belum ada row counter untuk operator ini, buat default counter = 1
-                db.run("INSERT OR IGNORE INTO ref_counters (username, counter, prefix) VALUES (?, 1, ?)", [username, operator], (err2) => {
+                db.run("INSERT OR IGNORE INTO ref_counters (username, slip_type, counter, prefix) VALUES (?, ?, 1, ?)", [username, slipType, defPrefix], (err2) => {
                     if (err2) return res.status(500).json({ error: err2.message });
 
-                    db.get("SELECT counter, prefix FROM ref_counters WHERE username = ?", [username], (err3, newRow) => {
+                    db.get("SELECT counter, prefix FROM ref_counters WHERE username = ? AND slip_type = ?", [username, slipType], (err3, newRow) => {
                         if (err3) return res.status(500).json({ error: err3.message });
                         const cnt = newRow ? newRow.counter : 1;
-                        const prfx = newRow ? newRow.prefix : operator;
+                        const prfx = newRow ? newRow.prefix : defPrefix;
                         const seq = String(cnt).padStart(3, '0');
-                        const nextRef = `${(prfx || operator || "")}${seq}`;
-                        res.json({ nextRef, counter: cnt, prefix: prfx || operator || "" });
+                        const nextRef = `${(prfx)}${seq}`;
+                        res.json({ nextRef, counter: cnt, prefix: prfx });
                     });
                 });
             }
@@ -104,12 +114,22 @@ exports.getNextRef = (req, res) => {
 exports.createTransaction = (req, res) => {
     const {
         ref_no,
-        debet_nama, debet_rekening,
-        kredit_nama, kredit_rekening,
+        operator_code,
+        debet_nama,
+        debet_rekening,
+        kredit_nama,
+        kredit_rekening,
         jenis_transaksi,
-        nominal_utama, nominal_desimal,
-        keterangan, terbilang
+        nominal_utama,
+        nominal_desimal,
+        keterangan,
+        terbilang
     } = req.body;
+
+    let slipType = (jenis_transaksi || "debet").toLowerCase();
+    if (!['debet', 'kredit', 'tagihan_lainnya', 'kewajiban_lainnya'].includes(slipType)) {
+        slipType = 'debet'; // Fallback
+    }
 
     if (!ref_no || ref_no.trim() === "") {
         return res.status(400).json({ error: "Nomor referensi tidak boleh kosong." });
@@ -168,7 +188,7 @@ exports.createTransaction = (req, res) => {
                                  `Menyimpan slip: ${ref_no} senilai Rp ${nominal_utama},${nominal_desimal}`,
                                  req.ip || "127.0.0.1"]);
 
-                            db.run("UPDATE ref_counters SET counter = counter + 1 WHERE username = ?", [user.username]);
+                            db.run("UPDATE ref_counters SET counter = counter + 1 WHERE username = ? AND slip_type = ?", [user.username, slipType]);
 
                             const notifId = crypto.randomUUID();
                             db.run("INSERT INTO notifications VALUES (?, ?, 'Kepala Bidang', ?, 0)",

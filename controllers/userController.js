@@ -21,8 +21,20 @@ exports.createUser = async (req, res) => {
         [id, username, nama, bagian, role, status, operator_code, defaultHash], function(err) {
             if (err) return res.status(400).json({ error: "Username sudah dipakai pengguna lain!" });
 
-            db.run(`INSERT OR IGNORE INTO ref_counters (username, counter, prefix) VALUES (?, 1, ?)`,
-                [username, operator_code]);
+            const op = operator_code || "";
+            const types = [
+                { type: 'debet', prefix: op },
+                { type: 'kredit', prefix: op ? op + 'K' : '' },
+                { type: 'tagihan_lainnya', prefix: op ? op + 'T' : '' },
+                { type: 'kewajiban_lainnya', prefix: op ? op + 'KW' : '' }
+            ];
+            const isPg = process.env.DB_TYPE === 'postgres';
+            types.forEach(t => {
+                const sql = isPg
+                    ? "INSERT INTO ref_counters (username, slip_type, counter, prefix) VALUES ($1, $2, 1, $3) ON CONFLICT (username, slip_type) DO NOTHING"
+                    : "INSERT OR IGNORE INTO ref_counters (username, slip_type, counter, prefix) VALUES (?, ?, 1, ?)";
+                db.run(sql, [username, t.type, t.prefix]);
+            });
 
             const logId = crypto.randomUUID();
             db.run("INSERT INTO audit_logs VALUES (?, ?, ?, ?, ?, ?)",
@@ -108,14 +120,29 @@ exports.getRefCounters = (req, res) => {
     db.all("SELECT id, username, operator_code FROM users WHERE deleted_at IS NULL", [], (err, users) => {
         if (err) return res.status(500).json({ error: err.message });
 
-        // Pastikan semua user punya entri di ref_counters
-        const insertPromises = users.map(u => new Promise(resolve => {
-            db.run(`INSERT OR IGNORE INTO ref_counters (username, counter, prefix) VALUES (?, 1, ?)`,
-                [u.username, u.operator_code || ""], resolve);
-        }));
+        // Pastikan semua user punya entri di ref_counters untuk 4 jenis slip
+        const insertPromises = [];
+        users.forEach(u => {
+            const op = u.operator_code || "";
+            const types = [
+                { type: 'debet', prefix: op },
+                { type: 'kredit', prefix: op ? op + 'K' : '' },
+                { type: 'tagihan_lainnya', prefix: op ? op + 'T' : '' },
+                { type: 'kewajiban_lainnya', prefix: op ? op + 'KW' : '' }
+            ];
+            types.forEach(t => {
+                insertPromises.push(new Promise(resolve => {
+                    const isPg = process.env.DB_TYPE === 'postgres';
+                    const sql = isPg
+                        ? "INSERT INTO ref_counters (username, slip_type, counter, prefix) VALUES ($1, $2, 1, $3) ON CONFLICT (username, slip_type) DO NOTHING"
+                        : "INSERT OR IGNORE INTO ref_counters (username, slip_type, counter, prefix) VALUES (?, ?, 1, ?)";
+                    db.run(sql, [u.username, t.type, t.prefix], resolve);
+                }));
+            });
+        });
 
         Promise.all(insertPromises).then(() => {
-            let query = `SELECT rc.username, rc.counter, rc.prefix, u.nama, u.operator_code
+            let query = `SELECT rc.username, rc.slip_type, rc.counter, rc.prefix, u.nama, u.operator_code
                     FROM ref_counters rc
                     INNER JOIN users u ON u.username = rc.username
                     WHERE u.deleted_at IS NULL`;
@@ -127,7 +154,7 @@ exports.getRefCounters = (req, res) => {
                 params.push(req.user.username);
             }
 
-            query += " ORDER BY u.nama ASC";
+            query += " ORDER BY u.nama ASC, rc.slip_type ASC";
 
             db.all(query, params, (err, rows) => {
                 if (err) return res.status(500).json({ error: err.message });
@@ -139,6 +166,7 @@ exports.getRefCounters = (req, res) => {
 
 exports.updateRefCounter = (req, res) => {
     const { username } = req.params;
+    const slipType = req.params.slip_type || 'debet';
     const { counter, prefix } = req.body;
 
     // Hanya Admin dan Kepala Bidang bisa edit counter milik orang lain
@@ -153,24 +181,29 @@ exports.updateRefCounter = (req, res) => {
     }
     const newPrefix = prefix !== undefined ? prefix.trim() : "";
 
-    db.run(`INSERT INTO ref_counters (username, counter, prefix) VALUES (?, ?, ?)
-            ON CONFLICT(username) DO UPDATE SET counter = excluded.counter, prefix = excluded.prefix`,
-        [username, newCounter, newPrefix], function(err) {
-            if (err) return res.status(500).json({ error: err.message });
+    const isPg = process.env.DB_TYPE === 'postgres';
+    const sql = isPg
+        ? `INSERT INTO ref_counters (username, slip_type, counter, prefix) VALUES ($1, $2, $3, $4)
+           ON CONFLICT(username, slip_type) DO UPDATE SET counter = EXCLUDED.counter, prefix = EXCLUDED.prefix`
+        : `INSERT INTO ref_counters (username, slip_type, counter, prefix) VALUES (?, ?, ?, ?)
+           ON CONFLICT(username, slip_type) DO UPDATE SET counter = excluded.counter, prefix = excluded.prefix`;
 
-            const logId = "LOG-" + Date.now();
-            db.run("INSERT INTO audit_logs VALUES (?, ?, ?, ?, ?, ?)",
-                [logId, new Date().toISOString(), req.user.nama, req.user.role,
-                 `Mengatur counter referensi ${username}: counter=${newCounter}, prefix=${newPrefix}`,
-                 "127.0.0.1"]);
+    db.run(sql, [username, slipType, newCounter, newPrefix], function(err) {
+        if (err) return res.status(500).json({ error: err.message });
 
-            res.json({ success: true });
-        }
-    );
+        const logId = "LOG-" + Date.now();
+        db.run("INSERT INTO audit_logs VALUES (?, ?, ?, ?, ?, ?)",
+            [logId, new Date().toISOString(), req.user.nama, req.user.role,
+             `Mengatur counter referensi ${username} (${slipType}): counter=${newCounter}, prefix=${newPrefix}`,
+             "127.0.0.1"]);
+
+        res.json({ success: true });
+    });
 };
 
 exports.resetRefCounter = (req, res) => {
     const { username } = req.params;
+    const slipType = req.params.slip_type || 'debet';
 
     // Hanya Admin dan Kepala Bidang bisa reset counter milik orang lain
     const canEditAll = req.user.role === 'Admin' || req.user.role === 'Kepala Bidang';
@@ -178,13 +211,13 @@ exports.resetRefCounter = (req, res) => {
         return res.status(403).json({ error: "Anda hanya dapat mereset counter milik Anda sendiri." });
     }
 
-    db.run("UPDATE ref_counters SET counter = 1 WHERE username = ?", [username], function(err) {
+    db.run("UPDATE ref_counters SET counter = 1 WHERE username = ? AND slip_type = ?", [username, slipType], function(err) {
         if (err) return res.status(500).json({ error: err.message });
 
         const logId = "LOG-" + Date.now();
         db.run("INSERT INTO audit_logs VALUES (?, ?, ?, ?, ?, ?)",
             [logId, new Date().toISOString(), req.user.nama, req.user.role,
-             `Me-reset counter referensi ${username} ke 1`, "127.0.0.1"]);
+             `Me-reset counter referensi ${username} (${slipType}) ke 1`, "127.0.0.1"]);
 
         res.json({ success: true });
     });
@@ -242,12 +275,25 @@ exports.importUsers = async (req, res) => {
                             return processRow(index + 1);
                         }
 
-                        // Seed ref_counters
-                        db.run("INSERT OR IGNORE INTO ref_counters (username, counter, prefix) VALUES (?, 1, ?)",
-                            [username, operator_code], function(errCounter) {
-                                imported++;
-                                processRow(index + 1);
-                            });
+                        // Seed ref_counters (4 slip types)
+                        const op = operator_code || "";
+                        const types = [
+                            { type: 'debet', prefix: op },
+                            { type: 'kredit', prefix: op ? op + 'K' : '' },
+                            { type: 'tagihan_lainnya', prefix: op ? op + 'T' : '' },
+                            { type: 'kewajiban_lainnya', prefix: op ? op + 'KW' : '' }
+                        ];
+                        const isPg = process.env.DB_TYPE === 'postgres';
+                        const promises = types.map(t => new Promise(resolve => {
+                            const sql = isPg
+                                ? "INSERT INTO ref_counters (username, slip_type, counter, prefix) VALUES ($1, $2, 1, $3) ON CONFLICT (username, slip_type) DO NOTHING"
+                                : "INSERT OR IGNORE INTO ref_counters (username, slip_type, counter, prefix) VALUES (?, ?, 1, ?)";
+                            db.run(sql, [username, t.type, t.prefix], resolve);
+                        }));
+                        Promise.all(promises).then(() => {
+                            imported++;
+                            processRow(index + 1);
+                        });
                     });
             });
         };

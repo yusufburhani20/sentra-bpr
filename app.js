@@ -334,6 +334,10 @@ window.addEventListener("DOMContentLoaded", async () => {
     document.getElementById("tx-nominal-utama").addEventListener("input", updateLiveSlipPreview);
     document.getElementById("tx-nominal-desimal").addEventListener("input", updateLiveSlipPreview);
     document.getElementById("tx-keterangan").addEventListener("input", updateLiveSlipPreview);
+    document.getElementById("tx-jenis-slip").addEventListener("change", () => {
+        fetchNextRef();
+        updateLiveSlipPreview();
+    });
 
     // Rekening fields: update live preview on input/selection
     // Nama fields are readonly — they sync automatically via the combobox paired field logic
