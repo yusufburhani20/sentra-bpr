@@ -66,7 +66,7 @@ export async function refreshData() {
             promises.push(fetch(`/api/cost-codes?page=${state.currentCcPage}&limit=${state.ccLimit}&search=${encodeURIComponent(searchVal)}`).then(r => r.json()));
             keys.push('cc_paginated');
         } else if (activeView === 'users') {
-            if (state.currentRole === 'Admin') {
+            if (state.currentRole === 'Admin' || state.currentRole === 'Kepala Bidang') {
                 promises.push(fetch('/api/users').then(r => r.json()));
                 keys.push('users');
             }
