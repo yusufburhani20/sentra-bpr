@@ -75,6 +75,26 @@ export async function login() {
 }
 
 export async function logout() {
+    if (state.currentUser && state.currentUser.impersonator) {
+        if (!confirm('Anda sedang mengakses sebagai user lain. Kembali ke akun asli Anda?')) return;
+        try {
+            const res = await authFetch('/api/auth/stop-impersonating', {
+                method: 'POST'
+            }).then(r => r.json());
+
+            if (res.success) {
+                showToast("Kembali ke akun asli...", "success");
+                window.location.reload();
+            } else {
+                showToast(res.error || "Gagal kembali ke akun asli.", "danger");
+            }
+        } catch (e) {
+            console.error(e);
+            showToast("Koneksi server terputus.", "danger");
+        }
+        return;
+    }
+
     if (!confirm('Apakah Anda yakin ingin keluar dari sistem?')) return;
     try {
         await fetch('/api/auth/logout', { method: 'POST' });
