@@ -21,8 +21,8 @@ exports.createUser = async (req, res) => {
         [id, username, nama, bagian, role, status, operator_code, defaultHash], function(err) {
             if (err) return res.status(400).json({ error: "Username sudah dipakai pengguna lain!" });
 
-            db.run(`INSERT OR IGNORE INTO ref_counters (operator_code, counter, prefix) VALUES (?, 1, ?)`,
-                [operator_code, operator_code]);
+            db.run(`INSERT OR IGNORE INTO ref_counters (username, counter, prefix) VALUES (?, 1, ?)`,
+                [username, operator_code]);
 
             const logId = crypto.randomUUID();
             db.run("INSERT INTO audit_logs VALUES (?, ?, ?, ?, ?, ?)",
@@ -188,4 +188,72 @@ exports.resetRefCounter = (req, res) => {
 
         res.json({ success: true });
     });
+};
+
+exports.importUsers = async (req, res) => {
+    const { rows } = req.body;
+    if (!Array.isArray(rows) || rows.length === 0) {
+        return res.status(400).json({ error: "Tidak ada data untuk diimpor." });
+    }
+
+    try {
+        const defaultHash = await bcrypt.hash(DEFAULT_PASSWORD, SALT_ROUNDS);
+        let imported = 0, skipped = 0;
+
+        const processRow = (index) => {
+            if (index >= rows.length) {
+                // Done processing
+                const logId = crypto.randomUUID();
+                db.run("INSERT INTO audit_logs VALUES (?, ?, ?, ?, ?, ?)",
+                    [logId, new Date().toISOString(), req.user.nama, req.user.role,
+                     `Import Pengguna: ${imported} berhasil, ${skipped} dilewati`, req.ip || "127.0.0.1"],
+                    () => {
+                        res.json({ success: true, imported, skipped });
+                    });
+                return;
+            }
+
+            const row = rows[index];
+            const username = (row.username || "").trim().toLowerCase();
+            const nama = (row.nama || "").trim();
+            const bagian = (row.bagian || "").trim();
+            const role = (row.role || "").trim();
+            const status = (row.status || "").trim() || "Aktif";
+            const operator_code = (row.operator_code || "").trim();
+
+            if (!username || !nama || !role || !operator_code) {
+                skipped++;
+                return processRow(index + 1);
+            }
+
+            // Check if username already exists
+            db.get("SELECT id FROM users WHERE username = ?", [username], (err, existingUser) => {
+                if (err || existingUser) {
+                    skipped++;
+                    return processRow(index + 1);
+                }
+
+                // Insert user
+                const id = crypto.randomUUID();
+                db.run("INSERT INTO users (id, username, nama, bagian, role, status, operator_code, password_hash) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                    [id, username, nama, bagian, role, status, operator_code, defaultHash], function(errInsert) {
+                        if (errInsert) {
+                            skipped++;
+                            return processRow(index + 1);
+                        }
+
+                        // Seed ref_counters
+                        db.run("INSERT OR IGNORE INTO ref_counters (username, counter, prefix) VALUES (?, 1, ?)",
+                            [username, operator_code], function(errCounter) {
+                                imported++;
+                                processRow(index + 1);
+                            });
+                    });
+            });
+        };
+
+        processRow(0);
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
 };

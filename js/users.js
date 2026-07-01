@@ -340,3 +340,135 @@ export async function impersonateUser(username) {
         showToast("Koneksi server terputus.", "danger");
     }
 }
+
+export function exportUsers() {
+    if (!state.usersDB || state.usersDB.length === 0) {
+        showToast("Tidak ada data pengguna untuk diekspor.", "warning");
+        return;
+    }
+    let csv = "Username,Nama,Bagian,Role,Status,Operator ID\n";
+    state.usersDB.forEach(u => {
+        const username = `"${(u.username || "").replace(/"/g, '""')}"`;
+        const nama = `"${(u.nama || "").replace(/"/g, '""')}"`;
+        const bagian = `"${(u.bagian || "").replace(/"/g, '""')}"`;
+        const role = `"${(u.role || "").replace(/"/g, '""')}"`;
+        const status = `"${(u.status || "").replace(/"/g, '""')}"`;
+        const operator_code = `"${(u.operator_code || "").replace(/"/g, '""')}"`;
+        csv += `${username},${nama},${bagian},${role},${status},${operator_code}\n`;
+    });
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = `Pengguna_${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showToast(`${state.usersDB.length} data pengguna diekspor ke CSV.`, "success");
+}
+
+export function downloadUserTemplate() {
+    const csv = "Username,Nama,Bagian,Role,Status,Operator ID\ncs_budi,Budi Santoso,Customer Service,Customer Service,Aktif,CS\nteller_ani,Ani Wijaya,Teller,Teller,Aktif,TLR\n";
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = "Template_Pengguna.csv";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+
+export async function importUsers(file) {
+    if (!file) return;
+
+    const statusBar = document.getElementById("import-users-status-bar");
+    statusBar.style.display = "block";
+    statusBar.style.background = "var(--primary-light)";
+    statusBar.style.color = "var(--primary)";
+    statusBar.innerText = "⏳ Memproses file CSV...";
+
+    try {
+        const text = await file.text();
+        const lines = text.split(/\r?\n/).filter(l => l.trim());
+
+        if (lines.length === 0) {
+            statusBar.style.background = "#fff3cd";
+            statusBar.style.color = "#856404";
+            statusBar.innerText = "⚠ File CSV kosong atau tidak valid.";
+            return;
+        }
+
+        const firstLine = lines[0].toLowerCase();
+        const hasHeader = firstLine.includes("username") || firstLine.includes("nama") || firstLine.includes("bagian") || firstLine.includes("operator");
+        const dataLines = hasHeader ? lines.slice(1) : lines;
+
+        const parseCSVRow = (line) => {
+            const result = [];
+            let current = '';
+            let inQuotes = false;
+            for (let i = 0; i < line.length; i++) {
+                const char = line[i];
+                if (char === '"') {
+                    inQuotes = !inQuotes;
+                } else if (char === ',' && !inQuotes) {
+                    result.push(current.trim());
+                    current = '';
+                } else {
+                    current += char;
+                }
+            }
+            result.push(current.trim());
+            return result;
+        };
+
+        const rows = [];
+        dataLines.forEach(line => {
+            const parts = parseCSVRow(line);
+            if (parts.length < 6) return;
+
+            const username = parts[0];
+            const nama = parts[1];
+            const bagian = parts[2];
+            const role = parts[3];
+            const status = parts[4] || "Aktif";
+            const operator_code = parts[5];
+
+            if (username && nama && role && operator_code) {
+                rows.push({ username, nama, bagian, role, status, operator_code });
+            }
+        });
+
+        if (rows.length === 0) {
+            statusBar.style.background = "#fff3cd";
+            statusBar.style.color = "#856404";
+            statusBar.innerText = "⚠ Tidak ada data pengguna valid ditemukan dalam file CSV.";
+            return;
+        }
+
+        const res = await authFetch('/api/users/import', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ rows })
+        }).then(r => r.json());
+
+        if (res.success) {
+            statusBar.style.background = "#d1e7dd";
+            statusBar.style.color = "#0a3622";
+            statusBar.innerText = `✅ Import selesai: ${res.imported} pengguna ditambahkan, ${res.skipped} dilewati (duplikat/tidak lengkap).`;
+            
+            // Clear users database cache and refresh view
+            state.usersDB = null;
+            await showSection("users");
+        } else {
+            statusBar.style.background = "#f8d7da";
+            statusBar.style.color = "#842029";
+            statusBar.innerText = `❌ Gagal: ${res.error}`;
+        }
+    } catch (e) {
+        statusBar.style.background = "#f8d7da";
+        statusBar.style.color = "#842029";
+        statusBar.innerText = "❌ Terjadi kesalahan saat membaca file atau koneksi server terputus.";
+        console.error(e);
+    }
+
+    document.getElementById("import-users-file").value = "";
+}

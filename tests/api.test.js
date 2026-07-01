@@ -148,5 +148,75 @@ describe('Express REST API Authentication & Security Integration Tests', () => {
             expect(res.statusCode).toBe(200);
             expect(res.body).toHaveProperty('success', true);
         });
+
+        test('Teller must be blocked from importing users', async () => {
+            const res = await request(app)
+                .post('/api/users/import')
+                .set('Cookie', tellerCookie)
+                .send({
+                    rows: [
+                        { username: 'test_imp_teller', nama: 'Test Imp Teller', bagian: 'Teller', role: 'Teller', status: 'Aktif', operator_code: 'TTEST1' }
+                    ]
+                });
+            expect(res.statusCode).toBe(403);
+        });
+
+        test('Admin can import new users and duplicates are skipped', async () => {
+            // Delete if exists first to make test idempotent
+            await new Promise((resolve) => {
+                db.run("DELETE FROM users WHERE username = ?", ['test_imp_admin'], () => {
+                    db.run("DELETE FROM ref_counters WHERE username = ?", ['test_imp_admin'], () => resolve());
+                });
+            });
+
+            // 1. First import should succeed
+            const res1 = await request(app)
+                .post('/api/users/import')
+                .set('Cookie', adminCookie)
+                .send({
+                    rows: [
+                        { username: 'test_imp_admin', nama: 'Test Imp Admin', bagian: 'SDMU', role: 'SDMU', status: 'Aktif', operator_code: 'ATEST1' }
+                    ]
+                });
+            expect(res1.statusCode).toBe(200);
+            expect(res1.body).toHaveProperty('success', true);
+            expect(res1.body.imported).toBe(1);
+            expect(res1.body.skipped).toBe(0);
+
+            // Verify in db
+            const userRow = await new Promise((resolve) => {
+                db.get("SELECT * FROM users WHERE username = ?", ['test_imp_admin'], (err, row) => resolve(row));
+            });
+            expect(userRow).toBeDefined();
+            expect(userRow.nama).toBe('Test Imp Admin');
+            expect(userRow.role).toBe('SDMU');
+            expect(userRow.operator_code).toBe('ATEST1');
+
+            const counterRow = await new Promise((resolve) => {
+                db.get("SELECT * FROM ref_counters WHERE username = ?", ['test_imp_admin'], (err, row) => resolve(row));
+            });
+            expect(counterRow).toBeDefined();
+            expect(counterRow.prefix).toBe('ATEST1');
+
+            // 2. Second import with same user should be skipped
+            const res2 = await request(app)
+                .post('/api/users/import')
+                .set('Cookie', adminCookie)
+                .send({
+                    rows: [
+                        { username: 'test_imp_admin', nama: 'Test Imp Admin', bagian: 'SDMU', role: 'SDMU', status: 'Aktif', operator_code: 'ATEST1' }
+                    ]
+                });
+            expect(res2.statusCode).toBe(200);
+            expect(res2.body.imported).toBe(0);
+            expect(res2.body.skipped).toBe(1);
+
+            // Clean up
+            await new Promise((resolve) => {
+                db.run("DELETE FROM users WHERE username = ?", ['test_imp_admin'], () => {
+                    db.run("DELETE FROM ref_counters WHERE username = ?", ['test_imp_admin'], () => resolve());
+                });
+            });
+        });
     });
 });

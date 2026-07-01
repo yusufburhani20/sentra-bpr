@@ -1002,11 +1002,35 @@
                 <section id="view-users" class="view-section" style="display:none;">
                     <div class="card" id="user-list-card" style="margin-bottom: 20px;">
                         <div
-                            style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+                            style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:10px;">
                             <h2 style="font-size: 16px; font-weight: 700;">Manajemen Pengguna Aplikasi</h2>
-                            <button class="btn btn-primary" id="btn-add-user">
-                                <i data-lucide="plus"></i> Tambah User Baru
-                            </button>
+                            <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+                                <button class="btn btn-primary" id="btn-add-user">
+                                    <i data-lucide="plus"></i> Tambah User Baru
+                                </button>
+                                <button class="btn btn-secondary" id="btn-export-users"
+                                    style="font-size:12px; padding:6px 12px;">
+                                    <i data-lucide="download"></i> Export CSV
+                                </button>
+                                <label class="btn btn-secondary"
+                                    style="font-size:12px; padding:6px 12px; cursor:pointer; margin:0;">
+                                    <i data-lucide="upload"></i> Import CSV
+                                    <input type="file" id="import-users-file" accept=".csv" style="display:none;">
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Import status bar -->
+                        <div id="import-users-status-bar"
+                            style="display:none; margin-bottom:12px; padding:10px 14px; border-radius:8px; font-size:12px; font-weight:600;">
+                        </div>
+                        <!-- CSV format hint -->
+                        <div
+                            style="font-size:11px; color:var(--text-muted); margin-bottom:12px; padding:8px 12px; background:var(--primary-light); border-radius:6px;">
+                            <strong>Format CSV:</strong> kolom: Username, Nama, Bagian, Role, Status, Operator ID
+                            &nbsp;|&nbsp;
+                            <a id="btn-download-user-template" href="#"
+                                style="color:var(--primary); font-weight:700; text-decoration:none;">⬇ Unduh Template</a>
                         </div>
                         <div class="table-responsive">
                             <table class="data-table">

@@ -4,7 +4,7 @@ import { showLoginScreen, hideLoginScreen, checkAuth, login, logout, changePassw
 import { fetchNextRef, renderInputView, updateLiveSlipPreview, resetTxForm, saveTransaction, printElement, initLayoutDragAndDrop, saveAndPrintTransaction, setupAutocompleteSearch, setupPKCombobox } from './js/transactions.js';
 import { renderRiwayatView, exportRiwayatToCSV, submitEditRequest } from './js/history.js';
 import { renderKodeBiayaView, resetCostCodeForm, submitCostCode, exportCostCodes, importCostCodes, downloadCostCodeTemplate, bulkDeleteSelectedCodes, clearAllCostCodes } from './js/costCodes.js';
-import { renderUsersView, openAddUserModal, submitUser, submitResetPassword } from './js/users.js';
+import { renderUsersView, openAddUserModal, submitUser, submitResetPassword, exportUsers, importUsers, downloadUserTemplate } from './js/users.js';
 import { renderAuditTrailView, clearAuditLogs, updateNotifBadge, renderNotifDropdown, markNotifsRead, startClock, initTheme, toggleTheme, initDeployPanel } from './js/system.js';
 import { renderDashboardView } from './js/dashboard.js';
 import { renderApprovalsView, fetchPendingApprovalsCount } from './js/approvals.js';
@@ -572,6 +572,9 @@ window.addEventListener("DOMContentLoaded", async () => {
 
     document.getElementById("btn-add-user").addEventListener("click", openAddUserModal);
     document.getElementById("btn-submit-user").addEventListener("click", submitUser);
+    document.getElementById("btn-export-users").addEventListener("click", exportUsers);
+    document.getElementById("import-users-file").addEventListener("change", (e) => { const f = e.target.files[0]; if (f) importUsers(f); });
+    document.getElementById("btn-download-user-template").addEventListener("click", (e) => { e.preventDefault(); downloadUserTemplate(); });
 
     document.getElementById("btn-add-other-checklist").addEventListener("click", addCustomChecklistItem);
     document.getElementById("btn-submit-slip-submission").addEventListener("click", submitSlipSubmission);
