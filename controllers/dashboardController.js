@@ -11,19 +11,18 @@ exports.getStats = (req, res) => {
 
     let filterClause = "";
     let filterParams = [];
-    let operatorFilterClause = "";
 
     if (isFiltered) {
         if (opCode) {
             filterClause = "AND (username = ? OR (username IS NULL AND operator_code = ?))";
-            operatorFilterClause = "AND (t.username = ? OR (t.username IS NULL AND t.operator_code = ?))";
             filterParams = [req.user.username, opCode];
         } else {
             filterClause = "AND username = ?";
-            operatorFilterClause = "AND t.username = ?";
             filterParams = [req.user.username];
         }
     }
+
+    const operatorParams = isFiltered ? [req.user.username] : [];
 
     // Queries
     const kpiQuery = `
@@ -63,16 +62,18 @@ exports.getStats = (req, res) => {
 
     const operatorQuery = `
         SELECT 
-            COALESCE(u.operator_code, t.operator_code, '-') as operator_code,
-            COALESCE(u.nama, '-') as operator_name,
-            COUNT(*) as count,
+            u.operator_code,
+            u.nama as operator_name,
+            COUNT(t.id) as count,
             COALESCE(SUM(t.nominal_utama), 0) as volume
-        FROM transactions t
-        LEFT JOIN users u ON 
-            (t.username IS NOT NULL AND u.username = t.username) OR 
-            (t.username IS NULL AND t.operator_code = u.operator_code AND t.operator_code IS NOT NULL AND t.operator_code != '')
-        WHERE t.deleted_at IS NULL ${operatorFilterClause}
-        GROUP BY COALESCE(u.operator_code, t.operator_code, '-'), COALESCE(u.nama, '-')
+        FROM users u
+        LEFT JOIN transactions t ON 
+            (t.deleted_at IS NULL) AND (
+                (t.username IS NOT NULL AND t.username = u.username) OR 
+                (t.username IS NULL AND t.operator_code = u.operator_code AND t.operator_code IS NOT NULL AND LENGTH(TRIM(t.operator_code)) > 0)
+            )
+        WHERE u.deleted_at IS NULL ${isFiltered ? "AND u.username = ?" : ""}
+        GROUP BY u.username, u.nama, u.operator_code
         ORDER BY count DESC
     `;
 
@@ -87,7 +88,7 @@ exports.getStats = (req, res) => {
             db.all(costCodeQuery, filterParams, (err, ccRows) => {
                 if (err) return res.status(500).json({ error: err.message });
 
-                db.all(operatorQuery, filterParams, (err, opRows) => {
+                db.all(operatorQuery, operatorParams, (err, opRows) => {
                     if (err) return res.status(500).json({ error: err.message });
 
                     // Format database outputs
