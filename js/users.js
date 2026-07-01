@@ -435,9 +435,12 @@ export async function importUsers(file) {
             return;
         }
 
-        const firstLine = lines[0].toLowerCase();
-        const hasHeader = firstLine.includes("username") || firstLine.includes("nama") || firstLine.includes("bagian") || firstLine.includes("operator");
-        const dataLines = hasHeader ? lines.slice(1) : lines;
+        const firstLine = lines[0];
+        
+        // Detect delimiter (support comma and semicolon for Indonesian regional settings in Excel)
+        const commaCount = (firstLine.match(/,/g) || []).length;
+        const semiCount = (firstLine.match(/;/g) || []).length;
+        const delimiter = semiCount > commaCount ? ';' : ',';
 
         const parseCSVRow = (line) => {
             const result = [];
@@ -447,7 +450,7 @@ export async function importUsers(file) {
                 const char = line[i];
                 if (char === '"') {
                     inQuotes = !inQuotes;
-                } else if (char === ',' && !inQuotes) {
+                } else if (char === delimiter && !inQuotes) {
                     result.push(current.trim());
                     current = '';
                 } else {
@@ -458,17 +461,38 @@ export async function importUsers(file) {
             return result;
         };
 
+        const parsedHeader = parseCSVRow(firstLine);
+        const headers = parsedHeader.map(h => h.toLowerCase().trim());
+        const hasHeader = headers.includes("username") || headers.includes("nama") || headers.includes("bagian") || headers.includes("role") || headers.includes("status") || headers.includes("operator id") || headers.includes("operator_code");
+        const dataLines = hasHeader ? lines.slice(1) : lines;
+
+        let usernameIdx = 0;
+        let namaIdx = 1;
+        let bagianIdx = 2;
+        let roleIdx = 3;
+        let statusIdx = 4;
+        let opCodeIdx = 5;
+
+        if (hasHeader) {
+            usernameIdx = headers.indexOf("username");
+            namaIdx = headers.indexOf("nama");
+            bagianIdx = headers.indexOf("bagian");
+            roleIdx = headers.indexOf("role");
+            statusIdx = headers.indexOf("status");
+            opCodeIdx = headers.findIndex(h => h.includes("operator") || h.includes("id") || h.includes("code"));
+        }
+
         const rows = [];
         dataLines.forEach(line => {
             const parts = parseCSVRow(line);
-            if (parts.length < 6) return;
+            if (parts.length === 0) return;
 
-            const username = parts[0];
-            const nama = parts[1];
-            const bagian = parts[2];
-            const role = parts[3];
-            const status = parts[4] || "Aktif";
-            const operator_code = parts[5];
+            const username = usernameIdx !== -1 ? (parts[usernameIdx] || "").trim() : "";
+            const nama = namaIdx !== -1 ? (parts[namaIdx] || "").trim() : "";
+            const bagian = bagianIdx !== -1 ? (parts[bagianIdx] || "").trim() : "";
+            const role = roleIdx !== -1 ? (parts[roleIdx] || "").trim() : "";
+            const status = (statusIdx !== -1 && parts[statusIdx]) ? parts[statusIdx].trim() : "Aktif";
+            const operator_code = opCodeIdx !== -1 ? (parts[opCodeIdx] || "").trim() : "";
 
             if (username && nama && role && operator_code) {
                 rows.push({ username, nama, bagian, role, status, operator_code });
