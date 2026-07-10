@@ -13,8 +13,6 @@ export function renderAuditTrailView() {
     const tbody = document.getElementById("audit-table-body");
     if (tbody) tbody.innerHTML = "";
 
-    const filtered = state.auditDB;
-
     if (filtered.length === 0) {
         tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--text-muted);">Tidak ada rekaman log audit.</td></tr>';
         updateAuditPaginationUI(0, 0);
