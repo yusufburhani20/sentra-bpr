@@ -2,9 +2,16 @@ import { state } from './state.js';
 import { formatDate, escapeHtml, showToast } from './utils.js';
 import { showSection } from '../app.js';
 
+let lastAuditDataStr = null;
+
 export function renderAuditTrailView() {
+    const filtered = state.auditDB;
+    const dataStr = JSON.stringify({ items: filtered, page: state.currentAuditPage, total: state.totalAuditCount });
+    if (dataStr === lastAuditDataStr && document.getElementById("audit-table-body").children.length > 0) return;
+    lastAuditDataStr = dataStr;
+
     const tbody = document.getElementById("audit-table-body");
-    tbody.innerHTML = "";
+    if (tbody) tbody.innerHTML = "";
 
     const filtered = state.auditDB;
 

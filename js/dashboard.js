@@ -5,10 +5,16 @@ let chartVolumeTrend = null;
 let chartCcDistribution = null;
 let chartOperatorActivity = null;
 
+let lastDashboardDataStr = null;
+
 export async function renderDashboardView() {
     try {
         const res = await fetch('/api/dashboard/stats').then(r => r.json());
         if (!res.success) return;
+
+        const dataStr = JSON.stringify(res);
+        if (dataStr === lastDashboardDataStr && chartVolumeTrend) return; // Skip re-render if data hasn't changed
+        lastDashboardDataStr = dataStr;
 
         const kpis = res.kpis;
 

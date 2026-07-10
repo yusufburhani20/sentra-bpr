@@ -2,9 +2,11 @@ import { state } from './state.js';
 import { formatDate, formatRupiah, escapeHtml, showToast, openModal, closeModal, authFetch, terbilang } from './utils.js';
 import { showSection } from '../app.js';
 
+let lastRiwayatDataStr = null;
+
 export function renderRiwayatView() {
     const filterSelect = document.getElementById("riwayat-filter-code");
-    if (filterSelect.children.length <= 1) {
+    if (filterSelect && filterSelect.children.length <= 1) {
         state.costCodesDB.forEach(cc => {
             const opt = document.createElement("option");
             opt.value = cc.kode;
@@ -13,10 +15,13 @@ export function renderRiwayatView() {
         });
     }
 
-    const tbody = document.getElementById("riwayat-table-body");
-    tbody.innerHTML = "";
-
     const filtered = state.transactionsDB;
+    const dataStr = JSON.stringify({ items: filtered, page: state.currentTxPage, total: state.totalTxCount });
+    if (dataStr === lastRiwayatDataStr && document.getElementById("riwayat-table-body").children.length > 0) return;
+    lastRiwayatDataStr = dataStr;
+
+    const tbody = document.getElementById("riwayat-table-body");
+    if (tbody) tbody.innerHTML = "";
 
     if (filtered.length === 0) {
         tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:var(--text-muted);">Tidak ada riwayat transaksi yang cocok.</td></tr>';

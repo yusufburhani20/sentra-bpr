@@ -32,14 +32,30 @@ export async function fetchPendingApprovalsCount() {
     }
 }
 
+let lastApprovalsDataStr = null;
+
 export async function renderApprovalsView() {
+    const isAdminOrSpv = state.currentUser && (state.currentUser.role === 'Admin' || state.currentUser.role === 'Kepala Bidang');
+    
+    // Fetch data terlebih dahulu untuk membandingkan state
+    let newPending = [];
+    if (isAdminOrSpv) {
+        newPending = await fetch('/api/approvals/pending').then(r => r.json());
+        state.pendingApprovalsDB = newPending;
+    }
+    const newHistory = await fetch('/api/approvals/history').then(r => r.json());
+    state.historyApprovalsDB = newHistory;
+
+    const dataStr = JSON.stringify({ pending: newPending, history: newHistory });
+    if (dataStr === lastApprovalsDataStr && document.getElementById("approvals-table-body").children.length > 0) return;
+    lastApprovalsDataStr = dataStr;
+
     const tbody = document.getElementById("approvals-table-body");
-    tbody.innerHTML = "";
+    if (tbody) tbody.innerHTML = "";
 
     const historyTbody = document.getElementById("approvals-history-table-body");
     if (historyTbody) historyTbody.innerHTML = "";
 
-    const isAdminOrSpv = state.currentUser && (state.currentUser.role === 'Admin' || state.currentUser.role === 'Kepala Bidang');
     const pendingCard = document.getElementById("approvals-pending-card");
     
     if (pendingCard) {
@@ -54,11 +70,10 @@ export async function renderApprovalsView() {
     // 1. Load pending list if Admin/Supervisor
     if (isAdminOrSpv) {
         try {
-            const rows = await fetch('/api/approvals/pending').then(r => r.json());
-            state.pendingApprovalsDB = rows;
+            const rows = state.pendingApprovalsDB;
 
             if (rows.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:var(--text-muted);">Tidak ada pengajuan persetujuan tertunda.</td></tr>';
+                if (tbody) tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:var(--text-muted);">Tidak ada pengajuan persetujuan tertunda.</td></tr>';
             } else {
                 rows.forEach(r => {
                     const tr = document.createElement("tr");
@@ -140,11 +155,11 @@ export async function renderApprovalsView() {
     // 2. Load history list
     if (historyTbody) {
         try {
-            const historyRows = await fetch('/api/approvals/history').then(r => r.json());
-            if (historyRows.length === 0) {
+            const hRows = state.historyApprovalsDB || [];
+            if (hRows.length === 0) {
                 historyTbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color:var(--text-muted);">Belum ada riwayat pengajuan.</td></tr>';
             } else {
-                historyRows.forEach(r => {
+            hRows.forEach(r => {
                     const tr = document.createElement("tr");
 
                     // Status badge class
