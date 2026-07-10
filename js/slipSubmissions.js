@@ -133,6 +133,13 @@ export function renderSubmissionsTable() {
                 btnExport.parentNode.replaceChild(newBtnExport, btnExport);
                 newBtnExport.addEventListener("click", exportSubmissionsCSV);
             }
+
+            const btnExportPdf = document.getElementById("btn-export-slip-pdf");
+            if (btnExportPdf) {
+                const newBtnExportPdf = btnExportPdf.cloneNode(true);
+                btnExportPdf.parentNode.replaceChild(newBtnExportPdf, btnExportPdf);
+                newBtnExportPdf.addEventListener("click", exportSubmissionsPDF);
+            }
         } else {
             laporanContainer.style.display = "none";
         }
@@ -503,6 +510,102 @@ export function exportSubmissionsCSV() {
     link.click();
     document.body.removeChild(link);
     showToast("Laporan CSV berhasil diunduh!", "success");
+}
+
+export async function exportSubmissionsPDF() {
+    const items = state.slipSubmissionsDB || [];
+    if (items.length === 0) {
+        showToast("Tidak ada data untuk diekspor ke PDF.", "warning");
+        return;
+    }
+
+    showToast("Menyiapkan dokumen PDF, harap tunggu...", "info");
+
+    // Buat wadah kontainer off-screen
+    const container = document.createElement('div');
+    container.style.padding = '20px';
+    container.style.fontFamily = 'sans-serif';
+    container.style.color = '#333';
+    container.style.width = '800px'; // Set fixed width for better A4 scaling
+
+    let html = `
+        <div style="text-align: center; margin-bottom: 20px;">
+            <h2 style="margin: 0; padding: 0;">Laporan Pengiriman Berkas Slip</h2>
+            <p style="margin: 5px 0; color: #666;">Dicetak pada: ${new Date().toLocaleString('id-ID')}</p>
+        </div>
+    `;
+
+    items.forEach(item => {
+        const checklists = [];
+        if (item.checklist_slips) checklists.push("Slip Transaksi");
+        if (item.checklist_mutasi) checklists.push("Mutasi Kas");
+        if (item.checklist_pb) checklists.push("Pemindahbukuan");
+        if (item.checklist_fo) checklists.push("Laporan FO");
+        if (Array.isArray(item.checklist_lainnya)) {
+            item.checklist_lainnya.forEach(other => checklists.push(other));
+        }
+
+        const fotoKirim = item.bukti_kirim_path ? 
+            `<img src="${item.bukti_kirim_path}" style="max-width: 150px; max-height: 150px; object-fit: contain; border: 1px solid #ddd; border-radius: 4px;" alt="Bukti Kirim">` : 
+            `<span style="color: #999; font-style: italic;">Tidak ada foto</span>`;
+
+        const fotoSampai = item.bukti_sampai_path ? 
+            `<img src="${item.bukti_sampai_path}" style="max-width: 150px; max-height: 150px; object-fit: contain; border: 1px solid #ddd; border-radius: 4px;" alt="Bukti Sampai">` : 
+            `<span style="color: #999; font-style: italic;">Belum diterima</span>`;
+
+        html += `
+        <div style="page-break-inside: avoid; border: 1px solid #e5e7eb; border-radius: 8px; padding: 15px; margin-bottom: 20px; background: #fff;">
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 15px;">
+                <tr>
+                    <td style="width: 50%; vertical-align: top;">
+                        <strong>Tanggal Kirim:</strong> ${formatDate(item.tanggal_kirim)}<br>
+                        <strong>Kantor Kas:</strong> ${escapeHtml(item.kantor_kas)}<br>
+                        <strong>Pengirim:</strong> ${escapeHtml(item.operator_name)} (${escapeHtml(item.operator_code)})<br>
+                        <strong>Status:</strong> <span style="color: ${item.status === 'Sampai' ? '#10b981' : '#f59e0b'}; font-weight: bold;">${escapeHtml(item.status)}</span>
+                    </td>
+                    <td style="width: 50%; vertical-align: top;">
+                        <strong>Tanggal Sampai:</strong> ${item.tanggal_sampai ? formatDate(item.tanggal_sampai) : "-"}<br>
+                        <strong>Penerima:</strong> ${escapeHtml(item.penerima_name || "-")}<br>
+                        <strong>Kelengkapan:</strong><br>
+                        <div style="margin-top: 4px; font-size: 13px;">
+                            ${checklists.map(c => `<span style="display:inline-block; background:#e0f2fe; color:#0369a1; padding:2px 6px; border-radius:4px; margin:2px;">✓ ${escapeHtml(c)}</span>`).join("") || "-"}
+                        </div>
+                    </td>
+                </tr>
+            </table>
+            
+            <div style="display: flex; gap: 20px; border-top: 1px dashed #e5e7eb; padding-top: 15px;">
+                <div style="flex: 1; text-align: center;">
+                    <div style="font-weight: bold; margin-bottom: 8px; font-size: 14px;">Foto Bukti Kirim</div>
+                    ${fotoKirim}
+                </div>
+                <div style="flex: 1; text-align: center;">
+                    <div style="font-weight: bold; margin-bottom: 8px; font-size: 14px;">Foto Bukti Terima</div>
+                    ${fotoSampai}
+                </div>
+            </div>
+        </div>
+        `;
+    });
+
+    container.innerHTML = html;
+
+    const opt = {
+        margin:       10,
+        filename:     `laporan_pengiriman_slip_${new Date().toISOString().slice(0,10)}.pdf`,
+        image:        { type: 'jpeg', quality: 0.98 },
+        html2canvas:  { scale: 2, useCORS: true },
+        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    };
+
+    // Panggil html2pdf
+    try {
+        await html2pdf().set(opt).from(container).save();
+        showToast("Laporan PDF berhasil diunduh!", "success");
+    } catch (err) {
+        console.error("Error generating PDF:", err);
+        showToast("Terjadi kesalahan saat memproses PDF.", "danger");
+    }
 }
 
 export async function deleteSubmission(id, name) {

@@ -844,11 +844,18 @@
 
                                 <!-- Export Action -->
                                 <div style="display:flex; justify-content:flex-end;">
-                                    <button class="btn btn-success" id="btn-export-slip-csv"
-                                        style="font-size:12px; padding:8px 14px; height:36px;">
-                                        <i data-lucide="download"
-                                            style="width:12px; height:12px; margin-right:4px;"></i> Ekspor Laporan (CSV)
-                                    </button>
+                                    <div style="display:flex; gap:8px;">
+                                        <button class="btn btn-secondary" id="btn-export-slip-pdf"
+                                            style="font-size:12px; padding:8px 14px; height:36px; border-color:var(--border);">
+                                            <i data-lucide="file-text"
+                                                style="width:12px; height:12px; margin-right:4px;"></i> Ekspor PDF
+                                        </button>
+                                        <button class="btn btn-success" id="btn-export-slip-csv"
+                                            style="font-size:12px; padding:8px 14px; height:36px;">
+                                            <i data-lucide="download"
+                                                style="width:12px; height:12px; margin-right:4px;"></i> Ekspor Laporan (CSV)
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
 
@@ -1560,6 +1567,8 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <!-- Chart.js CDN -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Library html2pdf.js untuk export PDF di client-side -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <!-- Aplikasi Utama JS -->
     <script type="module" src="app.js"></script>
 </body>
