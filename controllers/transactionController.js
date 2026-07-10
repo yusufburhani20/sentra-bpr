@@ -91,8 +91,9 @@ exports.getNextRef = (req, res) => {
             if (row) {
                 const { counter, prefix } = row;
                 const seq = String(counter).padStart(3, '0');
-                const nextRef = `${(prefix || defPrefix)}${seq}`;
-                res.json({ nextRef, counter, prefix: prefix || defPrefix });
+                const actualPrefix = (prefix !== null && prefix !== undefined) ? prefix : defPrefix;
+                const nextRef = `${actualPrefix}${seq}`;
+                res.json({ nextRef, counter, prefix: actualPrefix });
             } else {
                 // Jika belum ada row counter untuk operator ini, buat default counter = 1
                 db.run("INSERT OR IGNORE INTO ref_counters (username, slip_type, counter, prefix) VALUES (?, ?, 1, ?)", [username, slipType, defPrefix], (err2) => {
@@ -101,9 +102,9 @@ exports.getNextRef = (req, res) => {
                     db.get("SELECT counter, prefix FROM ref_counters WHERE username = ? AND slip_type = ?", [username, slipType], (err3, newRow) => {
                         if (err3) return res.status(500).json({ error: err3.message });
                         const cnt = newRow ? newRow.counter : 1;
-                        const prfx = newRow ? newRow.prefix : defPrefix;
+                        const prfx = newRow ? ((newRow.prefix !== null && newRow.prefix !== undefined) ? newRow.prefix : defPrefix) : defPrefix;
                         const seq = String(cnt).padStart(3, '0');
-                        const nextRef = `${(prfx)}${seq}`;
+                        const nextRef = `${prfx}${seq}`;
                         res.json({ nextRef, counter: cnt, prefix: prfx });
                     });
                 });
