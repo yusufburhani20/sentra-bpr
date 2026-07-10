@@ -123,6 +123,12 @@
                         </a>
                     </li>
                     <li>
+                        <a class="nav-item-link" data-view="filebackup" id="nav-filebackup">
+                            <i data-lucide="folder"></i>
+                            <span>File Backup</span>
+                        </a>
+                    </li>
+                    <li>
                         <a class="nav-item-link" data-view="kodebiaya" id="nav-kodebiaya">
                             <i data-lucide="tag"></i>
                             <span>Kelola Kode Biaya</span>
@@ -1260,6 +1266,35 @@
                         </p>
                         <button class="btn btn-primary" onclick="showSection('input')">Kembali ke Input
                             Transaksi</button>
+                    </div>
+                </section>
+
+                <!-- FILE BACKUP PAGE -->
+                <section id="view-filebackup" class="view-section" style="display:none;">
+                    <div class="card" style="margin-bottom: 20px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 16px;">
+                            <h2 style="font-size:16px; font-weight:700;"><i data-lucide="folder"></i> File Backup Server</h2>
+                            <button class="btn btn-secondary" id="btn-refresh-filebackup" style="padding:6px 12px; font-size:12px;">
+                                <i data-lucide="refresh-cw"></i> Muat Ulang
+                            </button>
+                        </div>
+                        <p style="color:var(--text-muted); font-size:13px; margin-bottom:16px;">Menampilkan daftar file backup yang terdapat pada server.</p>
+                        
+                        <div class="table-responsive">
+                            <table class="data-table" id="filebackup-table">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 50%;">Nama File</th>
+                                        <th style="width: 20%;">Ukuran</th>
+                                        <th style="width: 20%;">Terakhir Diubah</th>
+                                        <th style="width: 10%; text-align: center;">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="filebackup-table-body">
+                                    <!-- List file dirender dari JS -->
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </section>
 

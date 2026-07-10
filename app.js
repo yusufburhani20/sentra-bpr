@@ -9,6 +9,7 @@ import { renderAuditTrailView, clearAuditLogs, updateNotifBadge, renderNotifDrop
 import { renderDashboardView } from './js/dashboard.js';
 import { renderApprovalsView, fetchPendingApprovalsCount } from './js/approvals.js';
 import { fetchSubmissions, setupSlipSubmissionForm, submitSlipSubmission, submitConfirmArrival, addCustomChecklistItem } from './js/slipSubmissions.js';
+import { fetchFileBackupList, setupFileBackup } from './js/fileBackup.js';
 
 // Check Permissions
 function checkPermission(view, role) {
@@ -18,6 +19,7 @@ function checkPermission(view, role) {
         "riwayat": ["Admin", "Kepala Bidang", "Teller", "SDMU", "Customer Service"],
         "kodebiaya": ["Admin"],
         "kirimslip": ["Admin", "Kepala Bidang", "Teller", "SDMU", "Customer Service"],
+        "filebackup": ["Admin", "Kepala Bidang", "Teller", "SDMU", "Customer Service"],
         "users": ["Admin", "Kepala Bidang", "Teller", "SDMU", "Customer Service"],
         "audit": ["Admin", "Kepala Bidang"],
         "approvals": ["Admin", "Kepala Bidang", "Teller", "SDMU", "Customer Service"]
@@ -147,6 +149,8 @@ export async function showSection(sectionId) {
         else showTableLoading("audit-table-body", 5);
     } else if (sectionId === "kirimslip") {
         showTableLoading("submissions-table-body", 7);
+    } else if (sectionId === "filebackup") {
+        showTableLoading("filebackup-table-body", 4);
     }
 
     document.querySelectorAll(".view-section").forEach(view => {
@@ -171,6 +175,7 @@ export async function showSection(sectionId) {
         "input": "Input Transaksi Baru",
         "riwayat": "Riwayat Transaksi",
         "kirimslip": "Kirim Berkas Slip & Laporan Completeness Tracker",
+        "filebackup": "Daftar File Backup Server",
         "kodebiaya": "Kelola Kode Biaya",
         "users": "Manajemen Pengguna",
         "audit": "System Audit Trail",
@@ -192,6 +197,8 @@ export async function showSection(sectionId) {
     } else if (sectionId === "kirimslip") {
         setupSlipSubmissionForm();
         fetchSubmissions();
+    } else if (sectionId === "filebackup") {
+        fetchFileBackupList();
     } else if (sectionId === "kodebiaya") {
         renderKodeBiayaView();
     } else if (sectionId === "users") {
@@ -258,6 +265,8 @@ window.addEventListener("DOMContentLoaded", async () => {
 
     setupPKCombobox("tx-debet-rekening", "combo-debet-rek-list",   "code", "tx-debet-nama");
     setupPKCombobox("tx-kredit-rekening","combo-kredit-rek-list",  "code", "tx-kredit-nama");
+
+    setupFileBackup();
 
     document.getElementById("btn-login").addEventListener("click", login);
     document.getElementById("login-password").addEventListener("keydown", (e) => {
