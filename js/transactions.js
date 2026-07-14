@@ -192,8 +192,8 @@ export async function saveTransaction() {
         showToast("Isi Nama Perkiraan dan Rekening Kredit/Lawan!", "warning");
         return;
     }
-    if (nominalUtama <= 0) {
-        showToast("Nominal Utama harus lebih besar dari 0!", "warning");
+    if (nominalUtama <= 0 && nominalDesimal <= 0) {
+        showToast("Nominal transaksi harus lebih besar dari 0!", "warning");
         return;
     }
 
@@ -412,8 +412,8 @@ export async function saveAndPrintTransaction() {
         showToast("Isi Nama Perkiraan dan Rekening Kredit/Lawan!", "warning");
         return;
     }
-    if (nominalUtama <= 0) {
-        showToast("Nominal Utama harus lebih besar dari 0!", "warning");
+    if (nominalUtama <= 0 && nominalDesimal <= 0) {
+        showToast("Nominal transaksi harus lebih besar dari 0!", "warning");
         return;
     }
 
