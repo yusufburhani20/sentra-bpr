@@ -66,36 +66,87 @@ exports.createCostCode = (req, res) => {
     const { kode, deskripsi } = req.body;
     const id = crypto.randomUUID();
 
-    db.run("INSERT INTO cost_codes (id, kode, deskripsi) VALUES (?, ?, ?)",
-        [id, kode, deskripsi], function(err) {
-            if (err) return res.status(400).json({ error: "Kode Biaya sudah terdaftar!" });
+    db.get("SELECT id, deleted_at FROM cost_codes WHERE kode = ?", [kode], (err, row) => {
+        if (err) return res.status(500).json({ error: err.message });
 
-            const logId = crypto.randomUUID();
-            db.run("INSERT INTO audit_logs VALUES (?, ?, ?, ?, ?, ?)",
-                [logId, new Date().toISOString(), req.user.nama, req.user.role,
-                 `Menambahkan Kode Biaya: ${kode} - ${deskripsi}`, req.ip || "127.0.0.1"]);
+        if (row) {
+            if (row.deleted_at) {
+                // If it was soft-deleted, restore/reactivate it
+                db.run("UPDATE cost_codes SET deleted_at = NULL, deskripsi = ?, id = ? WHERE id = ?",
+                    [deskripsi, id, row.id], function(err) {
+                        if (err) return res.status(500).json({ error: err.message });
 
-            res.json({ success: true, id });
+                        const logId = crypto.randomUUID();
+                        db.run("INSERT INTO audit_logs VALUES (?, ?, ?, ?, ?, ?)",
+                            [logId, new Date().toISOString(), req.user.nama, req.user.role,
+                             `Menambahkan (Memulihkan) Kode Biaya: ${kode} - ${deskripsi}`, req.ip || "127.0.0.1"]);
+
+                        return res.json({ success: true, id });
+                    }
+                );
+            } else {
+                // Already active
+                return res.status(400).json({ error: "Kode Biaya sudah terdaftar!" });
+            }
+        } else {
+            // Not exist at all, perform normal insert
+            db.run("INSERT INTO cost_codes (id, kode, deskripsi) VALUES (?, ?, ?)",
+                [id, kode, deskripsi], function(err) {
+                    if (err) return res.status(400).json({ error: "Kode Biaya sudah terdaftar!" });
+
+                    const logId = crypto.randomUUID();
+                    db.run("INSERT INTO audit_logs VALUES (?, ?, ?, ?, ?, ?)",
+                        [logId, new Date().toISOString(), req.user.nama, req.user.role,
+                         `Menambahkan Kode Biaya: ${kode} - ${deskripsi}`, req.ip || "127.0.0.1"]);
+
+                    res.json({ success: true, id });
+                }
+            );
         }
-    );
+    });
 };
 
 exports.updateCostCode = (req, res) => {
     const { id } = req.params;
     const { kode, deskripsi } = req.body;
 
-    db.run("UPDATE cost_codes SET kode = ?, deskripsi = ? WHERE id = ?",
-        [kode, deskripsi, id], function(err) {
-            if (err) return res.status(400).json({ error: err.message });
+    // Check if the new kode is already used by another record
+    db.get("SELECT id, deleted_at FROM cost_codes WHERE kode = ? AND id != ?", [kode, id], (err, row) => {
+        if (err) return res.status(500).json({ error: err.message });
 
-            const logId = "LOG-" + Date.now();
-            db.run("INSERT INTO audit_logs VALUES (?, ?, ?, ?, ?, ?)",
-                [logId, new Date().toISOString(), req.user.nama, req.user.role,
-                 `Mengubah Kode Biaya: ${kode} - ${deskripsi}`, req.ip || "127.0.0.1"]);
+        if (row) {
+            if (!row.deleted_at) {
+                // The other row is active, conflict!
+                return res.status(400).json({ error: "Kode Biaya sudah terdaftar!" });
+            } else {
+                // The other row is soft-deleted. We can delete it to make way for this update.
+                db.run("DELETE FROM cost_codes WHERE id = ?", [row.id], function(err) {
+                    if (err) return res.status(500).json({ error: err.message });
 
-            res.json({ success: true });
+                    // Now perform the update
+                    doUpdate();
+                });
+            }
+        } else {
+            // No conflict
+            doUpdate();
         }
-    );
+    });
+
+    function doUpdate() {
+        db.run("UPDATE cost_codes SET kode = ?, deskripsi = ? WHERE id = ?",
+            [kode, deskripsi, id], function(err) {
+                if (err) return res.status(400).json({ error: err.message });
+
+                const logId = "LOG-" + Date.now();
+                db.run("INSERT INTO audit_logs VALUES (?, ?, ?, ?, ?, ?)",
+                    [logId, new Date().toISOString(), req.user.nama, req.user.role,
+                     `Mengubah Kode Biaya: ${kode} - ${deskripsi}`, req.ip || "127.0.0.1"]);
+
+                res.json({ success: true });
+            }
+        );
+    }
 };
 
 exports.deleteCostCode = (req, res) => {

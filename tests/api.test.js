@@ -244,5 +244,98 @@ describe('Express REST API Authentication & Security Integration Tests', () => {
                 });
             });
         });
+
+        test('Admin can perform CRUD on cost codes and resolve soft-deleted unique conflicts', async () => {
+            const testCode = 'TEST99';
+            const initialDesc = 'Initial Test Cost Code';
+            const updatedDesc = 'Updated Test Cost Code';
+
+            // Ensure not exists
+            await new Promise((resolve) => {
+                db.run("DELETE FROM cost_codes WHERE kode = ?", [testCode], () => resolve());
+            });
+
+            // 1. Create a new cost code
+            let res = await request(app)
+                .post('/api/cost-codes')
+                .set('Cookie', adminCookie)
+                .send({ kode: testCode, deskripsi: initialDesc });
+            expect(res.statusCode).toBe(200);
+            expect(res.body).toHaveProperty('success', true);
+            const createdId = res.body.id;
+
+            // 2. Try to create duplicate active cost code - should fail
+            res = await request(app)
+                .post('/api/cost-codes')
+                .set('Cookie', adminCookie)
+                .send({ kode: testCode, deskripsi: 'Another description' });
+            expect(res.statusCode).toBe(400);
+            expect(res.body.error).toContain('sudah terdaftar');
+
+            // 3. Soft-delete the cost code
+            res = await request(app)
+                .delete(`/api/cost-codes/${createdId}`)
+                .set('Cookie', adminCookie);
+            expect(res.statusCode).toBe(200);
+            expect(res.body).toHaveProperty('success', true);
+
+            // 4. Create new cost code with the same code (reactivate/restore soft-deleted one)
+            res = await request(app)
+                .post('/api/cost-codes')
+                .set('Cookie', adminCookie)
+                .send({ kode: testCode, deskripsi: updatedDesc });
+            expect(res.statusCode).toBe(200);
+            expect(res.body).toHaveProperty('success', true);
+            const newId = res.body.id;
+
+            // Verify it restored/updated
+            const costCodeRow = await new Promise((resolve) => {
+                db.get("SELECT * FROM cost_codes WHERE id = ?", [newId], (err, row) => resolve(row));
+            });
+            expect(costCodeRow).toBeDefined();
+            expect(costCodeRow.kode).toBe(testCode);
+            expect(costCodeRow.deskripsi).toBe(updatedDesc);
+            expect(costCodeRow.deleted_at).toBeNull();
+
+            // 5. Soft-delete the cost code again
+            res = await request(app)
+                .delete(`/api/cost-codes/${newId}`)
+                .set('Cookie', adminCookie);
+            expect(res.statusCode).toBe(200);
+
+            // 6. Create another active cost code (TEST88)
+            const secondCode = 'TEST88';
+            res = await request(app)
+                .post('/api/cost-codes')
+                .set('Cookie', adminCookie)
+                .send({ kode: secondCode, deskripsi: 'Second Cost Code' });
+            expect(res.statusCode).toBe(200);
+            const secondId = res.body.id;
+
+            // 7. Try to edit TEST88's code to TEST99 (which is soft-deleted). This should resolve conflict and succeed.
+            res = await request(app)
+                .put(`/api/cost-codes/${secondId}`)
+                .set('Cookie', adminCookie)
+                .send({ kode: testCode, deskripsi: 'Edited to TEST99' });
+            expect(res.statusCode).toBe(200);
+            expect(res.body).toHaveProperty('success', true);
+
+            // Verify in database: TEST88's id now has kode TEST99, and the old TEST99 soft-deleted row is deleted from the DB
+            const checkActive = await new Promise((resolve) => {
+                db.get("SELECT * FROM cost_codes WHERE id = ?", [secondId], (err, row) => resolve(row));
+            });
+            expect(checkActive.kode).toBe(testCode);
+            expect(checkActive.deskripsi).toBe('Edited to TEST99');
+
+            const checkSoftDeleted = await new Promise((resolve) => {
+                db.get("SELECT * FROM cost_codes WHERE id = ?", [newId], (err, row) => resolve(row));
+            });
+            expect(checkSoftDeleted).toBeFalsy(); // Should be hard-deleted because of the edit conflict resolution
+
+            // Clean up
+            await new Promise((resolve) => {
+                db.run("DELETE FROM cost_codes WHERE kode IN (?, ?)", [testCode, secondCode], () => resolve());
+            });
+        });
     });
 });
