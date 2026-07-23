@@ -82,7 +82,7 @@ exports.queryByRef = async (req, res) => {
              WHERE UPPER(ref) = UPPER(?) 
                 OR UPPER(nik) = UPPER(?) 
                 OR UPPER(ref) LIKE UPPER(?)
-             ORDER BY CAST(coll AS INTEGER) ASC, UPPER(bank) ASC, id ASC`,
+             ORDER BY UPPER(bank) ASC, CAST(coll AS INTEGER) ASC, id ASC`,
             [trimmed, trimmed, searchPattern]
         );
         if (rows.length === 0) {
