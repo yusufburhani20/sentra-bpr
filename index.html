@@ -1317,6 +1317,162 @@
                     </div>
                 </section>
 
+                <!-- ============================================================ -->
+                <!-- VIEW: iDEB / SLIK                                            -->
+                <!-- ============================================================ -->
+                <section id="view-ideb" class="view-section" style="display:none;">
+                    <style>
+                        /* ─── iDEB Styles ──────────────────────────────────────── */
+                        .ideb-toolbar { display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:20px; }
+                        .ideb-toolbar select, .ideb-toolbar input { padding:8px 12px; border-radius:8px; border:1px solid var(--border); background:var(--bg-secondary); color:var(--text-primary); font-size:13px; }
+                        .ideb-grid { display:grid; grid-template-columns:1fr; gap:16px; }
+                        .ideb-section { background:var(--bg-card); border-radius:12px; border:1px solid var(--border); overflow:hidden; }
+                        .ideb-section-header { display:flex; align-items:center; gap:10px; padding:14px 18px; background:linear-gradient(135deg,#1a237e,#283593); color:#fff; font-weight:700; font-size:14px; }
+                        .ideb-section-header .section-badge { background:rgba(255,255,255,0.2); padding:3px 10px; border-radius:20px; font-size:11px; }
+                        .ideb-person-info { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:8px; padding:14px 18px 8px; border-bottom:1px solid var(--border); }
+                        .ideb-info-item { display:flex; flex-direction:column; gap:2px; }
+                        .ideb-info-label { font-size:10px; text-transform:uppercase; color:var(--text-muted); font-weight:600; }
+                        .ideb-info-value { font-size:13px; color:var(--text-primary); font-weight:500; }
+                        .ideb-ref-row { display:flex; gap:8px; padding:10px 18px; border-bottom:1px solid var(--border); background:var(--bg-secondary); }
+                        .ideb-ref-row input { flex:1; padding:7px 12px; border-radius:7px; border:1px solid var(--border); background:var(--bg-card); color:var(--text-primary); font-size:13px; }
+                        .ideb-ref-row button { padding:7px 18px; background:var(--primary); color:#fff; border:none; border-radius:7px; cursor:pointer; font-size:13px; font-weight:600; white-space:nowrap; }
+                        .ideb-ref-row button:hover { background:var(--primary-dark,#1565c0); }
+                        .ideb-table-wrap { overflow-x:auto; padding:0 0 4px; }
+                        .ideb-table { width:100%; border-collapse:collapse; font-size:12px; min-width:900px; }
+                        .ideb-table th { background:#1a237e; color:#fff; padding:8px 10px; text-align:center; font-size:11px; font-weight:700; white-space:nowrap; }
+                        .ideb-table td { padding:7px 10px; border-bottom:1px solid var(--border); text-align:right; white-space:nowrap; }
+                        .ideb-table td:nth-child(2) { text-align:left; max-width:220px; overflow:hidden; text-overflow:ellipsis; }
+                        .ideb-table tr.coll-buruk td { background:rgba(220,38,38,0.12); color:#dc2626; font-weight:700; }
+                        .ideb-table tr:hover td { background:rgba(99,102,241,0.06); }
+                        .ideb-total-row { display:flex; gap:20px; padding:10px 18px; font-size:13px; color:var(--text-muted); border-top:1px solid var(--border); flex-wrap:wrap; }
+                        .ideb-total-row strong { color:var(--text-primary); }
+                        .ideb-empty { text-align:center; padding:28px; color:var(--text-muted); font-size:13px; }
+                        .ideb-coll-badge { display:inline-block; padding:2px 8px; border-radius:20px; font-size:11px; font-weight:700; }
+                        .ideb-coll-1,.ideb-coll-2 { background:#dcfce7; color:#166534; }
+                        .ideb-coll-3 { background:#fef9c3; color:#713f12; }
+                        .ideb-coll-4,.ideb-coll-5 { background:#fee2e2; color:#991b1b; }
+                        .ideb-print-area { display:none; }
+                        @media print {
+                            body > * { display:none !important; }
+                            .ideb-print-area { display:block !important; font-family:Courier,monospace; font-size:10pt; color:#000; }
+                            .ideb-print-section { margin-bottom:12pt; }
+                            .ideb-print-table { width:100%; border-collapse:collapse; font-size:9pt; }
+                            .ideb-print-table th,.ideb-print-table td { border:1px solid #000; padding:3pt 4pt; }
+                            .ideb-print-table tr.coll-buruk td { font-weight:bold; }
+                            .print-signature { display:grid; grid-template-columns:1fr 1fr; gap:40pt; margin-top:20pt; }
+                        }
+                    </style>
+
+                    <!-- Toolbar -->
+                    <div class="card" style="padding:20px; margin-bottom:0;">
+                        <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:12px; margin-bottom:16px;">
+                            <div>
+                                <h2 style="margin:0 0 4px; font-size:18px; font-weight:700;">Informasi Debitur iDEB / SLIK</h2>
+                                <p style="margin:0; font-size:12px; color:var(--text-muted);">Ringkasan Fasilitas Kredit — Sistem Layanan Informasi Keuangan OJK</p>
+                            </div>
+                            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                                <select id="ideb-kantor-sel" style="padding:8px 12px; border-radius:8px; border:1px solid var(--border); background:var(--bg-secondary); color:var(--text-primary); font-size:13px; min-width:220px;">
+                                    <option value="">— Pilih Kantor —</option>
+                                </select>
+                                <input type="date" id="ideb-tanggal" style="padding:8px 12px; border-radius:8px; border:1px solid var(--border); background:var(--bg-secondary); color:var(--text-primary); font-size:13px;">
+                                <button id="ideb-print-btn" onclick="idebPrint()" style="padding:8px 18px; background:#1a237e; color:#fff; border:none; border-radius:8px; cursor:pointer; font-size:13px; font-weight:600; display:flex; align-items:center; gap:6px;">
+                                    <i data-lucide="printer" style="width:15px;height:15px;"></i> Cetak
+                                </button>
+                                <button onclick="idebReset()" style="padding:8px 14px; background:var(--bg-secondary); color:var(--text-primary); border:1px solid var(--border); border-radius:8px; cursor:pointer; font-size:13px;">
+                                    <i data-lucide="refresh-cw" style="width:15px;height:15px;"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <!-- Stats Row -->
+                        <div id="ideb-stats-row" style="display:flex; gap:16px; font-size:12px; color:var(--text-muted);"></div>
+                    </div>
+
+                    <!-- 4 iDEB Sections -->
+                    <div class="ideb-grid" style="margin-top:16px;" id="ideb-grid-container">
+
+                        <!-- DEBITUR -->
+                        <div class="ideb-section">
+                            <div class="ideb-section-header">
+                                <i data-lucide="user" style="width:16px;height:16px;"></i>
+                                DEBITUR
+                                <span class="section-badge" id="ideb-debitur-coll-badge"></span>
+                            </div>
+                            <div class="ideb-ref-row">
+                                <input type="text" id="ideb-ref-debitur" placeholder="Masukkan No. REF / Nomor Register..." onkeydown="if(event.key==='Enter') idebSearch('debitur')">
+                                <button onclick="idebSearch('debitur')">Cari</button>
+                            </div>
+                            <div class="ideb-person-info" id="ideb-info-debitur">
+                                <div class="ideb-info-item"><span class="ideb-info-label">Nama</span><span class="ideb-info-value" id="ideb-nama-debitur">—</span></div>
+                                <div class="ideb-info-item"><span class="ideb-info-label">NIK</span><span class="ideb-info-value" id="ideb-nik-debitur">—</span></div>
+                                <div class="ideb-info-item" style="grid-column:1/-1"><span class="ideb-info-label">Alamat</span><span class="ideb-info-value" id="ideb-alamat-debitur">—</span></div>
+                            </div>
+                            <div class="ideb-table-wrap"><table class="ideb-table" id="ideb-table-debitur"><thead><tr><th>NO</th><th style="text-align:left">NAMA LIK</th><th>PLAFON</th><th>BAKI DEBET</th><th>SUKU<br>BUNGA</th><th>JW</th><th>JATUH<br>TEMPO</th><th>FRK<br>TGK</th><th>KOL<br>TGK</th><th>COLL</th><th>KET</th><th>TGK<br>HRI</th></tr></thead><tbody id="ideb-tbody-debitur"><tr><td colspan="12" class="ideb-empty">Masukkan No. REF lalu klik Cari</td></tr></tbody></table></div>
+                            <div class="ideb-total-row" id="ideb-total-debitur"></div>
+                        </div>
+
+                        <!-- PASANGAN DEBITUR -->
+                        <div class="ideb-section">
+                            <div class="ideb-section-header" style="background:linear-gradient(135deg,#1b5e20,#2e7d32);">
+                                <i data-lucide="users" style="width:16px;height:16px;"></i>
+                                PASANGAN DEBITUR
+                                <span class="section-badge" id="ideb-pasangan-debitur-coll-badge"></span>
+                            </div>
+                            <div class="ideb-ref-row">
+                                <input type="text" id="ideb-ref-pasangan-debitur" placeholder="Masukkan No. REF / Nomor Register..." onkeydown="if(event.key==='Enter') idebSearch('pasangan-debitur')">
+                                <button onclick="idebSearch('pasangan-debitur')" style="background:#2e7d32;">Cari</button>
+                            </div>
+                            <div class="ideb-person-info" id="ideb-info-pasangan-debitur">
+                                <div class="ideb-info-item"><span class="ideb-info-label">Nama</span><span class="ideb-info-value" id="ideb-nama-pasangan-debitur">—</span></div>
+                                <div class="ideb-info-item"><span class="ideb-info-label">NIK</span><span class="ideb-info-value" id="ideb-nik-pasangan-debitur">—</span></div>
+                                <div class="ideb-info-item" style="grid-column:1/-1"><span class="ideb-info-label">Alamat</span><span class="ideb-info-value" id="ideb-alamat-pasangan-debitur">—</span></div>
+                            </div>
+                            <div class="ideb-table-wrap"><table class="ideb-table" id="ideb-table-pasangan-debitur"><thead><tr><th>NO</th><th style="text-align:left">NAMA LIK</th><th>PLAFON</th><th>BAKI DEBET</th><th>SUKU<br>BUNGA</th><th>JW</th><th>JATUH<br>TEMPO</th><th>FRK<br>TGK</th><th>KOL<br>TGK</th><th>COLL</th><th>KET</th><th>TGK<br>HRI</th></tr></thead><tbody id="ideb-tbody-pasangan-debitur"><tr><td colspan="12" class="ideb-empty">Masukkan No. REF lalu klik Cari</td></tr></tbody></table></div>
+                            <div class="ideb-total-row" id="ideb-total-pasangan-debitur"></div>
+                        </div>
+
+                        <!-- PENJAMIN -->
+                        <div class="ideb-section">
+                            <div class="ideb-section-header" style="background:linear-gradient(135deg,#e65100,#bf360c);">
+                                <i data-lucide="shield" style="width:16px;height:16px;"></i>
+                                PENJAMIN
+                                <span class="section-badge" id="ideb-penjamin-coll-badge"></span>
+                            </div>
+                            <div class="ideb-ref-row">
+                                <input type="text" id="ideb-ref-penjamin" placeholder="Masukkan No. REF / Nomor Register..." onkeydown="if(event.key==='Enter') idebSearch('penjamin')">
+                                <button onclick="idebSearch('penjamin')" style="background:#bf360c;">Cari</button>
+                            </div>
+                            <div class="ideb-person-info" id="ideb-info-penjamin">
+                                <div class="ideb-info-item"><span class="ideb-info-label">Nama</span><span class="ideb-info-value" id="ideb-nama-penjamin">—</span></div>
+                                <div class="ideb-info-item"><span class="ideb-info-label">NIK</span><span class="ideb-info-value" id="ideb-nik-penjamin">—</span></div>
+                                <div class="ideb-info-item" style="grid-column:1/-1"><span class="ideb-info-label">Alamat</span><span class="ideb-info-value" id="ideb-alamat-penjamin">—</span></div>
+                            </div>
+                            <div class="ideb-table-wrap"><table class="ideb-table" id="ideb-table-penjamin"><thead><tr><th>NO</th><th style="text-align:left">NAMA LIK</th><th>PLAFON</th><th>BAKI DEBET</th><th>SUKU<br>BUNGA</th><th>JW</th><th>JATUH<br>TEMPO</th><th>FRK<br>TGK</th><th>KOL<br>TGK</th><th>COLL</th><th>KET</th><th>TGK<br>HRI</th></tr></thead><tbody id="ideb-tbody-penjamin"><tr><td colspan="12" class="ideb-empty">Masukkan No. REF lalu klik Cari</td></tr></tbody></table></div>
+                            <div class="ideb-total-row" id="ideb-total-penjamin"></div>
+                        </div>
+
+                        <!-- PASANGAN PENJAMIN -->
+                        <div class="ideb-section">
+                            <div class="ideb-section-header" style="background:linear-gradient(135deg,#4a148c,#6a1b9a);">
+                                <i data-lucide="shield-check" style="width:16px;height:16px;"></i>
+                                PASANGAN PENJAMIN
+                                <span class="section-badge" id="ideb-pasangan-penjamin-coll-badge"></span>
+                            </div>
+                            <div class="ideb-ref-row">
+                                <input type="text" id="ideb-ref-pasangan-penjamin" placeholder="Masukkan No. REF / Nomor Register..." onkeydown="if(event.key==='Enter') idebSearch('pasangan-penjamin')">
+                                <button onclick="idebSearch('pasangan-penjamin')" style="background:#6a1b9a;">Cari</button>
+                            </div>
+                            <div class="ideb-person-info" id="ideb-info-pasangan-penjamin">
+                                <div class="ideb-info-item"><span class="ideb-info-label">Nama</span><span class="ideb-info-value" id="ideb-nama-pasangan-penjamin">—</span></div>
+                                <div class="ideb-info-item"><span class="ideb-info-label">NIK</span><span class="ideb-info-value" id="ideb-nik-pasangan-penjamin">—</span></div>
+                                <div class="ideb-info-item" style="grid-column:1/-1"><span class="ideb-info-label">Alamat</span><span class="ideb-info-value" id="ideb-alamat-pasangan-penjamin">—</span></div>
+                            </div>
+                            <div class="ideb-table-wrap"><table class="ideb-table" id="ideb-table-pasangan-penjamin"><thead><tr><th>NO</th><th style="text-align:left">NAMA LIK</th><th>PLAFON</th><th>BAKI DEBET</th><th>SUKU<br>BUNGA</th><th>JW</th><th>JATUH<br>TEMPO</th><th>FRK<br>TGK</th><th>KOL<br>TGK</th><th>COLL</th><th>KET</th><th>TGK<br>HRI</th></tr></thead><tbody id="ideb-tbody-pasangan-penjamin"><tr><td colspan="12" class="ideb-empty">Masukkan No. REF lalu klik Cari</td></tr></tbody></table></div>
+                            <div class="ideb-total-row" id="ideb-total-pasangan-penjamin"></div>
+                        </div>
+
+                    </div><!-- end ideb-grid -->
+                </section><!-- end view-ideb -->
+
             </main>
         </div>
 
@@ -1569,161 +1725,7 @@
         </div>
     </div>
 
-    <!-- ============================================================ -->
-    <!-- VIEW: iDEB / SLIK                                            -->
-    <!-- ============================================================ -->
-    <section id="view-ideb" class="view-section" style="display:none;">
-        <style>
-            /* ─── iDEB Styles ──────────────────────────────────────── */
-            .ideb-toolbar { display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:20px; }
-            .ideb-toolbar select, .ideb-toolbar input { padding:8px 12px; border-radius:8px; border:1px solid var(--border); background:var(--bg-secondary); color:var(--text-primary); font-size:13px; }
-            .ideb-grid { display:grid; grid-template-columns:1fr; gap:16px; }
-            .ideb-section { background:var(--bg-card); border-radius:12px; border:1px solid var(--border); overflow:hidden; }
-            .ideb-section-header { display:flex; align-items:center; gap:10px; padding:14px 18px; background:linear-gradient(135deg,#1a237e,#283593); color:#fff; font-weight:700; font-size:14px; }
-            .ideb-section-header .section-badge { background:rgba(255,255,255,0.2); padding:3px 10px; border-radius:20px; font-size:11px; }
-            .ideb-person-info { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:8px; padding:14px 18px 8px; border-bottom:1px solid var(--border); }
-            .ideb-info-item { display:flex; flex-direction:column; gap:2px; }
-            .ideb-info-label { font-size:10px; text-transform:uppercase; color:var(--text-muted); font-weight:600; }
-            .ideb-info-value { font-size:13px; color:var(--text-primary); font-weight:500; }
-            .ideb-ref-row { display:flex; gap:8px; padding:10px 18px; border-bottom:1px solid var(--border); background:var(--bg-secondary); }
-            .ideb-ref-row input { flex:1; padding:7px 12px; border-radius:7px; border:1px solid var(--border); background:var(--bg-card); color:var(--text-primary); font-size:13px; }
-            .ideb-ref-row button { padding:7px 18px; background:var(--primary); color:#fff; border:none; border-radius:7px; cursor:pointer; font-size:13px; font-weight:600; white-space:nowrap; }
-            .ideb-ref-row button:hover { background:var(--primary-dark,#1565c0); }
-            .ideb-table-wrap { overflow-x:auto; padding:0 0 4px; }
-            .ideb-table { width:100%; border-collapse:collapse; font-size:12px; min-width:900px; }
-            .ideb-table th { background:#1a237e; color:#fff; padding:8px 10px; text-align:center; font-size:11px; font-weight:700; white-space:nowrap; }
-            .ideb-table td { padding:7px 10px; border-bottom:1px solid var(--border); text-align:right; white-space:nowrap; }
-            .ideb-table td:nth-child(2) { text-align:left; max-width:220px; overflow:hidden; text-overflow:ellipsis; }
-            .ideb-table tr.coll-buruk td { background:rgba(220,38,38,0.12); color:#dc2626; font-weight:700; }
-            .ideb-table tr:hover td { background:rgba(99,102,241,0.06); }
-            .ideb-total-row { display:flex; gap:20px; padding:10px 18px; font-size:13px; color:var(--text-muted); border-top:1px solid var(--border); flex-wrap:wrap; }
-            .ideb-total-row strong { color:var(--text-primary); }
-            .ideb-empty { text-align:center; padding:28px; color:var(--text-muted); font-size:13px; }
-            .ideb-coll-badge { display:inline-block; padding:2px 8px; border-radius:20px; font-size:11px; font-weight:700; }
-            .ideb-coll-1,.ideb-coll-2 { background:#dcfce7; color:#166534; }
-            .ideb-coll-3 { background:#fef9c3; color:#713f12; }
-            .ideb-coll-4,.ideb-coll-5 { background:#fee2e2; color:#991b1b; }
-            .ideb-print-area { display:none; }
-            @media print {
-                body > * { display:none !important; }
-                .ideb-print-area { display:block !important; font-family:Courier,monospace; font-size:10pt; color:#000; }
-                .ideb-print-section { margin-bottom:12pt; }
-                .ideb-print-table { width:100%; border-collapse:collapse; font-size:9pt; }
-                .ideb-print-table th,.ideb-print-table td { border:1px solid #000; padding:3pt 4pt; }
-                .ideb-print-table tr.coll-buruk td { font-weight:bold; }
-                .print-signature { display:grid; grid-template-columns:1fr 1fr; gap:40pt; margin-top:20pt; }
-            }
-        </style>
 
-        <!-- Toolbar -->
-        <div class="card" style="padding:20px; margin-bottom:0;">
-            <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:12px; margin-bottom:16px;">
-                <div>
-                    <h2 style="margin:0 0 4px; font-size:18px; font-weight:700;">Informasi Debitur iDEB / SLIK</h2>
-                    <p style="margin:0; font-size:12px; color:var(--text-muted);">Ringkasan Fasilitas Kredit — Sistem Layanan Informasi Keuangan OJK</p>
-                </div>
-                <div style="display:flex; gap:8px; flex-wrap:wrap;">
-                    <select id="ideb-kantor-sel" style="padding:8px 12px; border-radius:8px; border:1px solid var(--border); background:var(--bg-secondary); color:var(--text-primary); font-size:13px; min-width:220px;">
-                        <option value="">— Pilih Kantor —</option>
-                    </select>
-                    <input type="date" id="ideb-tanggal" style="padding:8px 12px; border-radius:8px; border:1px solid var(--border); background:var(--bg-secondary); color:var(--text-primary); font-size:13px;">
-                    <button id="ideb-print-btn" onclick="idebPrint()" style="padding:8px 18px; background:#1a237e; color:#fff; border:none; border-radius:8px; cursor:pointer; font-size:13px; font-weight:600; display:flex; align-items:center; gap:6px;">
-                        <i data-lucide="printer" style="width:15px;height:15px;"></i> Cetak
-                    </button>
-                    <button onclick="idebReset()" style="padding:8px 14px; background:var(--bg-secondary); color:var(--text-primary); border:1px solid var(--border); border-radius:8px; cursor:pointer; font-size:13px;">
-                        <i data-lucide="refresh-cw" style="width:15px;height:15px;"></i>
-                    </button>
-                </div>
-            </div>
-            <!-- Stats Row -->
-            <div id="ideb-stats-row" style="display:flex; gap:16px; font-size:12px; color:var(--text-muted);"></div>
-        </div>
-
-        <!-- 4 iDEB Sections -->
-        <div class="ideb-grid" style="margin-top:16px;" id="ideb-grid-container">
-
-            <!-- DEBITUR -->
-            <div class="ideb-section">
-                <div class="ideb-section-header">
-                    <i data-lucide="user" style="width:16px;height:16px;"></i>
-                    DEBITUR
-                    <span class="section-badge" id="ideb-debitur-coll-badge"></span>
-                </div>
-                <div class="ideb-ref-row">
-                    <input type="text" id="ideb-ref-debitur" placeholder="Masukkan No. REF / Nomor Register..." onkeydown="if(event.key==='Enter') idebSearch('debitur')">
-                    <button onclick="idebSearch('debitur')">Cari</button>
-                </div>
-                <div class="ideb-person-info" id="ideb-info-debitur">
-                    <div class="ideb-info-item"><span class="ideb-info-label">Nama</span><span class="ideb-info-value" id="ideb-nama-debitur">—</span></div>
-                    <div class="ideb-info-item"><span class="ideb-info-label">NIK</span><span class="ideb-info-value" id="ideb-nik-debitur">—</span></div>
-                    <div class="ideb-info-item" style="grid-column:1/-1"><span class="ideb-info-label">Alamat</span><span class="ideb-info-value" id="ideb-alamat-debitur">—</span></div>
-                </div>
-                <div class="ideb-table-wrap"><table class="ideb-table" id="ideb-table-debitur"><thead><tr><th>NO</th><th style="text-align:left">NAMA LIK</th><th>PLAFON</th><th>BAKI DEBET</th><th>SUKU<br>BUNGA</th><th>JW</th><th>JATUH<br>TEMPO</th><th>FRK<br>TGK</th><th>KOL<br>TGK</th><th>COLL</th><th>KET</th><th>TGK<br>HRI</th></tr></thead><tbody id="ideb-tbody-debitur"><tr><td colspan="12" class="ideb-empty">Masukkan No. REF lalu klik Cari</td></tr></tbody></table></div>
-                <div class="ideb-total-row" id="ideb-total-debitur"></div>
-            </div>
-
-            <!-- PASANGAN DEBITUR -->
-            <div class="ideb-section">
-                <div class="ideb-section-header" style="background:linear-gradient(135deg,#1b5e20,#2e7d32);">
-                    <i data-lucide="users" style="width:16px;height:16px;"></i>
-                    PASANGAN DEBITUR
-                    <span class="section-badge" id="ideb-pasangan-debitur-coll-badge"></span>
-                </div>
-                <div class="ideb-ref-row">
-                    <input type="text" id="ideb-ref-pasangan-debitur" placeholder="Masukkan No. REF / Nomor Register..." onkeydown="if(event.key==='Enter') idebSearch('pasangan-debitur')">
-                    <button onclick="idebSearch('pasangan-debitur')" style="background:#2e7d32;">Cari</button>
-                </div>
-                <div class="ideb-person-info" id="ideb-info-pasangan-debitur">
-                    <div class="ideb-info-item"><span class="ideb-info-label">Nama</span><span class="ideb-info-value" id="ideb-nama-pasangan-debitur">—</span></div>
-                    <div class="ideb-info-item"><span class="ideb-info-label">NIK</span><span class="ideb-info-value" id="ideb-nik-pasangan-debitur">—</span></div>
-                    <div class="ideb-info-item" style="grid-column:1/-1"><span class="ideb-info-label">Alamat</span><span class="ideb-info-value" id="ideb-alamat-pasangan-debitur">—</span></div>
-                </div>
-                <div class="ideb-table-wrap"><table class="ideb-table" id="ideb-table-pasangan-debitur"><thead><tr><th>NO</th><th style="text-align:left">NAMA LIK</th><th>PLAFON</th><th>BAKI DEBET</th><th>SUKU<br>BUNGA</th><th>JW</th><th>JATUH<br>TEMPO</th><th>FRK<br>TGK</th><th>KOL<br>TGK</th><th>COLL</th><th>KET</th><th>TGK<br>HRI</th></tr></thead><tbody id="ideb-tbody-pasangan-debitur"><tr><td colspan="12" class="ideb-empty">Masukkan No. REF lalu klik Cari</td></tr></tbody></table></div>
-                <div class="ideb-total-row" id="ideb-total-pasangan-debitur"></div>
-            </div>
-
-            <!-- PENJAMIN -->
-            <div class="ideb-section">
-                <div class="ideb-section-header" style="background:linear-gradient(135deg,#e65100,#bf360c);">
-                    <i data-lucide="shield" style="width:16px;height:16px;"></i>
-                    PENJAMIN
-                    <span class="section-badge" id="ideb-penjamin-coll-badge"></span>
-                </div>
-                <div class="ideb-ref-row">
-                    <input type="text" id="ideb-ref-penjamin" placeholder="Masukkan No. REF / Nomor Register..." onkeydown="if(event.key==='Enter') idebSearch('penjamin')">
-                    <button onclick="idebSearch('penjamin')" style="background:#bf360c;">Cari</button>
-                </div>
-                <div class="ideb-person-info" id="ideb-info-penjamin">
-                    <div class="ideb-info-item"><span class="ideb-info-label">Nama</span><span class="ideb-info-value" id="ideb-nama-penjamin">—</span></div>
-                    <div class="ideb-info-item"><span class="ideb-info-label">NIK</span><span class="ideb-info-value" id="ideb-nik-penjamin">—</span></div>
-                    <div class="ideb-info-item" style="grid-column:1/-1"><span class="ideb-info-label">Alamat</span><span class="ideb-info-value" id="ideb-alamat-penjamin">—</span></div>
-                </div>
-                <div class="ideb-table-wrap"><table class="ideb-table" id="ideb-table-penjamin"><thead><tr><th>NO</th><th style="text-align:left">NAMA LIK</th><th>PLAFON</th><th>BAKI DEBET</th><th>SUKU<br>BUNGA</th><th>JW</th><th>JATUH<br>TEMPO</th><th>FRK<br>TGK</th><th>KOL<br>TGK</th><th>COLL</th><th>KET</th><th>TGK<br>HRI</th></tr></thead><tbody id="ideb-tbody-penjamin"><tr><td colspan="12" class="ideb-empty">Masukkan No. REF lalu klik Cari</td></tr></tbody></table></div>
-                <div class="ideb-total-row" id="ideb-total-penjamin"></div>
-            </div>
-
-            <!-- PASANGAN PENJAMIN -->
-            <div class="ideb-section">
-                <div class="ideb-section-header" style="background:linear-gradient(135deg,#4a148c,#6a1b9a);">
-                    <i data-lucide="shield-check" style="width:16px;height:16px;"></i>
-                    PASANGAN PENJAMIN
-                    <span class="section-badge" id="ideb-pasangan-penjamin-coll-badge"></span>
-                </div>
-                <div class="ideb-ref-row">
-                    <input type="text" id="ideb-ref-pasangan-penjamin" placeholder="Masukkan No. REF / Nomor Register..." onkeydown="if(event.key==='Enter') idebSearch('pasangan-penjamin')">
-                    <button onclick="idebSearch('pasangan-penjamin')" style="background:#6a1b9a;">Cari</button>
-                </div>
-                <div class="ideb-person-info" id="ideb-info-pasangan-penjamin">
-                    <div class="ideb-info-item"><span class="ideb-info-label">Nama</span><span class="ideb-info-value" id="ideb-nama-pasangan-penjamin">—</span></div>
-                    <div class="ideb-info-item"><span class="ideb-info-label">NIK</span><span class="ideb-info-value" id="ideb-nik-pasangan-penjamin">—</span></div>
-                    <div class="ideb-info-item" style="grid-column:1/-1"><span class="ideb-info-label">Alamat</span><span class="ideb-info-value" id="ideb-alamat-pasangan-penjamin">—</span></div>
-                </div>
-                <div class="ideb-table-wrap"><table class="ideb-table" id="ideb-table-pasangan-penjamin"><thead><tr><th>NO</th><th style="text-align:left">NAMA LIK</th><th>PLAFON</th><th>BAKI DEBET</th><th>SUKU<br>BUNGA</th><th>JW</th><th>JATUH<br>TEMPO</th><th>FRK<br>TGK</th><th>KOL<br>TGK</th><th>COLL</th><th>KET</th><th>TGK<br>HRI</th></tr></thead><tbody id="ideb-tbody-pasangan-penjamin"><tr><td colspan="12" class="ideb-empty">Masukkan No. REF lalu klik Cari</td></tr></tbody></table></div>
-                <div class="ideb-total-row" id="ideb-total-pasangan-penjamin"></div>
-            </div>
-
-        </div><!-- end ideb-grid -->
-    </section><!-- end view-ideb -->
 
     <!-- ============================================================ -->
     <!-- iDEB PRINT AREA (hidden, only visible on print)              -->
