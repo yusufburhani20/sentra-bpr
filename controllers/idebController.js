@@ -64,9 +64,15 @@ exports.queryByRef = async (req, res) => {
         if (!ref || !ref.trim()) {
             return res.status(400).json({ error: 'Nomor REF tidak boleh kosong.' });
         }
+        const trimmed = ref.trim();
+        const searchPattern = `%${trimmed}%`;
         const rows = await dbAll(
-            `SELECT * FROM ideb_records WHERE UPPER(ref) = UPPER(?) ORDER BY NoID`,
-            [ref.trim()]
+            `SELECT * FROM ideb_records 
+             WHERE UPPER(ref) = UPPER(?) 
+                OR UPPER(nik) = UPPER(?) 
+                OR UPPER(ref) LIKE UPPER(?)
+             ORDER BY id`,
+            [trimmed, trimmed, searchPattern]
         );
         if (rows.length === 0) {
             return res.json({ found: false, records: [], summary: null });
