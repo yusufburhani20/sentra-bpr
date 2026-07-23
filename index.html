@@ -1375,25 +1375,26 @@
                                 height: auto !important;
                                 overflow: visible !important;
                                 font-family: 'Courier New', Courier, monospace !important;
-                                font-size: 9.5pt !important;
+                                font-size: 7.8pt !important;
+                                line-height: 1.15 !important;
                                 color: #000 !important;
                                 background: #fff !important;
                             }
                             .ideb-print-section {
-                                page-break-inside: avoid !important;
-                                margin-bottom: 14pt !important;
+                                margin-bottom: 6pt !important;
                             }
                             .ideb-print-table {
                                 width: 100% !important;
                                 border-collapse: collapse !important;
-                                font-size: 8.5pt !important;
+                                font-size: 7.5pt !important;
+                                line-height: 1.15 !important;
                             }
                             .ideb-print-table tr {
                                 page-break-inside: avoid !important;
                             }
                             .ideb-print-table th, .ideb-print-table td {
                                 border: 1px solid #000 !important;
-                                padding: 3pt 4pt !important;
+                                padding: 1px 3px !important;
                             }
                             .ideb-print-table tr.coll-buruk td {
                                 font-weight: bold !important;
@@ -1401,12 +1402,12 @@
                             .print-signature {
                                 display: flex !important;
                                 justify-content: space-between !important;
-                                margin-top: 24pt !important;
+                                margin-top: 10pt !important;
                                 page-break-inside: avoid !important;
                             }
                             @page {
                                 size: A4 portrait;
-                                margin: 10mm;
+                                margin: 4mm 6mm 4mm 6mm;
                             }
                         }
                     </style>
@@ -2065,9 +2066,9 @@
             const nik = s.summary.nik || '—';
             const alamat = s.summary.alamat || '—';
             const collBuruk = s.summary.coll_buruk || '1';
-            const totalBD = Math.round(s.summary.total_bd || 0);
-            const totalAngs = Math.round(s.summary.total_angsuran || 0);
 
+            let totalBD = 0;
+            let totalAngs = 0;
             let rows = '';
             s.records.forEach((rec, i) => {
                 const coll = parseInt(rec.coll) || 0;
@@ -2076,39 +2077,43 @@
                 const ketText = ketMap[rawKondisi] || rawKondisi || '';
                 const dateStr = fmtDate(rec.jatem);
 
+                const osNum = parseFloat(rec.os) || 0;
+                totalBD += osNum;
+                totalAngs += calcAngsuranRow(rec.plafon, rec.os, rec.sb, rec.jw, rec.angsuran);
+
                 rows += `<tr class="${isBuruk ? 'coll-buruk' : ''}" style="${isBuruk ? 'color:#cc0000; font-weight:bold;' : ''}">` +
-                    `<td style="text-align:center;">${i + 1}</td>` +
-                    `<td style="text-align:left;">${rec.bank || ''}</td>` +
-                    `<td style="text-align:right;">${fmtNum(rec.plafon)}</td>` +
-                    `<td style="text-align:right;">${fmtNum(rec.os)}</td>` +
-                    `<td style="text-align:center;">${fmtSB(rec.sb)}</td>` +
-                    `<td style="text-align:center;">${rec.jw || 0}</td>` +
-                    `<td style="text-align:center;">${dateStr}</td>` +
-                    `<td style="text-align:center;">${rec.frekuensirestrukturisasi ?? 0}</td>` +
-                    `<td style="text-align:center;">${rec.tunggakan ?? 0}</td>` +
-                    `<td style="text-align:center;">${rec.coll || ''}</td>` +
-                    `<td style="text-align:center;">${ketText}</td>` +
-                    `<td style="text-align:center;">${rec.tung_hari ?? 0}</td>` +
+                    `<td style="text-align:center; padding:1px 3px;">${i + 1}</td>` +
+                    `<td style="text-align:left; padding:1px 3px;">${rec.bank || ''}</td>` +
+                    `<td style="text-align:right; padding:1px 3px;">${fmtNumComma(rec.plafon)}</td>` +
+                    `<td style="text-align:right; padding:1px 3px;">${fmtNumComma(rec.os)}</td>` +
+                    `<td style="text-align:center; padding:1px 3px;">${fmtSB(rec.sb)}</td>` +
+                    `<td style="text-align:center; padding:1px 3px;">${rec.jw || 0}</td>` +
+                    `<td style="text-align:center; padding:1px 3px;">${dateStr}</td>` +
+                    `<td style="text-align:center; padding:1px 3px;">${rec.frekuensirestrukturisasi ?? 0}</td>` +
+                    `<td style="text-align:center; padding:1px 3px;">${rec.tunggakan ?? 0}</td>` +
+                    `<td style="text-align:center; padding:1px 3px;">${rec.coll || ''}</td>` +
+                    `<td style="text-align:left; padding:1px 3px;">${ketText}</td>` +
+                    `<td style="text-align:center; padding:1px 3px;">${rec.tung_hari ?? 0}</td>` +
                     `</tr>`;
             });
 
             return `
-                <div class="ideb-print-section" style="margin-bottom: 16px;">
-                    <div style="font-weight: bold; text-transform: uppercase; margin-bottom: 4px;">${label}</div>
-                    <div style="display: flex; justify-content: space-between; font-size: 9pt; margin-bottom: 6px;">
+                <div class="ideb-print-section" style="margin-bottom: 6px;">
+                    <div style="font-weight: bold; text-transform: uppercase; margin-bottom: 1px; font-size: 8.5pt;">${label}</div>
+                    <div style="display: flex; justify-content: space-between; font-size: 7.8pt; margin-bottom: 2px;">
                         <div>
                             <div>Nama &nbsp;&nbsp;: ${nama}</div>
                             <div>NIK &nbsp;&nbsp;&nbsp;: ${nik}</div>
-                            <div>Alamat : ${alamat}</div>
+                            <div>ALAMAT : ${alamat}</div>
                         </div>
                         <div style="font-weight: bold; align-self: flex-end;">
                             KOLEKTIBILITAS TERBURUK : ${collBuruk}
                         </div>
                     </div>
-                    <table class="ideb-print-table">
+                    <table class="ideb-print-table" style="width:100%; border-collapse:collapse; font-size:7.5pt; line-height:1.15;">
                         <thead>
                             <tr>
-                                <th style="width: 30px;">NO</th>
+                                <th style="width: 20px;">NO</th>
                                 <th>NAMA LJK</th>
                                 <th>PLAFON</th>
                                 <th>BAKI DEBET</th>
@@ -2124,30 +2129,29 @@
                         </thead>
                         <tbody>${rows}</tbody>
                     </table>
-                    <div style="display: flex; gap: 30px; font-size: 9pt; margin-top: 4px; font-weight: bold;">
-                        <span>Total BD : ${fmtNum(totalBD)}</span>
-                        <span>Perkiraan Angs. /Bulan : ${fmtNum(totalAngs)}</span>
+                    <div style="font-size: 7.8pt; margin-top: 2px;">
+                        Total BD : ${fmtNumComma(totalBD)} &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Perkiraan Angs. /Bulan : ${fmtNumComma(totalAngs)}
                     </div>
-                    <div style="border-bottom: 1px dashed #000; margin-top: 8px; margin-bottom: 12px;"></div>
+                    <div style="border-bottom: 1px dashed #000; margin-top: 4px; margin-bottom: 6px;"></div>
                 </div>`;
         }
 
         const regNo = document.getElementById('ideb-ref-debitur').value.trim() || '—';
 
         const printHtml = `
-            <div style="font-family: 'Courier New', Courier, monospace; font-size: 9.5pt; color: #000; padding: 10px;">
+            <div style="font-family: 'Courier New', Courier, monospace; font-size: 7.8pt; line-height: 1.15; color: #000; padding: 0px;">
                 <!-- Header -->
-                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;">
-                    <div style="color: #cc0000; font-weight: bold; font-size: 11pt; display: flex; align-items: center; gap: 4px;">
-                        <span style="font-size: 14pt;">⚠️</span> RAHASIA
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 4px;">
+                    <div style="color: #cc0000; font-weight: bold; font-size: 9.5pt; display: flex; align-items: center; gap: 4px;">
+                        <span style="font-size: 11pt;">⚠️</span> RAHASIA
                     </div>
                     <div style="text-align: center; flex: 1;">
-                        <div style="font-weight: bold; font-size: 12pt; text-transform: uppercase;">RINGKASAN FASILITAS iDEB</div>
-                        <div style="font-size: 9.5pt;">No. Register : ${regNo}</div>
+                        <div style="font-weight: bold; font-size: 10.5pt; text-transform: uppercase;">RINGKASAN FASILITAS iDEB</div>
+                        <div style="font-size: 8.5pt;">No. Register : ${regNo}</div>
                     </div>
-                    <div style="width: 100px;"></div>
+                    <div style="width: 80px;"></div>
                 </div>
-                <div style="border-bottom: 2px solid #000; margin-bottom: 14px;"></div>
+                <div style="border-bottom: 1.5px solid #000; margin-bottom: 6px;"></div>
 
                 <!-- Content Sections -->
                 ${buildSectionHtml('debitur', 'DEBITUR')}
@@ -2156,20 +2160,20 @@
                 ${buildSectionHtml('pasangan-penjamin', 'PASANGAN PENJAMIN')}
 
                 <!-- Footer & Signatures -->
-                <div style="margin-top: 10px; font-size: 9.5pt; page-break-inside: avoid;">
-                    <div style="margin-bottom: 14px;">Kantor : ${kantorNm}</div>
+                <div style="margin-top: 4px; font-size: 8pt; page-break-inside: avoid;">
+                    <div style="margin-bottom: 6px;">Kantor &nbsp;: ${kantorNm}</div>
 
-                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-top: 20px;">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-top: 10px;">
                         <div style="text-align: left; min-width: 220px;">
                             <div>Mengetahui :</div>
-                            <div style="height: 50px;"></div>
+                            <div style="height: 32px;"></div>
                             <div style="font-weight: bold;">${svNama}</div>
                             <div>${svJab}</div>
                         </div>
                         <div style="text-align: left; min-width: 240px;">
                             <div>${kotaNm}, ${tglFmt}</div>
                             <div>Petugas iDeb,</div>
-                            <div style="height: 50px;"></div>
+                            <div style="height: 32px;"></div>
                             <div style="font-weight: bold;">${userNama}</div>
                             <div>${userJab}</div>
                         </div>
