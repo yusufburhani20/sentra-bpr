@@ -11,6 +11,9 @@
 
 <body>
 
+    <!-- iDEB PRINT AREA (visible only when printing) -->
+    <div class="ideb-print-area" id="ideb-print-area"></div>
+
     <!-- LOGIN SCREEN -->
     <div id="login-screen" class="login-screen" style="display: none;">
         <div class="login-card">
@@ -1353,13 +1356,58 @@
                         .ideb-coll-4,.ideb-coll-5 { background:#fee2e2; color:#991b1b; }
                         .ideb-print-area { display:none; }
                         @media print {
-                            body > * { display:none !important; }
-                            .ideb-print-area { display:block !important; font-family:Courier,monospace; font-size:10pt; color:#000; }
-                            .ideb-print-section { margin-bottom:12pt; }
-                            .ideb-print-table { width:100%; border-collapse:collapse; font-size:9pt; }
-                            .ideb-print-table th,.ideb-print-table td { border:1px solid #000; padding:3pt 4pt; }
-                            .ideb-print-table tr.coll-buruk td { font-weight:bold; }
-                            .print-signature { display:grid; grid-template-columns:1fr 1fr; gap:40pt; margin-top:20pt; }
+                            html, body {
+                                background: #fff !important;
+                                color: #000 !important;
+                                height: auto !important;
+                                min-height: auto !important;
+                                overflow: visible !important;
+                                margin: 0 !important;
+                                padding: 0 !important;
+                            }
+                            body > * {
+                                display: none !important;
+                            }
+                            body > #ideb-print-area, body > .ideb-print-area, #ideb-print-area {
+                                display: block !important;
+                                position: relative !important;
+                                width: 100% !important;
+                                height: auto !important;
+                                overflow: visible !important;
+                                font-family: 'Courier New', Courier, monospace !important;
+                                font-size: 9.5pt !important;
+                                color: #000 !important;
+                                background: #fff !important;
+                            }
+                            .ideb-print-section {
+                                page-break-inside: avoid !important;
+                                margin-bottom: 14pt !important;
+                            }
+                            .ideb-print-table {
+                                width: 100% !important;
+                                border-collapse: collapse !important;
+                                font-size: 8.5pt !important;
+                            }
+                            .ideb-print-table tr {
+                                page-break-inside: avoid !important;
+                            }
+                            .ideb-print-table th, .ideb-print-table td {
+                                border: 1px solid #000 !important;
+                                padding: 3pt 4pt !important;
+                            }
+                            .ideb-print-table tr.coll-buruk td {
+                                font-weight: bold !important;
+                            }
+                            .print-signature {
+                                display: flex !important;
+                                justify-content: space-between !important;
+                                margin-top: 24pt !important;
+                                page-break-inside: avoid !important;
+                            }
+                            @page {
+                                size: A4 portrait;
+                                margin: 10mm;
+                            }
                         }
                     </style>
 
