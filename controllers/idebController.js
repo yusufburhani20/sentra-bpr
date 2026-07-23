@@ -77,24 +77,20 @@ exports.queryByRef = async (req, res) => {
         if (rows.length === 0) {
             return res.json({ found: false, records: [], summary: null });
         }
-        // Calculate summary matching legacy Desktop app formula
+        // Calculate summary matching exact VB6 Desktop formula: (Plafon * (1 + SB/100)) / JW for active rows (OS > 0)
         const first = rows[0];
         const totalBD = rows.reduce((sum, r) => sum + (parseFloat(r.os) || 0), 0);
         const totalAngsuran = rows.reduce((sum, r) => {
             const osNum = parseFloat(r.os) || 0;
             if (osNum <= 0) return sum; // Ignore Lunas (OS = 0) rows
 
-            if (r.angsuran && parseFloat(r.angsuran) > 0) {
-                return sum + parseFloat(r.angsuran);
-            }
             const plafonNum = parseFloat(r.plafon) || 0;
             const sbNum = parseFloat(r.sb) || 0;
             const jwNum = parseFloat(r.jw) || 0;
             if (jwNum <= 0) return sum;
 
-            const pokokBln = plafonNum / jwNum;
-            const bungaBln = (plafonNum * (sbNum / 100)) / jwNum;
-            return sum + (pokokBln + bungaBln);
+            const rowAngs = (plafonNum * (1 + (sbNum / 100))) / jwNum;
+            return sum + rowAngs;
         }, 0);
 
         const collBuruk = first.coll_buruk;

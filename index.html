@@ -1841,20 +1841,17 @@
         if (!v || isNaN(v)) return '0';
         return Math.round(parseFloat(v)).toLocaleString('en-US');
     }
-    function calcAngsuranRow(plafon, os, sb, jw, dbAngsuran) {
+    function calcAngsuranRow(plafon, os, sb, jw) {
         const osNum = parseFloat(os) || 0;
-        if (osNum <= 0) return 0; // If OS is 0 (Lunas), angsuran is ALWAYS 0!
+        if (osNum <= 0) return 0; // Facility is Lunas (OS = 0)
 
-        if (dbAngsuran && parseFloat(dbAngsuran) > 0) return parseFloat(dbAngsuran);
-        
         const plafonNum = parseFloat(plafon) || 0;
         const sbNum = parseFloat(sb) || 0;
         const jwNum = parseFloat(jw) || 0;
         if (jwNum <= 0) return 0;
 
-        const pokokBln = plafonNum / jwNum;
-        const bungaBln = (plafonNum * (sbNum / 100)) / jwNum;
-        return pokokBln + bungaBln;
+        // Exact Legacy VB6 Desktop formula: (Plafon * (1 + SukuBunga/100)) / JangkaWaktu
+        return (plafonNum * (1 + (sbNum / 100))) / jwNum;
     }
     function fmtDate(s) {
         if (!s || s === '0' || s === 'null') return '';
