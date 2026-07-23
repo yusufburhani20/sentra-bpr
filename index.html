@@ -1846,7 +1846,8 @@
         if (osNum <= 0) return 0; // If OS is 0 (Lunas), angsuran is ALWAYS 0!
 
         const plafonNum = parseFloat(plafon) || 0;
-        const sbNum = parseFloat(sb) || 0;
+        const rawSb = parseFloat(sb) || 0;
+        const sbNum = Math.round(rawSb * 10) / 10; // Round SB to 1 decimal place like VB6 Desktop
         const jwNum = parseFloat(jw) || 0;
         if (jwNum <= 0) return 0;
 

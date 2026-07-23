@@ -86,7 +86,8 @@ exports.queryByRef = async (req, res) => {
             if (osNum <= 0) return sum; // Ignore Lunas (OS = 0) rows
 
             const plafonNum = parseFloat(r.plafon) || 0;
-            const sbNum = parseFloat(r.sb) || 0;
+            const rawSb = parseFloat(r.sb) || 0;
+            const sbNum = Math.round(rawSb * 10) / 10; // Round SB to 1 decimal place like VB6 Desktop
             const jwNum = parseFloat(r.jw) || 0;
             if (jwNum <= 0) return sum;
 
