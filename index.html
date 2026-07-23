@@ -1875,6 +1875,7 @@
             data.forEach(k => {
                 const opt = document.createElement('option');
                 opt.value = k.idgroup || k.idkantor;
+                opt.dataset.group = String(k.idgroup || '').padStart(3, '0');
                 opt.textContent = k.nmkantor + (k.titimangsa ? ' — ' + k.titimangsa : '');
                 sel.appendChild(opt);
             });
@@ -1887,6 +1888,11 @@
             const r = await fetch('/api/ideb/user-info');
             idebState.userInfo = await r.json();
         } catch(e) { idebState.userInfo = null; }
+
+        try {
+            const rUsers = await fetch('/api/ideb/users');
+            idebState.allUsers = await rUsers.json();
+        } catch(e) { idebState.allUsers = []; }
     }
 
     // ─── Load Stats ─────────────────────────────────────────────────────────────
@@ -1936,11 +1942,7 @@
         tbody.innerHTML = '<tr><td colspan="12" class="ideb-empty" style="color:var(--primary);">🔍 Mencari data...</td></tr>';
 
         try {
-            const r = await fetch('/api/ideb/query', {
-                method: 'POST',
-                headers: {'Content-Type':'application/json'},
-                body: JSON.stringify({ ref })
-            });
+            const r = await fetch('/api/ideb/query?ref=' + encodeURIComponent(ref));
             const data = await r.json();
             idebState[role] = data;
             idebRenderSection(role, data);
@@ -1971,7 +1973,7 @@
         nik.textContent    = s.nik    || '—';
         alamat.textContent = s.alamat || '—';
 
-        const collBuruk = parseInt(s.coll_buruk) || 0;
+        const collBuruk = data.records.reduce((max, r) => Math.max(max, parseInt(r.coll) || 1), 1);
         if (badge) {
             badge.textContent = collBuruk >= 3 ? ('COLL BURUK: '+collBuruk) : '';
             badge.style.background = collBuruk>=3 ? 'rgba(220,38,38,0.85)' : 'rgba(255,255,255,0.2)';
@@ -2028,20 +2030,24 @@
     // ─── Print ──────────────────────────────────────────────────────────────────
     function idebPrint() {
         const kantorSel = document.getElementById('ideb-kantor-sel');
-        const kantorOptionText = kantorSel.options[kantorSel.selectedIndex]?.text || '';
+        const selectedOpt = kantorSel.options[kantorSel.selectedIndex];
+        const kantorOptionText = selectedOpt?.text || '';
         const kantorNm = kantorOptionText.split(' — ')[0] || 'KANTOR CABANG SINGAPARNA';
         const kotaNm   = kantorOptionText.split(' — ')[1] || 'TASIKMALAYA';
+        const selectedGroup = selectedOpt?.dataset?.group || String(kantorSel.value || '').padStart(3, '0');
 
         const tglInput = document.getElementById('ideb-tanggal').value;
         const d = tglInput ? new Date(tglInput) : new Date();
         const monthsShort = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agust','Sep','Okt','Nov','Des'];
         const tglFmt = `${d.getDate()} ${monthsShort[d.getMonth()]} ${d.getFullYear()}`;
 
-        const u = idebState.userInfo;
-        const svNama = u?.linked ? u.nama_sv : 'EVA PARIDAH';
-        const svJab = u?.linked ? u.jabatan_sv : 'KEPALA BIDANG OPERASIONAL';
-        const userNama = u?.linked ? u.nama : 'MOCH ILMAN ALI SHOLEHUDIN';
-        const userJab = u?.linked ? u.jabatan : 'STAF IT';
+        // Look up matching pejabat & user for selected kantor branch
+        const matchedUser = (idebState.allUsers || []).find(u => u.cabang === selectedGroup) || idebState.userInfo;
+
+        const svNama = matchedUser?.nama_sv || (idebState.userInfo?.linked ? idebState.userInfo.nama_sv : 'EVA PARIDAH');
+        const svJab = matchedUser?.jabatan_sv || (idebState.userInfo?.linked ? idebState.userInfo.jabatan_sv : 'KEPALA BIDANG OPERASIONAL');
+        const userNama = matchedUser?.nama || (idebState.userInfo?.linked ? idebState.userInfo.nama : 'MOCH ILMAN ALI SHOLEHUDIN');
+        const userJab = matchedUser?.jabatan || (idebState.userInfo?.linked ? idebState.userInfo.jabatan : 'STAF IT');
 
         const ketMap = {
             '00': 'AKTIF', '0': 'AKTIF',

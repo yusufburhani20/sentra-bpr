@@ -56,6 +56,17 @@ exports.getUserInfo = async (req, res) => {
     }
 };
 
+// ─── GET /api/ideb/users ───────────────────────────────────────────────────────
+// Returns all iDEB users (for mapping Pejabat/Supervisor by Cabang/Kantor)
+exports.getAllUsers = async (req, res) => {
+    try {
+        const rows = await dbAll('SELECT * FROM ideb_users ORDER BY cabang');
+        res.json(rows);
+    } catch (e) {
+        res.status(500).json({ error: 'Gagal mengambil data user iDEB.' });
+    }
+};
+
 // ─── POST /api/ideb/query ──────────────────────────────────────────────────────
 // Query iDEB records by REF number (for one of 4 roles: debitur/pasangan/penjamin/pasangan_penjamin)
 exports.queryByRef = async (req, res) => {

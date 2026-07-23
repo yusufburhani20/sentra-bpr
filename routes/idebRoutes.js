@@ -10,6 +10,7 @@ router.use(requireAuth);
 router.get('/kantor',       idebController.getKantor);
 router.get('/ref-kondisi',  idebController.getRefKondisi);
 router.get('/user-info',    idebController.getUserInfo);
+router.get('/users',        idebController.getAllUsers);
 router.get('/stats',        idebController.getStats);
 router.get('/search-ref',   idebController.searchRefSuggestions);
 
