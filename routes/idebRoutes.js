@@ -16,8 +16,9 @@ router.get('/stats',        idebController.getStats);
 router.post('/query', idebController.queryByRef);
 
 // ─── Import ────────────────────────────────────────────────────────────────────
-router.post('/import-csv',    idebController.uploadMiddleware, idebController.importData);
-router.post('/import-kantor', idebController.upsertKantor);
-router.post('/import-users',  idebController.upsertUsers);
+router.post('/import-csv',     idebController.uploadMiddleware, idebController.importData);
+router.post('/import-records', idebController.importRecords);
+router.post('/import-kantor',  idebController.upsertKantor);
+router.post('/import-users',   idebController.upsertUsers);
 
 module.exports = router;

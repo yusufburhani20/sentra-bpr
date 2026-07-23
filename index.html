@@ -1378,6 +1378,9 @@
                                 <button id="ideb-print-btn" onclick="idebPrint()" style="padding:8px 18px; background:#1a237e; color:#fff; border:none; border-radius:8px; cursor:pointer; font-size:13px; font-weight:600; display:flex; align-items:center; gap:6px;">
                                     <i data-lucide="printer" style="width:15px;height:15px;"></i> Cetak
                                 </button>
+                                <button onclick="idebOpenImportModal()" style="padding:8px 16px; background:#2e7d32; color:#fff; border:none; border-radius:8px; cursor:pointer; font-size:13px; font-weight:600; display:flex; align-items:center; gap:6px;">
+                                    <i data-lucide="upload" style="width:15px;height:15px;"></i> Import Data
+                                </button>
                                 <button onclick="idebReset()" style="padding:8px 14px; background:var(--bg-secondary); color:var(--text-primary); border:1px solid var(--border); border-radius:8px; cursor:pointer; font-size:13px;">
                                     <i data-lucide="refresh-cw" style="width:15px;height:15px;"></i>
                                 </button>
@@ -1558,6 +1561,38 @@
         </div>
 
     </div><!-- /#main-app -->
+
+    <!-- MODAL: Import iDEB Data -->
+    <div class="modal-overlay" id="modal-ideb-import">
+        <div class="modal-container" style="max-width: 540px;">
+            <div class="modal-header" style="background:#2e7d32; color:#fff;">
+                <h3 class="modal-title" style="color:#fff; font-size:16px;"><i data-lucide="upload" style="width:18px;height:18px;vertical-align:middle;margin-right:6px;"></i> Import Data iDEB / SLIK</h3>
+                <button class="modal-close modal-close-btn" style="color:#fff; opacity:0.8;" onclick="document.getElementById('modal-ideb-import').classList.remove('active')"><i data-lucide="x"></i></button>
+            </div>
+            <div class="modal-body" style="padding:20px;">
+                <p style="font-size:13px; color:var(--text-muted); margin-bottom:16px; line-height:1.5;">
+                    Pilih file <strong>JSON</strong> hasil ekspor SQL Server (<code>ideb_records_*.json</code>, <code>ideb_kantor_*.json</code>, <code>ideb_users_*.json</code>) atau file <strong>CSV / TXT</strong>.
+                </p>
+                <div class="form-group" style="margin-bottom:16px;">
+                    <label style="font-size:12px; font-weight:700; margin-bottom:6px; display:block;">Pilih File Data (.json, .csv, .txt):</label>
+                    <input type="file" id="ideb-import-file-input" accept=".json,.csv,.txt" style="width:100%; padding:12px; border:2px dashed var(--border); border-radius:8px; background:var(--bg-secondary); font-size:13px; cursor:pointer;">
+                </div>
+                <div id="ideb-import-progress" style="display:none; margin-bottom:16px;">
+                    <div style="font-size:12px; font-weight:600; margin-bottom:6px; color:var(--primary);" id="ideb-import-status-text">Mengunggah dan memproses data...</div>
+                    <div style="width:100%; background:var(--bg-secondary); border-radius:10px; height:8px; overflow:hidden;">
+                        <div id="ideb-import-progress-bar" style="width:0%; background:#2e7d32; height:100%; transition:width 0.3s;"></div>
+                    </div>
+                </div>
+                <div id="ideb-import-result" style="font-size:13px; padding:12px; border-radius:8px; display:none; margin-bottom:16px; line-height:1.5;"></div>
+            </div>
+            <div class="modal-footer" style="display:flex; justify-content:flex-end; gap:8px; padding:12px 20px; border-top:1px solid var(--border);">
+                <button class="btn btn-secondary" onclick="document.getElementById('modal-ideb-import').classList.remove('active')">Tutup</button>
+                <button class="btn btn-primary" id="btn-do-ideb-import" onclick="idebProcessImportFile()" style="background:#2e7d32; border-color:#2e7d32;">
+                    <i data-lucide="upload-cloud"></i> Mulai Import
+                </button>
+            </div>
+        </div>
+    </div>
 
     <!-- MODAL: Ganti Password Sendiri -->
     <div class="modal-overlay" id="modal-change-password">
@@ -1969,6 +2004,127 @@
         const pa = document.getElementById('ideb-print-area');
         pa.innerHTML = printHtml;
         window.print();
+    }
+
+    // ─── Import Functions ────────────────────────────────────────────────────────
+    function idebOpenImportModal() {
+        document.getElementById('ideb-import-file-input').value = '';
+        document.getElementById('ideb-import-progress').style.display = 'none';
+        document.getElementById('ideb-import-result').style.display = 'none';
+        document.getElementById('modal-ideb-import').classList.add('active');
+        if (window.lucide) window.lucide.createIcons();
+    }
+
+    async function idebProcessImportFile() {
+        const fileInput = document.getElementById('ideb-import-file-input');
+        if (!fileInput.files || fileInput.files.length === 0) {
+            alert('Pilih file yang akan diimport terlebih dahulu.');
+            return;
+        }
+        const file = fileInput.files[0];
+        const fileName = file.name.toLowerCase();
+
+        const progressDiv = document.getElementById('ideb-import-progress');
+        const progressBar = document.getElementById('ideb-import-progress-bar');
+        const statusText = document.getElementById('ideb-import-status-text');
+        const resultDiv = document.getElementById('ideb-import-result');
+        const btnDo = document.getElementById('btn-do-ideb-import');
+
+        progressDiv.style.display = 'block';
+        resultDiv.style.display = 'none';
+        progressBar.style.width = '10%';
+        btnDo.disabled = true;
+
+        try {
+            if (fileName.endsWith('.json')) {
+                statusText.textContent = 'Membaca file JSON...';
+                const text = await file.text();
+                const json = JSON.parse(text);
+
+                if (!Array.isArray(json)) {
+                    throw new Error('Format JSON tidak valid (harus berupa array).');
+                }
+
+                const sample = json[0] || {};
+                let endpoint = '/api/ideb/import-records';
+                let payloadKey = 'records';
+
+                if ('idkantor' in sample || 'nmkantor' in sample) {
+                    endpoint = '/api/ideb/import-kantor';
+                    payloadKey = 'kantor';
+                } else if ('userid' in sample || 'nama_sv' in sample) {
+                    endpoint = '/api/ideb/import-users';
+                    payloadKey = 'users';
+                }
+
+                statusText.textContent = `Mengimport ${json.length.toLocaleString('id-ID')} data ke server...`;
+                progressBar.style.width = '30%';
+
+                const CHUNK_SIZE = 2000;
+                let totalInserted = 0;
+
+                for (let i = 0; i < json.length; i += CHUNK_SIZE) {
+                    const chunk = json.slice(i, i + CHUNK_SIZE);
+                    const percent = Math.round(30 + ((i / json.length) * 65));
+                    progressBar.style.width = percent + '%';
+                    statusText.textContent = `Mengirim batch ${Math.floor(i / CHUNK_SIZE) + 1} dari ${Math.ceil(json.length / CHUNK_SIZE)} (${totalInserted.toLocaleString('id-ID')} tersimpan)...`;
+
+                    const res = await fetch(endpoint, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ [payloadKey]: chunk })
+                    });
+
+                    const data = await res.json();
+                    if (!res.ok) throw new Error(data.error || 'Gagal import.');
+                    totalInserted += (data.inserted || chunk.length);
+                }
+
+                progressBar.style.width = '100%';
+                statusText.textContent = 'Import Selesai!';
+                resultDiv.style.display = 'block';
+                resultDiv.style.background = '#dcfce7';
+                resultDiv.style.color = '#166534';
+                resultDiv.style.border = '1px solid #bbf7d0';
+                resultDiv.innerHTML = `<strong>Berhasil!</strong> ${totalInserted.toLocaleString('id-ID')} data berhasil disimpan ke database Sentra.`;
+
+            } else if (fileName.endsWith('.csv') || fileName.endsWith('.txt')) {
+                statusText.textContent = 'Mengunggah file CSV/TXT ke server...';
+                progressBar.style.width = '50%';
+                const formData = new FormData();
+                formData.append('file', file);
+
+                const res = await fetch('/api/ideb/import-csv', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'Gagal import CSV.');
+
+                progressBar.style.width = '100%';
+                statusText.textContent = 'Import Selesai!';
+                resultDiv.style.display = 'block';
+                resultDiv.style.background = '#dcfce7';
+                resultDiv.style.color = '#166534';
+                resultDiv.style.border = '1px solid #bbf7d0';
+                resultDiv.innerHTML = `<strong>Berhasil!</strong> ${data.message}`;
+            } else {
+                throw new Error('Format file tidak didukung. Gunakan file .json, .csv, atau .txt.');
+            }
+
+            idebLoadKantor();
+            idebLoadStats();
+        } catch(e) {
+            progressBar.style.width = '0%';
+            statusText.textContent = 'Terjadi kesalahan.';
+            resultDiv.style.display = 'block';
+            resultDiv.style.background = '#fee2e2';
+            resultDiv.style.color = '#991b1b';
+            resultDiv.style.border = '1px solid #fecaca';
+            resultDiv.innerHTML = `<strong>Gagal:</strong> ${e.message}`;
+        } finally {
+            btnDo.disabled = false;
+        }
     }
 
     // ─── Init iDEB when view is activated ───────────────────────────────────────

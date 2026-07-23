@@ -268,6 +268,59 @@ exports.upsertUsers = async (req, res) => {
     }
 };
 
+// ─── POST /api/ideb/import-records ───────────────────────────────────────────
+// Bulk insert/upsert for records JSON data
+exports.importRecords = async (req, res) => {
+    try {
+        const { records } = req.body;
+        if (!Array.isArray(records) || records.length === 0) {
+            return res.status(400).json({ error: 'Data records tidak valid atau kosong.' });
+        }
+        const isPg = process.env.DB_TYPE === 'postgres';
+        let inserted = 0;
+
+        for (const r of records) {
+            const sql = isPg
+                ? `INSERT INTO ideb_records (ref, nik, nama, alamat, coll_buruk, bank, plafon, os, sb, jw, jatem, tunggakan, coll, kondisi, tgl_update, tgl_input, cabang, tung_hari, tunggakanpokok, tunggakanbunga, frekuensirestrukturisasi, angsuran)
+                   VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22)`
+                : `INSERT INTO ideb_records (ref, nik, nama, alamat, coll_buruk, bank, plafon, os, sb, jw, jatem, tunggakan, coll, kondisi, tgl_update, tgl_input, cabang, tung_hari, tunggakanpokok, tunggakanbunga, frekuensirestrukturisasi, angsuran)
+                   VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`;
+
+            const params = [
+                r.ref || null, r.nik || null, r.nama || null, r.alamat || null,
+                r.coll_buruk !== undefined ? String(r.coll_buruk) : null,
+                r.bank || r.nama_lik || null,
+                parseFloat(r.plafon) || 0,
+                parseFloat(r.os || r.baki_debet) || 0,
+                parseFloat(r.sb || r.suku_bunga) || 0,
+                parseFloat(r.jw || r.jangka_waktu) || 0,
+                r.jatem || r.jatuh_tempo || null,
+                r.tunggakan !== undefined ? String(r.tunggakan) : null,
+                r.coll !== undefined ? String(r.coll) : null,
+                r.kondisi || null,
+                r.tgl_update || null,
+                r.tgl_input || null,
+                r.cabang || null,
+                r.tung_hari !== undefined ? String(r.tung_hari) : null,
+                r.tunggakanpokok !== undefined ? parseFloat(r.tunggakanpokok) : null,
+                r.tunggakanbunga !== undefined ? parseFloat(r.tunggakanbunga) : null,
+                r.frekuensirestrukturisasi !== undefined ? parseFloat(r.frekuensirestrukturisasi) : null,
+                r.angsuran !== undefined ? parseFloat(r.angsuran) : null,
+            ];
+            try {
+                await dbRun(sql, params);
+                inserted++;
+            } catch (rowErr) {
+                // Ignore duplicates or bad rows
+            }
+        }
+        res.json({ success: true, message: `${inserted} data iDEB berhasil diimport.`, inserted });
+    } catch (e) {
+        console.error('[iDEB] importRecords error:', e);
+        res.status(500).json({ error: 'Gagal mengimport data iDEB.' });
+    }
+};
+
 // ─── GET /api/ideb/stats ───────────────────────────────────────────────────────
 exports.getStats = async (req, res) => {
     try {
@@ -283,3 +336,4 @@ exports.getStats = async (req, res) => {
         res.status(500).json({ error: 'Gagal mengambil statistik iDEB.' });
     }
 };
+
