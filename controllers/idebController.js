@@ -71,7 +71,7 @@ exports.getAllUsers = async (req, res) => {
 // Query iDEB records by REF number (for one of 4 roles: debitur/pasangan/penjamin/pasangan_penjamin)
 exports.queryByRef = async (req, res) => {
     try {
-        const { ref } = req.body;
+        const ref = (req.body && req.body.ref) || req.query.ref || '';
         if (!ref || !ref.trim()) {
             return res.status(400).json({ error: 'Nomor REF tidak boleh kosong.' });
         }

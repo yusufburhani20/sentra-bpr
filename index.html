@@ -1975,8 +1975,15 @@
 
         const collBuruk = data.records.reduce((max, r) => Math.max(max, parseInt(r.coll) || 1), 1);
         if (badge) {
-            badge.textContent = collBuruk >= 3 ? ('COLL BURUK: '+collBuruk) : '';
-            badge.style.background = collBuruk>=3 ? 'rgba(220,38,38,0.85)' : 'rgba(255,255,255,0.2)';
+            badge.textContent = collBuruk >= 3 ? ('COLL BURUK: ' + collBuruk) : ('COLL TERBURUK: ' + collBuruk);
+            badge.style.background = collBuruk >= 3 ? 'rgba(220,38,38,0.9)' : 'rgba(34,197,94,0.9)';
+            badge.style.color = '#fff';
+            badge.style.padding = '2px 8px';
+            badge.style.borderRadius = '12px';
+            badge.style.fontSize = '11px';
+            badge.style.fontWeight = '700';
+            badge.style.marginLeft = '8px';
+            badge.style.display = 'inline-block';
         }
 
         let html = '';

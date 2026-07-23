@@ -15,6 +15,7 @@ router.get('/stats',        idebController.getStats);
 router.get('/search-ref',   idebController.searchRefSuggestions);
 
 // ─── Query ─────────────────────────────────────────────────────────────────────
+router.get('/query',  idebController.queryByRef);
 router.post('/query', idebController.queryByRef);
 
 // ─── Import ────────────────────────────────────────────────────────────────────
