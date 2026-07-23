@@ -339,6 +339,10 @@ exports.importRecords = async (req, res) => {
         let inserted = 0;
 
         await dbRun(isPg ? 'BEGIN' : 'BEGIN TRANSACTION');
+        const refsToDelete = new Set(records.map(r => r.ref).filter(Boolean));
+        for (const ref of refsToDelete) {
+            await dbRun(isPg ? 'DELETE FROM ideb_records WHERE UPPER(ref) = UPPER($1)' : 'DELETE FROM ideb_records WHERE UPPER(ref) = UPPER(?)', [ref]).catch(() => {});
+        }
         for (const r of records) {
             const sql = isPg
                 ? `INSERT INTO ideb_records (ref, nik, nama, alamat, coll_buruk, bank, plafon, os, sb, jw, jatem, tunggakan, coll, kondisi, tgl_update, tgl_input, cabang, tung_hari, tunggakanpokok, tunggakanbunga, frekuensirestrukturisasi, angsuran)
@@ -435,7 +439,7 @@ function parseSlikTxtBuffer(buffer) {
             alamat: alamat,
             coll_buruk: String(maxColl),
             bank: k.ljkKet || k.ljk || '',
-            plafon: parseFloat(k.plafon || k.plafonAwal || 0),
+            plafon: parseFloat(k.plafonAwal) || parseFloat(k.plafon) || 0,
             os: parseFloat(k.bakiDebet || 0),
             sb: parseFloat(k.sukuBungaImbalan || 0),
             jw: jw,
@@ -496,7 +500,10 @@ exports.syncTxtFolder = async (req, res) => {
             try {
                 const filePath = path.join(targetDir, file);
                 const buf = fs.readFileSync(filePath);
-                const { records } = parseSlikTxtBuffer(buf);
+                const { ref, records } = parseSlikTxtBuffer(buf);
+                if (ref) {
+                    await dbRun(isPg ? 'DELETE FROM ideb_records WHERE UPPER(ref) = UPPER($1)' : 'DELETE FROM ideb_records WHERE UPPER(ref) = UPPER(?)', [ref]).catch(() => {});
+                }
                 if (records && records.length > 0) {
                     for (const r of records) {
                         const sql = isPg
