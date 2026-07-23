@@ -75,6 +75,7 @@ app.use('/api/approvals', require('./routes/approvalRoutes'));
 app.use('/api/slip-submissions', require('./routes/slipSubmissionRoutes'));
 app.use('/api/system', require('./routes/systemRoutes'));
 app.use('/api/user-files', require('./routes/fileBackupRoutes'));
+app.use('/api/ideb', require('./routes/idebRoutes'));
 
 // ─── CATCH-ALL SPA ROUTE ──────────────────────────────────────────────────────
 app.get('*', (req, res) => {

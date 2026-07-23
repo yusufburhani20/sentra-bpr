@@ -309,6 +309,88 @@ async function initializeDb(callback) {
                 }
             });
         });
+        // ─── iDEB TABLES ──────────────────────────────────────────────────────────
+        // 10. iDEB Records Table (main SLIK/iDEB data)
+        await runAsync(`CREATE TABLE IF NOT EXISTS ideb_records (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            ref TEXT,
+            nik TEXT,
+            nama TEXT,
+            alamat TEXT,
+            coll_buruk TEXT,
+            bank TEXT,
+            plafon REAL,
+            os REAL,
+            sb REAL,
+            jw REAL,
+            jatem TEXT,
+            tunggakan TEXT,
+            coll TEXT,
+            kondisi TEXT,
+            tgl_update TEXT,
+            tgl_input TEXT,
+            cabang TEXT,
+            tung_hari TEXT,
+            tunggakanpokok REAL,
+            tunggakanbunga REAL,
+            frekuensirestrukturisasi REAL,
+            angsuran REAL
+        )`);
+        await runAsync(`CREATE INDEX IF NOT EXISTS idx_ideb_ref ON ideb_records (ref)`);
+        await runAsync(`CREATE INDEX IF NOT EXISTS idx_ideb_nik ON ideb_records (nik)`);
+        await runAsync(`CREATE INDEX IF NOT EXISTS idx_ideb_cabang ON ideb_records (cabang)`);
+
+        // 11. iDEB Kantor Table
+        await runAsync(`CREATE TABLE IF NOT EXISTS ideb_kantor (
+            idkantor INTEGER PRIMARY KEY,
+            idgroup TEXT,
+            nmkantor TEXT,
+            titimangsa TEXT,
+            versi TEXT DEFAULT '113'
+        )`);
+
+        // 12. iDEB Users Table (linked to Sentra users via sentra_username)
+        await runAsync(`CREATE TABLE IF NOT EXISTS ideb_users (
+            userid TEXT PRIMARY KEY,
+            nama TEXT,
+            jabatan TEXT,
+            nama_sv TEXT,
+            jabatan_sv TEXT,
+            cabang TEXT,
+            sentra_username TEXT
+        )`);
+
+        // 13. iDEB Ref Kondisi Table
+        await runAsync(`CREATE TABLE IF NOT EXISTS ideb_ref_kondisi (
+            kode TEXT PRIMARY KEY,
+            ket TEXT
+        )`);
+
+        // Seed ref_kondisi if empty
+        const kondisiCount = await getAsync('SELECT COUNT(*) as count FROM ideb_ref_kondisi');
+        if (!kondisiCount || parseInt(kondisiCount.count) === 0) {
+            const kondisiData = [
+                ['00','Fasilitas Aktif'],['01','Dibatalkan'],['02','Lunas'],
+                ['03','Dihapusbukukan'],['04','Hapus Tagih'],
+                ['05','Lunas karena pengambilalihan agunan'],
+                ['06','Lunas karena diselesaikan melalui pengadilan.'],
+                ['07','Dialihkan/Dijual ke Pelapor lain'],
+                ['08','Dialihkan ke Fasilitas lain'],
+                ['09','Dialihkan/dijual kepada pihak lain non pelapor'],
+                ['10','Disekuritisasi (Kreditur Asal sebagai Servicer)'],
+                ['11','Disekuritisasi (Kreditur Asal tidak sebagai Servicer)'],
+                ['12','Lunas Dengan Diskon'],['13','Diblokir Sementara'],
+                ['14','Berhenti dari keanggotaan Kredit Join'],
+            ];
+            for (const [kode, ket] of kondisiData) {
+                await runAsync(
+                    `INSERT INTO ideb_ref_kondisi (kode, ket) VALUES (?, ?) ON CONFLICT (kode) DO NOTHING`,
+                    [kode, ket]
+                );
+            }
+        }
+        // ─── END iDEB TABLES ──────────────────────────────────────────────────────
+
         console.log("Database initialized & default credentials verified.");
         if (callback) callback();
     } catch (e) {
