@@ -1973,6 +1973,16 @@
         nik.textContent    = s.nik    || '—';
         alamat.textContent = s.alamat || '—';
 
+        // Sort records: COLL ASC (1..5, largest at bottom), then Bank Name ASC
+        data.records.sort((a, b) => {
+            const collA = parseInt(a.coll) || 1;
+            const collB = parseInt(b.coll) || 1;
+            if (collA !== collB) return collA - collB;
+            const bankA = String(a.bank || '').toLowerCase();
+            const bankB = String(b.bank || '').toLowerCase();
+            return bankA.localeCompare(bankB);
+        });
+
         const collBuruk = data.records.reduce((max, r) => Math.max(max, parseInt(r.coll) || 1), 1);
         if (badge) {
             badge.textContent = collBuruk >= 3 ? ('COLL BURUK: ' + collBuruk) : ('COLL TERBURUK: ' + collBuruk);
@@ -2072,6 +2082,16 @@
             if (!s || !s.found || !s.records || s.records.length === 0) {
                 return '';
             }
+
+            // Sort records: COLL ASC (1..5, largest at bottom), then Bank Name ASC
+            s.records.sort((a, b) => {
+                const collA = parseInt(a.coll) || 1;
+                const collB = parseInt(b.coll) || 1;
+                if (collA !== collB) return collA - collB;
+                const bankA = String(a.bank || '').toLowerCase();
+                const bankB = String(b.bank || '').toLowerCase();
+                return bankA.localeCompare(bankB);
+            });
 
             const nama = s.summary.nama || '—';
             const nik = s.summary.nik || '—';
