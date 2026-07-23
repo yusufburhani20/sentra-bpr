@@ -310,9 +310,10 @@ async function initializeDb(callback) {
             });
         });
         // ─── iDEB TABLES ──────────────────────────────────────────────────────────
-        // 10. iDEB Records Table (main SLIK/iDEB data)
+        const isPgEngine = process.env.DB_TYPE === 'postgres';
+        const idColDef = isPgEngine ? 'id SERIAL PRIMARY KEY' : 'id INTEGER PRIMARY KEY AUTOINCREMENT';
         await runAsync(`CREATE TABLE IF NOT EXISTS ideb_records (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            ${idColDef},
             ref TEXT,
             nik TEXT,
             nama TEXT,
