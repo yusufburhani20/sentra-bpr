@@ -1843,15 +1843,14 @@
     }
     function calcAngsuranRow(plafon, os, sb, jw) {
         const osNum = parseFloat(os) || 0;
-        if (osNum <= 0) return 0; // Facility is Lunas (OS = 0)
+        if (osNum <= 0) return 0; // If OS is 0 (Lunas), angsuran is ALWAYS 0!
 
         const plafonNum = parseFloat(plafon) || 0;
         const sbNum = parseFloat(sb) || 0;
         const jwNum = parseFloat(jw) || 0;
         if (jwNum <= 0) return 0;
 
-        // Exact Legacy VB6 Desktop formula: (Plafon * (1 + SukuBunga/100)) / JangkaWaktu
-        return (plafonNum * (1 + (sbNum / 100))) / jwNum;
+        return (plafonNum / jwNum) * (1 + (sbNum / 100));
     }
     function fmtDate(s) {
         if (!s || s === '0' || s === 'null') return '';
@@ -2063,13 +2062,14 @@
             const nama = s.summary.nama || '—';
             const nik = s.summary.nik || '—';
             const alamat = s.summary.alamat || '—';
-            const collBuruk = s.summary.coll_buruk || '1';
 
             let totalBD = 0;
             let totalAngs = 0;
+            let maxColl = 1;
             let rows = '';
             s.records.forEach((rec, i) => {
-                const coll = parseInt(rec.coll) || 0;
+                const coll = parseInt(rec.coll) || 1;
+                if (coll > maxColl) maxColl = coll;
                 const isBuruk = coll >= 3;
                 const rawKondisi = String(rec.kondisi || '').trim();
                 const ketText = ketMap[rawKondisi] || rawKondisi || '';
@@ -2077,7 +2077,7 @@
 
                 const osNum = parseFloat(rec.os) || 0;
                 totalBD += osNum;
-                totalAngs += calcAngsuranRow(rec.plafon, rec.os, rec.sb, rec.jw, rec.angsuran);
+                totalAngs += calcAngsuranRow(rec.plafon, rec.os, rec.sb, rec.jw);
 
                 rows += `<tr class="${isBuruk ? 'coll-buruk' : ''}" style="${isBuruk ? 'color:#cc0000; font-weight:bold;' : ''}">` +
                     `<td style="text-align:center; padding:1px 3px;">${i + 1}</td>` +
@@ -2105,7 +2105,7 @@
                             <div>ALAMAT : ${alamat}</div>
                         </div>
                         <div style="font-weight: bold; align-self: flex-end;">
-                            KOLEKTIBILITAS TERBURUK : ${collBuruk}
+                            KOLEKTIBILITAS TERBURUK : ${maxColl}
                         </div>
                     </div>
                     <table class="ideb-print-table" style="width:100%; border-collapse:collapse; font-size:7.5pt; line-height:1.15;">
