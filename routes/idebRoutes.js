@@ -23,5 +23,6 @@ router.post('/import-csv',     idebController.uploadMiddleware, idebController.i
 router.post('/import-records', idebController.importRecords);
 router.post('/import-kantor',  idebController.upsertKantor);
 router.post('/import-users',   idebController.upsertUsers);
+router.post('/sync-txt-folder', idebController.syncTxtFolder);
 
 module.exports = router;

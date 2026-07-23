@@ -383,6 +383,174 @@ exports.importRecords = async (req, res) => {
     }
 };
 
+// ─── Helper: Parse OJK SLIK TXT Buffer ──────────────────────────────────────────
+function parseSlikTxtBuffer(buffer) {
+    let text = '';
+    if (buffer[0] === 0xEF && buffer[1] === 0xBB && buffer[2] === 0xBF) {
+        text = buffer.toString('utf8', 3);
+    } else if (buffer[0] === 0xFF && buffer[1] === 0xFE) {
+        text = buffer.toString('utf16le', 2);
+    } else {
+        try { text = buffer.toString('utf8'); } catch(e) { text = buffer.toString('utf16le'); }
+    }
+    if (text.includes('\u0000')) {
+        text = buffer.toString('utf16le');
+    }
+
+    const json = JSON.parse(text);
+    const header = json.header || {};
+    const ref = header.kodeReferensiPengguna || '';
+    const tglInput = header.tanggalHasil || header.tanggalPermintaan || '';
+    const cabang = header.kodeCabangPermintaan || '';
+
+    const ind = json.individual || {};
+    const dataPokok = (ind.dataPokokDebitur && ind.dataPokokDebitur[0]) || {};
+    const nama = dataPokok.namaDebitur || '';
+    const nik = dataPokok.noIdentitas || (ind.parameterPencarian && ind.parameterPencarian.noIdentitas) || '';
+    const alamat = ((dataPokok.alamat || '') + ' ' + (dataPokok.kabKotaKet || '')).trim();
+
+    const records = [];
+    const kreList = (ind.fasilitas && ind.fasilitas.kreditPembiayan) || [];
+
+    let maxColl = 1;
+    kreList.forEach(k => {
+        const collVal = parseInt(k.kualitas) || 1;
+        if (collVal > maxColl) maxColl = collVal;
+    });
+
+    kreList.forEach(k => {
+        let jw = parseFloat(k.jangkaWaktu || k.jangkaWaktuBulan || 0);
+        if (!jw && k.tanggalMulai && k.tanggalJatuhTempo) {
+            const y1 = parseInt(k.tanggalMulai.substring(0,4));
+            const m1 = parseInt(k.tanggalMulai.substring(4,6));
+            const y2 = parseInt(k.tanggalJatuhTempo.substring(0,4));
+            const m2 = parseInt(k.tanggalJatuhTempo.substring(4,6));
+            jw = Math.max(1, (y2 - y1) * 12 + (m2 - m1));
+        }
+
+        records.push({
+            ref: ref,
+            nik: nik,
+            nama: nama,
+            alamat: alamat,
+            coll_buruk: String(maxColl),
+            bank: k.ljkKet || k.ljk || '',
+            plafon: parseFloat(k.plafon || k.plafonAwal || 0),
+            os: parseFloat(k.bakiDebet || 0),
+            sb: parseFloat(k.sukuBungaImbalan || 0),
+            jw: jw,
+            jatem: k.tanggalJatuhTempo || '',
+            tunggakan: String(k.frekuensiTunggakan || '0'),
+            coll: String(k.kualitas || '1'),
+            kondisi: String(k.kondisi || '00'),
+            tgl_update: k.tanggalUpdate || k.tanggalKondisi || '',
+            tgl_input: tglInput,
+            cabang: cabang,
+            tung_hari: String(k.jumlahHariTunggakan || '0'),
+            tunggakanpokok: parseFloat(k.tunggakanPokok || 0),
+            tunggakanbunga: parseFloat(k.tunggakanBunga || 0),
+            frekuensirestrukturisasi: parseFloat(k.frekuensiRestrukturisasi || 0)
+        });
+    });
+
+    return { ref, nama, nik, records };
+}
+
+// ─── POST /api/ideb/sync-txt-folder ───────────────────────────────────────────
+// Scan server folder data/txt for TXT files and import all records
+exports.syncTxtFolder = async (req, res) => {
+    try {
+        const fs = require('fs');
+        const path = require('path');
+        const searchDirs = [
+            path.join(__dirname, '..', 'data', 'txt'),
+            path.join(__dirname, '..', 'data', 'TXT'),
+            path.join(__dirname, '..', '..', 'TXT'),
+            path.join(__dirname, '..', '..', 'data', 'txt')
+        ];
+
+        let targetDir = null;
+        for (const dir of searchDirs) {
+            if (fs.existsSync(dir)) {
+                targetDir = dir;
+                break;
+            }
+        }
+
+        if (!targetDir) {
+            return res.status(404).json({ error: 'Folder data/txt tidak ditemukan di server.' });
+        }
+
+        const files = fs.readdirSync(targetDir).filter(f => f.toLowerCase().endsWith('.txt') || f.toLowerCase().endsWith('.json'));
+        if (files.length === 0) {
+            return res.json({ success: true, message: `Folder ${targetDir} ditemukan, namun belum ada file .txt di dalamnya.`, importedFiles: 0, importedRecords: 0 });
+        }
+
+        let totalRecords = 0;
+        let totalFiles = 0;
+        const isPg = process.env.DB_TYPE === 'postgres';
+
+        await dbRun(isPg ? 'BEGIN' : 'BEGIN TRANSACTION');
+
+        for (const file of files) {
+            try {
+                const filePath = path.join(targetDir, file);
+                const buf = fs.readFileSync(filePath);
+                const { records } = parseSlikTxtBuffer(buf);
+                if (records && records.length > 0) {
+                    for (const r of records) {
+                        const sql = isPg
+                            ? `INSERT INTO ideb_records (ref, nik, nama, alamat, coll_buruk, bank, plafon, os, sb, jw, jatem, tunggakan, coll, kondisi, tgl_update, tgl_input, cabang, tung_hari, tunggakanpokok, tunggakanbunga, frekuensirestrukturisasi, angsuran)
+                               VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22)`
+                            : `INSERT INTO ideb_records (ref, nik, nama, alamat, coll_buruk, bank, plafon, os, sb, jw, jatem, tunggakan, coll, kondisi, tgl_update, tgl_input, cabang, tung_hari, tunggakanpokok, tunggakanbunga, frekuensirestrukturisasi, angsuran)
+                               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`;
+
+                        const params = [
+                            r.ref || null, r.nik || null, r.nama || null, r.alamat || null,
+                            r.coll_buruk !== undefined ? String(r.coll_buruk) : null,
+                            r.bank || null,
+                            parseFloat(r.plafon) || 0,
+                            parseFloat(r.os) || 0,
+                            parseFloat(r.sb) || 0,
+                            parseFloat(r.jw) || 0,
+                            r.jatem || null,
+                            r.tunggakan !== undefined ? String(r.tunggakan) : null,
+                            r.coll !== undefined ? String(r.coll) : null,
+                            r.kondisi || null,
+                            r.tgl_update || null,
+                            r.tgl_input || null,
+                            r.cabang || null,
+                            r.tung_hari !== undefined ? String(r.tung_hari) : null,
+                            r.tunggakanpokok !== undefined ? parseFloat(r.tunggakanpokok) : null,
+                            r.tunggakanbunga !== undefined ? parseFloat(r.tunggakanbunga) : null,
+                            r.frekuensirestrukturisasi !== undefined ? parseFloat(r.frekuensirestrukturisasi) : null,
+                            null
+                        ];
+                        await dbRun(sql, params).catch(() => {});
+                        totalRecords++;
+                    }
+                    totalFiles++;
+                }
+            } catch (errFile) {
+                console.error('[iDEB] Parse file error:', file, errFile.message);
+            }
+        }
+
+        await dbRun('COMMIT');
+        res.json({
+            success: true,
+            message: `Berhasil meng-import ${totalRecords} fasilitas dari ${totalFiles} file .txt di folder server.`,
+            importedFiles: totalFiles,
+            importedRecords: totalRecords
+        });
+
+    } catch (e) {
+        await dbRun('ROLLBACK').catch(() => {});
+        console.error('[iDEB] syncTxtFolder error:', e);
+        res.status(500).json({ error: 'Gagal melakukan sync file .txt dari folder server.' });
+    }
+};
+
 // ─── GET /api/ideb/stats ───────────────────────────────────────────────────────
 exports.getStats = async (req, res) => {
     try {

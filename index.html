@@ -1535,6 +1535,45 @@
         <!-- TOAST NOTIFICATION CONTAINER -->
         <div class="toast-stack" id="toast-stack"></div>
 
+        <!-- MODAL: IMPORT IDEB DATA (TXT / JSON / CSV) -->
+        <div class="modal-overlay" id="modal-ideb-import">
+            <div class="modal-container" style="max-width: 600px;">
+                <div class="modal-header">
+                    <h3 class="modal-title">Import Data iDEB / SLIK</h3>
+                    <button class="modal-close" onclick="idebCloseImportModal()"><i data-lucide="x"></i></button>
+                </div>
+                <div class="modal-body" style="padding: 20px;">
+                    <p style="margin: 0 0 16px; font-size: 13px; color: var(--text-muted);">
+                        Pilih file <strong>.TXT / .JSON</strong> hasil export aplikasi OJK SLIK iDEB Desktop, atau klik Sync untuk mengambil dari folder server <code>data/txt/</code>.
+                    </p>
+
+                    <!-- Option 1: File Upload -->
+                    <div style="border: 2px dashed var(--border); border-radius: 10px; padding: 24px; text-align: center; margin-bottom: 20px; background: var(--bg-secondary);">
+                        <i data-lucide="file-text" style="width: 40px; height: 40px; color: var(--primary); margin-bottom: 8px;"></i>
+                        <h4 style="margin: 0 0 6px; font-size: 14px;">Upload File TXT / JSON</h4>
+                        <p style="margin: 0 0 12px; font-size: 12px; color: var(--text-muted);">Bisa pilih 1 atau banyak file .txt sekaligus</p>
+                        <input type="file" id="ideb-txt-file-input" accept=".txt,.json,.csv" multiple style="display: none;" onchange="idebHandleTxtFileSelect(event)">
+                        <button class="btn btn-primary" onclick="document.getElementById('ideb-txt-file-input').click()">
+                            <i data-lucide="folder-open" style="width: 15px; height: 15px; margin-right: 6px;"></i> Pilih File .TXT
+                        </button>
+                    </div>
+
+                    <!-- Option 2: Server Folder Sync -->
+                    <div style="background: rgba(30,136,229,0.08); border: 1px solid rgba(30,136,229,0.3); border-radius: 10px; padding: 16px; display: flex; align-items: center; justify-content: space-between;">
+                        <div>
+                            <strong style="font-size: 13px; color: #1e88e5; display: block; margin-bottom: 2px;">Impor dari Folder Server</strong>
+                            <span style="font-size: 11px; color: var(--text-muted);">Otomatis memindai file di folder <code>data/txt/</code></span>
+                        </div>
+                        <button class="btn btn-success" id="btn-sync-txt-folder" onclick="idebSyncServerTxtFolder()" style="padding: 8px 14px; font-size: 12px; white-space: nowrap;">
+                            <i data-lucide="refresh-cw" style="width: 14px; height: 14px; margin-right: 4px;"></i> Sync Folder Server
+                        </button>
+                    </div>
+
+                    <div id="ideb-import-status" style="margin-top: 16px; font-size: 13px; display: none;"></div>
+                </div>
+            </div>
+        </div>
+
         <!-- MODAL: ADD/EDIT USER -->
         <div class="modal-overlay" id="modal-user">
             <div class="modal-container">
@@ -1862,6 +1901,166 @@
     function fmtSB(v) {
         if (!v || parseFloat(v) === 0) return '0';
         return parseFloat(v).toFixed(1);
+    }
+
+    // ─── Import Modal & Parser Logic ────────────────────────────────────────────
+    function idebOpenImportModal() {
+        const modal = document.getElementById('modal-ideb-import');
+        if (modal) modal.classList.add('active');
+        const status = document.getElementById('ideb-import-status');
+        if (status) status.style.display = 'none';
+    }
+
+    function idebCloseImportModal() {
+        const modal = document.getElementById('modal-ideb-import');
+        if (modal) modal.classList.remove('active');
+    }
+
+    async function idebHandleTxtFileSelect(evt) {
+        const files = evt.target.files;
+        if (!files || files.length === 0) return;
+
+        const statusEl = document.getElementById('ideb-import-status');
+        statusEl.style.display = 'block';
+        statusEl.style.color = 'var(--primary)';
+        statusEl.innerHTML = `⏳ Membaca & memproses ${files.length} file TXT...`;
+
+        let allRecords = [];
+        let successFiles = 0;
+
+        for (let i = 0; i < files.length; i++) {
+            const file = files[i];
+            try {
+                const text = await idebReadFileAsText(file);
+                const json = JSON.parse(text);
+                const records = parseSlikJsonToRecords(json);
+                if (records && records.length > 0) {
+                    allRecords = allRecords.concat(records);
+                    successFiles++;
+                }
+            } catch (err) {
+                console.error('Error parsing file:', file.name, err);
+            }
+        }
+
+        if (allRecords.length === 0) {
+            statusEl.style.color = 'var(--danger)';
+            statusEl.innerHTML = '❌ Tidak ada data iDEB valid yang ditemukan di file yang dipilih.';
+            return;
+        }
+
+        statusEl.innerHTML = `⏳ Mengunggah ${allRecords.length} fasilitas ke database...`;
+
+        try {
+            const res = await fetch('/api/ideb/import-records', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ records: allRecords })
+            });
+            const data = await res.json();
+            if (data.success) {
+                statusEl.style.color = 'var(--success)';
+                statusEl.innerHTML = `✅ <strong>Berhasil!</strong> ${allRecords.length} fasilitas dari ${successFiles} file TXT berhasil di-import.`;
+                idebLoadStats();
+            } else {
+                statusEl.style.color = 'var(--danger)';
+                statusEl.innerHTML = '❌ ' + (data.error || 'Gagal menyimpan ke database.');
+            }
+        } catch (err) {
+            statusEl.style.color = 'var(--danger)';
+            statusEl.innerHTML = '❌ Terjadi kesalahan jaringan saat mengunggah data.';
+        }
+    }
+
+    function idebReadFileAsText(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = (e) => resolve(e.target.result);
+            reader.onerror = (e) => reject(e);
+            reader.readAsText(file);
+        });
+    }
+
+    function parseSlikJsonToRecords(json) {
+        const header = json.header || {};
+        const ref = header.kodeReferensiPengguna || '';
+        const tglInput = header.tanggalHasil || header.tanggalPermintaan || '';
+        const cabang = header.kodeCabangPermintaan || '';
+
+        const ind = json.individual || {};
+        const dataPokok = (ind.dataPokokDebitur && ind.dataPokokDebitur[0]) || {};
+        const nama = dataPokok.namaDebitur || '';
+        const nik = dataPokok.noIdentitas || (ind.parameterPencarian && ind.parameterPencarian.noIdentitas) || '';
+        const alamat = ((dataPokok.alamat || '') + ' ' + (dataPokok.kabKotaKet || '')).trim();
+
+        const records = [];
+        const kreList = (ind.fasilitas && ind.fasilitas.kreditPembiayan) || [];
+
+        let maxColl = 1;
+        kreList.forEach(k => {
+            const collVal = parseInt(k.kualitas) || 1;
+            if (collVal > maxColl) maxColl = collVal;
+        });
+
+        kreList.forEach(k => {
+            let jw = parseFloat(k.jangkaWaktu || k.jangkaWaktuBulan || 0);
+            if (!jw && k.tanggalMulai && k.tanggalJatuhTempo) {
+                const y1 = parseInt(k.tanggalMulai.substring(0,4));
+                const m1 = parseInt(k.tanggalMulai.substring(4,6));
+                const y2 = parseInt(k.tanggalJatuhTempo.substring(0,4));
+                const m2 = parseInt(k.tanggalJatuhTempo.substring(4,6));
+                jw = Math.max(1, (y2 - y1) * 12 + (m2 - m1));
+            }
+
+            records.push({
+                ref: ref,
+                nik: nik,
+                nama: nama,
+                alamat: alamat,
+                coll_buruk: String(maxColl),
+                bank: k.ljkKet || k.ljk || '',
+                plafon: parseFloat(k.plafon || k.plafonAwal || 0),
+                os: parseFloat(k.bakiDebet || 0),
+                sb: parseFloat(k.sukuBungaImbalan || 0),
+                jw: jw,
+                jatem: k.tanggalJatuhTempo || '',
+                tunggakan: String(k.frekuensiTunggakan || '0'),
+                coll: String(k.kualitas || '1'),
+                kondisi: String(k.kondisi || '00'),
+                tgl_update: k.tanggalUpdate || k.tanggalKondisi || '',
+                tgl_input: tglInput,
+                cabang: cabang,
+                tung_hari: String(k.jumlahHariTunggakan || '0'),
+                tunggakanpokok: parseFloat(k.tunggakanPokok || 0),
+                tunggakanbunga: parseFloat(k.tunggakanBunga || 0),
+                frekuensirestrukturisasi: parseFloat(k.frekuensiRestrukturisasi || 0)
+            });
+        });
+
+        return records;
+    }
+
+    async function idebSyncServerTxtFolder() {
+        const statusEl = document.getElementById('ideb-import-status');
+        statusEl.style.display = 'block';
+        statusEl.style.color = 'var(--primary)';
+        statusEl.innerHTML = '⏳ Memindai folder <code>data/txt/</code> di server...';
+
+        try {
+            const res = await fetch('/api/ideb/sync-txt-folder', { method: 'POST' });
+            const data = await res.json();
+            if (data.success) {
+                statusEl.style.color = 'var(--success)';
+                statusEl.innerHTML = `✅ ${data.message}`;
+                idebLoadStats();
+            } else {
+                statusEl.style.color = 'var(--danger)';
+                statusEl.innerHTML = '❌ ' + (data.error || 'Gagal sync folder server.');
+            }
+        } catch (err) {
+            statusEl.style.color = 'var(--danger)';
+            statusEl.innerHTML = '❌ Terjadi kesalahan jaringan saat sync folder server.';
+        }
     }
 
     // ─── Load Kantor Dropdown ───────────────────────────────────────────────────
