@@ -1427,7 +1427,8 @@
                                 <button id="ideb-print-btn" onclick="idebPrint()" style="padding:8px 18px; background:#1a237e; color:#fff; border:none; border-radius:8px; cursor:pointer; font-size:13px; font-weight:600; display:flex; align-items:center; gap:6px;">
                                     <i data-lucide="printer" style="width:15px;height:15px;"></i> Cetak
                                 </button>
-                                <button onclick="idebOpenImportModal()" style="padding:8px 16px; background:#2e7d32; color:#fff; border:none; border-radius:8px; cursor:pointer; font-size:13px; font-weight:600; display:flex; align-items:center; gap:6px;">
+                                <input type="file" id="ideb-txt-file-input" accept=".txt,.json,.csv" multiple style="display:none;" onchange="idebHandleTxtFileSelect(event)">
+                                <button onclick="document.getElementById('ideb-txt-file-input').click()" style="padding:8px 16px; background:#2e7d32; color:#fff; border:none; border-radius:8px; cursor:pointer; font-size:13px; font-weight:600; display:flex; align-items:center; gap:6px;">
                                     <i data-lucide="upload" style="width:15px;height:15px;"></i> Import Data
                                 </button>
                                 <button onclick="idebReset()" style="padding:8px 14px; background:var(--bg-secondary); color:var(--text-primary); border:1px solid var(--border); border-radius:8px; cursor:pointer; font-size:13px;">
@@ -1920,10 +1921,9 @@
         const files = evt.target.files;
         if (!files || files.length === 0) return;
 
-        const statusEl = document.getElementById('ideb-import-status');
-        statusEl.style.display = 'block';
-        statusEl.style.color = 'var(--primary)';
-        statusEl.innerHTML = `⏳ Membaca & memproses ${files.length} file TXT...`;
+        if (typeof showToast === 'function') {
+            showToast(`⏳ Membaca ${files.length} file .TXT...`, 'info');
+        }
 
         let allRecords = [];
         let successFiles = 0;
@@ -1944,12 +1944,10 @@
         }
 
         if (allRecords.length === 0) {
-            statusEl.style.color = 'var(--danger)';
-            statusEl.innerHTML = '❌ Tidak ada data iDEB valid yang ditemukan di file yang dipilih.';
+            if (typeof showToast === 'function') showToast('❌ Tidak ada data iDEB valid di file yang dipilih.', 'error');
+            evt.target.value = '';
             return;
         }
-
-        statusEl.innerHTML = `⏳ Mengunggah ${allRecords.length} fasilitas ke database...`;
 
         try {
             const res = await fetch('/api/ideb/import-records', {
@@ -1959,17 +1957,20 @@
             });
             const data = await res.json();
             if (data.success) {
-                statusEl.style.color = 'var(--success)';
-                statusEl.innerHTML = `✅ <strong>Berhasil!</strong> ${allRecords.length} fasilitas dari ${successFiles} file TXT berhasil di-import.`;
+                if (typeof showToast === 'function') {
+                    showToast(`✅ Berhasil mengimpor ${allRecords.length} fasilitas dari ${successFiles} file .TXT!`, 'success');
+                } else {
+                    alert(`Berhasil mengimpor ${allRecords.length} fasilitas dari ${successFiles} file .TXT!`);
+                }
                 idebLoadStats();
             } else {
-                statusEl.style.color = 'var(--danger)';
-                statusEl.innerHTML = '❌ ' + (data.error || 'Gagal menyimpan ke database.');
+                if (typeof showToast === 'function') showToast('❌ ' + (data.error || 'Gagal menyimpan ke database.'), 'error');
             }
         } catch (err) {
-            statusEl.style.color = 'var(--danger)';
-            statusEl.innerHTML = '❌ Terjadi kesalahan jaringan saat mengunggah data.';
+            if (typeof showToast === 'function') showToast('❌ Terjadi kesalahan jaringan.', 'error');
         }
+
+        evt.target.value = '';
     }
 
     function idebReadFileAsText(file) {
