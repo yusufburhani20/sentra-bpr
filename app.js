@@ -22,7 +22,8 @@ function checkPermission(view, role) {
         "filebackup": ["Admin", "Kepala Bidang", "Teller", "SDMU", "Customer Service"],
         "users": ["Admin", "Kepala Bidang", "Teller", "SDMU", "Customer Service"],
         "audit": ["Admin", "Kepala Bidang"],
-        "approvals": ["Admin", "Kepala Bidang", "Teller", "SDMU", "Customer Service"]
+        "approvals": ["Admin", "Kepala Bidang", "Teller", "SDMU", "Customer Service"],
+        "ideb": ["Admin", "Kepala Bidang", "Teller", "SDMU", "Customer Service"]
     };
     return permissions[view] ? permissions[view].includes(role) : false;
 }
@@ -179,6 +180,7 @@ export async function showSection(sectionId) {
         "kodebiaya": "Kelola Kode Biaya",
         "users": "Manajemen Pengguna",
         "audit": "System Audit Trail",
+        "ideb": "Informasi Debitur iDEB / SLIK",
         "access-denied": "Akses Ditolak / Terbatas"
     };
     
@@ -240,6 +242,7 @@ export async function initApp() {
     document.getElementById("nav-users").style.display = checkPermission("users", state.currentRole) ? "flex" : "none";
     document.getElementById("nav-audit").style.display = checkPermission("audit", state.currentRole) ? "flex" : "none";
     document.getElementById("nav-approvals").style.display = checkPermission("approvals", state.currentRole) ? "flex" : "none";
+    document.getElementById("nav-ideb").style.display = checkPermission("ideb", state.currentRole) ? "flex" : "none";
 
     await showSection("dashboard");
     await fetchPendingApprovalsCount();
