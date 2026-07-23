@@ -1,0 +1,93 @@
+[
+  {
+    "idkantor": 1,
+    "idgroup": "001",
+    "nmkantor": "KANTOR PUSAT OPERASIONAL",
+    "titimangsa": "SUMEDANG",
+    "versi": "113"
+  },
+  {
+    "idkantor": 2,
+    "idgroup": "001",
+    "nmkantor": "PASEH",
+    "titimangsa": "SUMEDANG",
+    "versi": "113"
+  },
+  {
+    "idkantor": 3,
+    "idgroup": "001",
+    "nmkantor": "SUMEDANG UTARA",
+    "titimangsa": "SUMEDANG",
+    "versi": "113"
+  },
+  {
+    "idkantor": 4,
+    "idgroup": "002",
+    "nmkantor": "KANTOR CABANG CIPARAY",
+    "titimangsa": "BANDUNG",
+    "versi": "113"
+  },
+  {
+    "idkantor": 5,
+    "idgroup": "002",
+    "nmkantor": "SOREANG",
+    "titimangsa": "BANDUNG",
+    "versi": "113"
+  },
+  {
+    "idkantor": 6,
+    "idgroup": "002",
+    "nmkantor": "CICALENGKA",
+    "titimangsa": "BANDUNG",
+    "versi": "113"
+  },
+  {
+    "idkantor": 7,
+    "idgroup": "002",
+    "nmkantor": "DAYEUH KOLOT",
+    "titimangsa": "BANDUNG",
+    "versi": "113"
+  },
+  {
+    "idkantor": 8,
+    "idgroup": "003",
+    "nmkantor": "KANTOR CABANG GARUT",
+    "titimangsa": "GARUT",
+    "versi": "113"
+  },
+  {
+    "idkantor": 9,
+    "idgroup": "004",
+    "nmkantor": "KANTOR CABANG SITURAJA",
+    "titimangsa": "SUMEDANG",
+    "versi": "113"
+  },
+  {
+    "idkantor": 10,
+    "idgroup": "004",
+    "nmkantor": "WADO",
+    "titimangsa": "SUMEDANG",
+    "versi": "113"
+  },
+  {
+    "idkantor": 11,
+    "idgroup": "005",
+    "nmkantor": "KANTOR CABANG SOREANG",
+    "titimangsa": "BANDUNG",
+    "versi": "113"
+  },
+  {
+    "idkantor": 12,
+    "idgroup": "006",
+    "nmkantor": "KANTOR CABANG SUMEDANG",
+    "titimangsa": "SUMEDANG",
+    "versi": "113"
+  },
+  {
+    "idkantor": 13,
+    "idgroup": "015",
+    "nmkantor": "KANTOR CABANG SINGAPARNA",
+    "titimangsa": "TASIKMALAYA",
+    "versi": "113"
+  }
+]

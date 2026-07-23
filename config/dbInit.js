@@ -389,6 +389,92 @@ async function initializeDb(callback) {
                 );
             }
         }
+
+        // Auto-seed iDEB data from data/ folder if tables are empty
+        const fs = require('fs');
+        const path = require('path');
+        const isPg = process.env.DB_TYPE === 'postgres';
+
+        // 1. Seed Kantor
+        const kantorCount = await getAsync('SELECT COUNT(*) as count FROM ideb_kantor');
+        if (!kantorCount || parseInt(kantorCount.count) === 0) {
+            const kantorPath = path.join(__dirname, '..', 'data', 'ideb_kantor.json');
+            if (fs.existsSync(kantorPath)) {
+                try {
+                    const kantorData = JSON.parse(fs.readFileSync(kantorPath, 'utf-8'));
+                    for (const k of kantorData) {
+                        const sql = isPg
+                            ? `INSERT INTO ideb_kantor (idkantor, idgroup, nmkantor, titimangsa, versi) VALUES ($1,$2,$3,$4,$5) ON CONFLICT (idkantor) DO NOTHING`
+                            : `INSERT OR IGNORE INTO ideb_kantor (idkantor, idgroup, nmkantor, titimangsa, versi) VALUES (?,?,?,?,?)`;
+                        await runAsync(sql, [k.idkantor, k.idgroup, k.nmkantor, k.titimangsa, k.versi || '113']);
+                    }
+                    console.log(`Auto-seeded ${kantorData.length} ideb_kantor records.`);
+                } catch(errK) { console.error("Auto-seed kantor error:", errK); }
+            }
+        }
+
+        // 2. Seed Users
+        const usersCount = await getAsync('SELECT COUNT(*) as count FROM ideb_users');
+        if (!usersCount || parseInt(usersCount.count) === 0) {
+            const usersPath = path.join(__dirname, '..', 'data', 'ideb_users.json');
+            if (fs.existsSync(usersPath)) {
+                try {
+                    const usersData = JSON.parse(fs.readFileSync(usersPath, 'utf-8'));
+                    for (const u of usersData) {
+                        const sql = isPg
+                            ? `INSERT INTO ideb_users (userid, nama, jabatan, nama_sv, jabatan_sv, cabang, sentra_username) VALUES ($1,$2,$3,$4,$5,$6,$7) ON CONFLICT (userid) DO NOTHING`
+                            : `INSERT OR IGNORE INTO ideb_users (userid, nama, jabatan, nama_sv, jabatan_sv, cabang, sentra_username) VALUES (?,?,?,?,?,?,?)`;
+                        await runAsync(sql, [u.userid, u.nama, u.jabatan, u.nama_sv, u.jabatan_sv, u.cabang, u.sentra_username || null]);
+                    }
+                    console.log(`Auto-seeded ${usersData.length} ideb_users records.`);
+                } catch(errU) { console.error("Auto-seed users error:", errU); }
+            }
+        }
+
+        // 3. Seed Records
+        const recordsCount = await getAsync('SELECT COUNT(*) as count FROM ideb_records');
+        if (!recordsCount || parseInt(recordsCount.count) === 0) {
+            const recordsPath = path.join(__dirname, '..', 'data', 'ideb_records.json');
+            if (fs.existsSync(recordsPath)) {
+                try {
+                    const recData = JSON.parse(fs.readFileSync(recordsPath, 'utf-8'));
+                    console.log(`Auto-seeding ${recData.length} ideb_records...`);
+                    for (const r of recData) {
+                        const sql = isPg
+                            ? `INSERT INTO ideb_records (ref, nik, nama, alamat, coll_buruk, bank, plafon, os, sb, jw, jatem, tunggakan, coll, kondisi, tgl_update, tgl_input, cabang, tung_hari, tunggakanpokok, tunggakanbunga, frekuensirestrukturisasi, angsuran)
+                               VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22)`
+                            : `INSERT INTO ideb_records (ref, nik, nama, alamat, coll_buruk, bank, plafon, os, sb, jw, jatem, tunggakan, coll, kondisi, tgl_update, tgl_input, cabang, tung_hari, tunggakanpokok, tunggakanbunga, frekuensirestrukturisasi, angsuran)
+                               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`;
+
+                        const params = [
+                            r.ref || null, r.nik || null, r.nama || null, r.alamat || null,
+                            r.coll_buruk !== undefined ? String(r.coll_buruk) : null,
+                            r.bank || r.nama_lik || null,
+                            parseFloat(r.plafon) || 0,
+                            parseFloat(r.os || r.baki_debet) || 0,
+                            parseFloat(r.sb || r.suku_bunga) || 0,
+                            parseFloat(r.jw || r.jangka_waktu) || 0,
+                            r.jatem || r.jatuh_tempo || null,
+                            r.tunggakan !== undefined ? String(r.tunggakan) : null,
+                            r.coll !== undefined ? String(r.coll) : null,
+                            r.kondisi || null,
+                            r.tgl_update || null,
+                            r.tgl_input || null,
+                            r.cabang || null,
+                            r.tung_hari !== undefined ? String(r.tung_hari) : null,
+                            r.tunggakanpokok !== undefined ? parseFloat(r.tunggakanpokok) : null,
+                            r.tunggakanbunga !== undefined ? parseFloat(r.tunggakanbunga) : null,
+                            r.frekuensirestrukturisasi !== undefined ? parseFloat(r.frekuensirestrukturisasi) : null,
+                            r.angsuran !== undefined ? parseFloat(r.angsuran) : null,
+                        ];
+                        try {
+                            await runAsync(sql, params);
+                        } catch(rowE) {}
+                    }
+                    console.log(`Auto-seeded ${recData.length} ideb_records successfully.`);
+                } catch(errR) { console.error("Auto-seed records error:", errR); }
+            }
+        }
         // ─── END iDEB TABLES ──────────────────────────────────────────────────────
 
         console.log("Database initialized & default credentials verified.");

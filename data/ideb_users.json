@@ -1,0 +1,162 @@
+[
+  {
+    "userid": "TJS001A",
+    "nama": "GILANG NUANSA",
+    "jabatan": "KEPALA BIDANG OPERASIONAL",
+    "nama_sv": "WILLY KARAMOY",
+    "jabatan_sv": "KEPALA KANTOR CABANG",
+    "cabang": "006"
+  },
+  {
+    "userid": "USER001",
+    "nama": "ANDARA EKA SUCI",
+    "jabatan": "CUSTOMER SERVICE",
+    "nama_sv": "IMAS SETIASIH SUPRIADI",
+    "jabatan_sv": "KEPALA BIDANG OPERASIONAL",
+    "cabang": "001"
+  },
+  {
+    "userid": "USER002",
+    "nama": "INTAN MELINDA",
+    "jabatan": "AKUNTING",
+    "nama_sv": "FAUZI JULIANA",
+    "jabatan_sv": "KEPALA BIDANG OPERASIONAL",
+    "cabang": "002"
+  },
+  {
+    "userid": "USER003",
+    "nama": "PUJIAWANTI HANDIANI",
+    "jabatan": "AKUNTING",
+    "nama_sv": "FEBRIADI",
+    "jabatan_sv": "KEPALA BIDANG OPERASIONAL",
+    "cabang": "003"
+  },
+  {
+    "userid": "USER004",
+    "nama": "LULU LUTHFIANI NURUL FADILAH",
+    "jabatan": "ADMINISTRASI KREDIT",
+    "nama_sv": "WILLY KARAMOY",
+    "jabatan_sv": "KEPALA KANTOR CABANG",
+    "cabang": "004"
+  },
+  {
+    "userid": "USER005",
+    "nama": "PUJIAWANTI HANDIANI",
+    "jabatan": "AKUNTING",
+    "nama_sv": "ARDAN NUROKHMAT",
+    "jabatan_sv": "KEPALA BIDANG OPERASIONAL",
+    "cabang": "005"
+  },
+  {
+    "userid": "USER006",
+    "nama": "PUJIAWANTI HANDIANI",
+    "jabatan": "AKUNTING",
+    "nama_sv": "ARDAN NUROKHMAT",
+    "jabatan_sv": "KEPALA BIDANG OPERASIONAL",
+    "cabang": "005"
+  },
+  {
+    "userid": "USER007",
+    "nama": "PUJIAWANTI HANDIANI",
+    "jabatan": "AKUNTING",
+    "nama_sv": "ARDAN NUROKHMAT",
+    "jabatan_sv": "KEPALA BIDANG OPERASIONAL",
+    "cabang": "005"
+  },
+  {
+    "userid": "USER008",
+    "nama": "PUJIAWANTI HANDIANI",
+    "jabatan": "AKUNTING",
+    "nama_sv": "ARDAN NUROKHMAT",
+    "jabatan_sv": "KEPALA BIDANG OPERASIONAL",
+    "cabang": "005"
+  },
+  {
+    "userid": "USER009",
+    "nama": "PUJIAWANTI HANDIANI",
+    "jabatan": "AKUNTING",
+    "nama_sv": "ARDAN NUROKHMAT",
+    "jabatan_sv": "KEPALA BIDANG OPERASIONAL",
+    "cabang": "005"
+  },
+  {
+    "userid": "USER010",
+    "nama": "PUJIAWANTI HANDIANI",
+    "jabatan": "AKUNTING",
+    "nama_sv": "ARDAN NUROKHMAT",
+    "jabatan_sv": "KEPALA BIDANG OPERASIONAL",
+    "cabang": "005"
+  },
+  {
+    "userid": "USER011",
+    "nama": "PUJIAWANTI HANDIANI",
+    "jabatan": "AKUNTING",
+    "nama_sv": "ARDAN NUROKHMAT",
+    "jabatan_sv": "KEPALA BIDANG OPERASIONAL",
+    "cabang": "005"
+  },
+  {
+    "userid": "USER012",
+    "nama": "LUGINA MASRI",
+    "jabatan": "STAF IT",
+    "nama_sv": "HILMAN HIDAYAT",
+    "jabatan_sv": "KEPALA BIDANG OPERASIONA",
+    "cabang": "012"
+  },
+  {
+    "userid": "USER013",
+    "nama": "ANISA WILDANI",
+    "jabatan": "CUSTOMER SERVICES",
+    "nama_sv": "HENDRA SUDRAJAT",
+    "jabatan_sv": "KEPALA BIDANG OPERASIONA",
+    "cabang": "013"
+  },
+  {
+    "userid": "USER014",
+    "nama": "MUHAMAD FIQRI DZIKRIANSYAH",
+    "jabatan": "CUSTOMER SERVICES",
+    "nama_sv": "FERRA FITRIANJA",
+    "jabatan_sv": "KEPALA BIDANG OPERASIONA",
+    "cabang": "014"
+  },
+  {
+    "userid": "USER015",
+    "nama": "PUJIAWANTI HANDIANI",
+    "jabatan": "AKUNTING",
+    "nama_sv": "ARDAN NUROKHMAT",
+    "jabatan_sv": "KEPALA BIDANG OPERASIONAL",
+    "cabang": "005"
+  },
+  {
+    "userid": "USER016",
+    "nama": "PUJIAWANTI HANDIANI",
+    "jabatan": "AKUNTING",
+    "nama_sv": "ARDAN NUROKHMAT",
+    "jabatan_sv": "KEPALA BIDANG OPERASIONAL",
+    "cabang": "005"
+  },
+  {
+    "userid": "USER017",
+    "nama": "PUJIAWANTI HANDIANI",
+    "jabatan": "AKUNTING",
+    "nama_sv": "ARDAN NUROKHMAT",
+    "jabatan_sv": "KEPALA BIDANG OPERASIONAL",
+    "cabang": "005"
+  },
+  {
+    "userid": "USER018",
+    "nama": "PUJIAWANTI HANDIANI",
+    "jabatan": "AKUNTING",
+    "nama_sv": "ARDAN NUROKHMAT",
+    "jabatan_sv": "KEPALA BIDANG OPERASIONAL",
+    "cabang": "005"
+  },
+  {
+    "userid": "USER019",
+    "nama": "MOCH ILMAN ALI SHOLEHUDIN",
+    "jabatan": "STAF IT",
+    "nama_sv": "EVA PARIDAH",
+    "jabatan_sv": "KEPALA BIDANG OPERASIONAL",
+    "cabang": "015"
+  }
+]
