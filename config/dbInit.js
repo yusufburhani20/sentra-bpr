@@ -439,6 +439,7 @@ async function initializeDb(callback) {
                 try {
                     const recData = JSON.parse(fs.readFileSync(recordsPath, 'utf-8'));
                     console.log(`Auto-seeding ${recData.length} ideb_records...`);
+                    await runAsync(isPg ? 'BEGIN' : 'BEGIN TRANSACTION');
                     for (const r of recData) {
                         const sql = isPg
                             ? `INSERT INTO ideb_records (ref, nik, nama, alamat, coll_buruk, bank, plafon, os, sb, jw, jatem, tunggakan, coll, kondisi, tgl_update, tgl_input, cabang, tung_hari, tunggakanpokok, tunggakanbunga, frekuensirestrukturisasi, angsuran)
@@ -471,8 +472,12 @@ async function initializeDb(callback) {
                             await runAsync(sql, params);
                         } catch(rowE) {}
                     }
+                    await runAsync('COMMIT');
                     console.log(`Auto-seeded ${recData.length} ideb_records successfully.`);
-                } catch(errR) { console.error("Auto-seed records error:", errR); }
+                } catch(errR) {
+                    await runAsync('ROLLBACK').catch(() => {});
+                    console.error("Auto-seed records error:", errR);
+                }
             }
         }
         // ─── END iDEB TABLES ──────────────────────────────────────────────────────

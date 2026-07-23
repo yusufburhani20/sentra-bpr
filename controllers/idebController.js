@@ -315,6 +315,7 @@ exports.importRecords = async (req, res) => {
         const isPg = process.env.DB_TYPE === 'postgres';
         let inserted = 0;
 
+        await dbRun(isPg ? 'BEGIN' : 'BEGIN TRANSACTION');
         for (const r of records) {
             const sql = isPg
                 ? `INSERT INTO ideb_records (ref, nik, nama, alamat, coll_buruk, bank, plafon, os, sb, jw, jatem, tunggakan, coll, kondisi, tgl_update, tgl_input, cabang, tung_hari, tunggakanpokok, tunggakanbunga, frekuensirestrukturisasi, angsuran)
@@ -350,8 +351,10 @@ exports.importRecords = async (req, res) => {
                 // Ignore duplicates or bad rows
             }
         }
+        await dbRun('COMMIT');
         res.json({ success: true, message: `${inserted} data iDEB berhasil diimport.`, inserted });
     } catch (e) {
+        await dbRun('ROLLBACK').catch(() => {});
         console.error('[iDEB] importRecords error:', e);
         res.status(500).json({ error: 'Gagal mengimport data iDEB.' });
     }
