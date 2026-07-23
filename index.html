@@ -1997,83 +1997,150 @@
     // ─── Print ──────────────────────────────────────────────────────────────────
     function idebPrint() {
         const kantorSel = document.getElementById('ideb-kantor-sel');
-        const kantorNm  = kantorSel.options[kantorSel.selectedIndex]?.text.split(' — ')[0] || 'KANTOR CABANG';
-        const tgl = document.getElementById('ideb-tanggal').value;
-        const tglFmt = tgl ? new Date(tgl).toLocaleDateString('id-ID',{day:'2-digit',month:'long',year:'numeric'}) : new Date().toLocaleDateString('id-ID',{day:'2-digit',month:'long',year:'numeric'});
-        const kota = kantorSel.options[kantorSel.selectedIndex]?.text.split(' — ')[1] || '';
+        const kantorOptionText = kantorSel.options[kantorSel.selectedIndex]?.text || '';
+        const kantorNm = kantorOptionText.split(' — ')[0] || 'KANTOR CABANG SINGAPARNA';
+        const kotaNm   = kantorOptionText.split(' — ')[1] || 'TASIKMALAYA';
+
+        const tglInput = document.getElementById('ideb-tanggal').value;
+        const d = tglInput ? new Date(tglInput) : new Date();
+        const monthsShort = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agust','Sep','Okt','Nov','Des'];
+        const tglFmt = `${d.getDate()} ${monthsShort[d.getMonth()]} ${d.getFullYear()}`;
+
         const u = idebState.userInfo;
+        const svNama = u?.linked ? u.nama_sv : 'EVA PARIDAH';
+        const svJab = u?.linked ? u.jabatan_sv : 'KEPALA BIDANG OPERASIONAL';
+        const userNama = u?.linked ? u.nama : 'MOCH ILMAN ALI SHOLEHUDIN';
+        const userJab = u?.linked ? u.jabatan : 'STAF IT';
+
+        const ketMap = {
+            '00': 'AKTIF', '0': 'AKTIF',
+            '01': 'Dibatalkan',
+            '02': 'Lunas', '2': 'Lunas',
+            '03': 'WO', '3': 'WO',
+            '04': 'Hapus Tagih',
+            '05': 'Agunan',
+            '07': 'Dialihkan',
+            '12': 'Lunas Diskon'
+        };
 
         function buildSectionHtml(role, label) {
             const s = idebState[role];
-            let nama='—', nik='—', alamat='', collBuruk='', rows='', totalBD=0, totalAngs=0;
-            if (s && s.found && s.summary) {
-                nama = s.summary.nama||'—'; nik = s.summary.nik||'—';
-                alamat = s.summary.alamat||''; collBuruk = s.summary.coll_buruk||'';
-                totalBD = Math.round(s.summary.total_bd||0);
-                totalAngs = Math.round(s.summary.total_angsuran||0);
-                (s.records||[]).forEach((rec,i) => {
-                    const isBuruk = parseInt(rec.coll) >= 3;
-                    rows += `<tr class="${isBuruk?'coll-buruk':''}">`+
-                        `<td style="text-align:center">${i+1}</td>`+
-                        `<td style="text-align:left">${rec.bank||''}</td>`+
-                        `<td>${fmtNum(rec.plafon)}</td>`+
-                        `<td>${fmtNum(rec.os)}</td>`+
-                        `<td style="text-align:center">${fmtSB(rec.sb)}</td>`+
-                        `<td style="text-align:center">${rec.jw||0}</td>`+
-                        `<td style="text-align:center">${fmtDate(rec.jatem)}</td>`+
-                        `<td style="text-align:center">${rec.frekuensirestrukturisasi??0}</td>`+
-                        `<td style="text-align:center">${rec.tunggakan??0}</td>`+
-                        `<td style="text-align:center">${rec.coll||''}</td>`+
-                        `<td style="text-align:left">${rec.kondisi||''}</td>`+
-                        `<td style="text-align:center">${rec.tung_hari??0}</td>`+
-                        '</tr>';
-                });
-                if (!rows) rows = `<tr><td colspan="12" style="text-align:center">TIDAK ADA FASILITAS</td></tr>`;
-            } else {
-                rows = `<tr><td colspan="12" style="text-align:center">TIDAK ADA FASILITAS</td></tr>`;
+            if (!s || !s.found || !s.records || s.records.length === 0) {
+                return '';
             }
+
+            const nama = s.summary.nama || '—';
+            const nik = s.summary.nik || '—';
+            const alamat = s.summary.alamat || '—';
+            const collBuruk = s.summary.coll_buruk || '1';
+            const totalBD = Math.round(s.summary.total_bd || 0);
+            const totalAngs = Math.round(s.summary.total_angsuran || 0);
+
+            let rows = '';
+            s.records.forEach((rec, i) => {
+                const coll = parseInt(rec.coll) || 0;
+                const isBuruk = coll >= 3;
+                const rawKondisi = String(rec.kondisi || '').trim();
+                const ketText = ketMap[rawKondisi] || rawKondisi || '';
+                const dateStr = fmtDate(rec.jatem);
+
+                rows += `<tr class="${isBuruk ? 'coll-buruk' : ''}" style="${isBuruk ? 'color:#cc0000; font-weight:bold;' : ''}">` +
+                    `<td style="text-align:center;">${i + 1}</td>` +
+                    `<td style="text-align:left;">${rec.bank || ''}</td>` +
+                    `<td style="text-align:right;">${fmtNum(rec.plafon)}</td>` +
+                    `<td style="text-align:right;">${fmtNum(rec.os)}</td>` +
+                    `<td style="text-align:center;">${fmtSB(rec.sb)}</td>` +
+                    `<td style="text-align:center;">${rec.jw || 0}</td>` +
+                    `<td style="text-align:center;">${dateStr}</td>` +
+                    `<td style="text-align:center;">${rec.frekuensirestrukturisasi ?? 0}</td>` +
+                    `<td style="text-align:center;">${rec.tunggakan ?? 0}</td>` +
+                    `<td style="text-align:center;">${rec.coll || ''}</td>` +
+                    `<td style="text-align:center;">${ketText}</td>` +
+                    `<td style="text-align:center;">${rec.tung_hari ?? 0}</td>` +
+                    `</tr>`;
+            });
+
             return `
-                <div class="ideb-print-section">
-                    <b>${label}</b><br>
-                    Nama &nbsp;&nbsp;: ${nama}<br>
-                    NIK &nbsp;&nbsp;&nbsp;: ${nik}<br>
-                    Alamat: ${alamat} &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; KOLEKTIBILITAS TERBURUK: ${collBuruk}
-                    <table class="ideb-print-table" style="margin-top:6pt;">
-                        <thead><tr>
-                            <th>NO</th><th>NAMA LIK</th><th>PLAFON</th><th>BAKI DEBET</th>
-                            <th>SUKU BUNGA</th><th>JW</th><th>JATUH TEMPO</th>
-                            <th>FRK TGK</th><th>KOL TGK</th><th>COLL</th><th>KET</th><th>TGK HRI</th>
-                        </tr></thead>
+                <div class="ideb-print-section" style="margin-bottom: 16px;">
+                    <div style="font-weight: bold; text-transform: uppercase; margin-bottom: 4px;">${label}</div>
+                    <div style="display: flex; justify-content: space-between; font-size: 9pt; margin-bottom: 6px;">
+                        <div>
+                            <div>Nama &nbsp;&nbsp;: ${nama}</div>
+                            <div>NIK &nbsp;&nbsp;&nbsp;: ${nik}</div>
+                            <div>Alamat : ${alamat}</div>
+                        </div>
+                        <div style="font-weight: bold; align-self: flex-end;">
+                            KOLEKTIBILITAS TERBURUK : ${collBuruk}
+                        </div>
+                    </div>
+                    <table class="ideb-print-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 30px;">NO</th>
+                                <th>NAMA LJK</th>
+                                <th>PLAFON</th>
+                                <th>BAKI DEBET</th>
+                                <th>SUKU BUNGA</th>
+                                <th>JW</th>
+                                <th>JATUH TEMPO</th>
+                                <th>FRK TGK</th>
+                                <th>KOL TGK</th>
+                                <th>COLL</th>
+                                <th>KET</th>
+                                <th>TGK HRI</th>
+                            </tr>
+                        </thead>
                         <tbody>${rows}</tbody>
                     </table>
-                    <p style="margin:4pt 0">Total BD: ${totalBD.toLocaleString('id-ID')} &nbsp;&nbsp;&nbsp; Perkiraan Angs./Bulan: ${totalAngs.toLocaleString('id-ID')}</p>
-                    <hr>
+                    <div style="display: flex; gap: 30px; font-size: 9pt; margin-top: 4px; font-weight: bold;">
+                        <span>Total BD : ${fmtNum(totalBD)}</span>
+                        <span>Perkiraan Angs. /Bulan : ${fmtNum(totalAngs)}</span>
+                    </div>
+                    <div style="border-bottom: 1px dashed #000; margin-top: 8px; margin-bottom: 12px;"></div>
                 </div>`;
         }
 
+        const regNo = document.getElementById('ideb-ref-debitur').value.trim() || '—';
+
         const printHtml = `
-            <div style="font-family:Courier,monospace; font-size:10pt; padding:20pt;">
-                <p style="text-align:center; font-weight:bold; font-size:13pt; margin-bottom:2pt;">RINGKASAN FASILITAS iDEB</p>
-                <p style="text-align:center; font-size:10pt; margin-bottom:14pt;">No. Register : ${document.getElementById('ideb-ref-debitur').value.trim()}</p>
-                <p style="text-align:left; font-weight:bold; font-size:11pt; color:#cc0000;">&#128274; RAHASIA</p>
-                <hr style="border-top:2px solid #000; margin-bottom:12pt;">
-                ${buildSectionHtml('debitur','DEBITUR')}
-                ${buildSectionHtml('pasangan-debitur','PASANGAN DEBITUR')}
-                ${buildSectionHtml('penjamin','PENJAMIN')}
-                ${buildSectionHtml('pasangan-penjamin','PASANGAN PENJAMIN')}
-                <p>Kantor : ${kantorNm}</p>
-                <div class="print-signature" style="display:grid; grid-template-columns:1fr 1fr; gap:80pt; margin-top:16pt;">
-                    <div>
-                        <p>Mengetahui :</p>
-                        <br><br><br>
-                        <b>${u?.linked ? u.nama_sv : '________________________'}</b><br>
-                        ${u?.linked ? u.jabatan_sv : 'KEPALA BIDANG OPERASIONAL'}
+            <div style="font-family: 'Courier New', Courier, monospace; font-size: 9.5pt; color: #000; padding: 10px;">
+                <!-- Header -->
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;">
+                    <div style="color: #cc0000; font-weight: bold; font-size: 11pt; display: flex; align-items: center; gap: 4px;">
+                        <span style="font-size: 14pt;">⚠️</span> RAHASIA
                     </div>
-                    <div>
-                        <p>${kota}, ${tglFmt}<br>Petugas iDeb,</p>
-                        <br><br><br>
-                        <b>${u?.linked ? u.nama : '________________________'}</b><br>
-                        ${u?.linked ? u.jabatan : 'STAF IT'}
+                    <div style="text-align: center; flex: 1;">
+                        <div style="font-weight: bold; font-size: 12pt; text-transform: uppercase;">RINGKASAN FASILITAS iDEB</div>
+                        <div style="font-size: 9.5pt;">No. Register : ${regNo}</div>
+                    </div>
+                    <div style="width: 100px;"></div>
+                </div>
+                <div style="border-bottom: 2px solid #000; margin-bottom: 14px;"></div>
+
+                <!-- Content Sections -->
+                ${buildSectionHtml('debitur', 'DEBITUR')}
+                ${buildSectionHtml('pasangan-debitur', 'PASANGAN DEBITUR')}
+                ${buildSectionHtml('penjamin', 'PENJAMIN')}
+                ${buildSectionHtml('pasangan-penjamin', 'PASANGAN PENJAMIN')}
+
+                <!-- Footer & Signatures -->
+                <div style="margin-top: 10px; font-size: 9.5pt; page-break-inside: avoid;">
+                    <div style="margin-bottom: 14px;">Kantor : ${kantorNm}</div>
+
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-top: 20px;">
+                        <div style="text-align: left; min-width: 220px;">
+                            <div>Mengetahui :</div>
+                            <div style="height: 50px;"></div>
+                            <div style="font-weight: bold;">${svNama}</div>
+                            <div>${svJab}</div>
+                        </div>
+                        <div style="text-align: left; min-width: 240px;">
+                            <div>${kotaNm}, ${tglFmt}</div>
+                            <div>Petugas iDeb,</div>
+                            <div style="height: 50px;"></div>
+                            <div style="font-weight: bold;">${userNama}</div>
+                            <div>${userJab}</div>
+                        </div>
                     </div>
                 </div>
             </div>`;
