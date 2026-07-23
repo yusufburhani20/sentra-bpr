@@ -96,22 +96,13 @@ exports.queryByRef = async (req, res) => {
             const osNum = parseFloat(r.os) || 0;
             if (osNum <= 0) return sum; // Ignore Lunas (OS = 0) rows
 
-            const rawKondisi = String(r.kondisi || '').trim();
-            if (['01', '02', '03', '04', '07', '12'].includes(rawKondisi)) return sum;
-
-            if (r.angsuran !== undefined && r.angsuran !== null && parseFloat(r.angsuran) > 0) {
-                return sum + parseFloat(r.angsuran);
-            }
-
             const plafonNum = parseFloat(r.plafon) || 0;
             const rawSb = parseFloat(r.sb) || 0;
             const sbNum = Math.round(rawSb * 10) / 10; // Round SB to 1 decimal place like VB6 Desktop
             const jwNum = parseFloat(r.jw) || 0;
             if (jwNum <= 0) return sum;
 
-            const pokokBulan = plafonNum / jwNum;
-            const bungaBulan = (plafonNum * (sbNum / 100)) / 12;
-            return sum + (pokokBulan + bungaBulan);
+            return sum + ((plafonNum / jwNum) * (1 + (sbNum / 100)));
         }, 0);
 
         res.json({

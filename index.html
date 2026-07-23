@@ -1881,16 +1881,9 @@
         if (!v || isNaN(v)) return '0';
         return Math.round(parseFloat(v)).toLocaleString('en-US');
     }
-    function calcAngsuranRow(plafon, os, sb, jw, angsuran, kondisi) {
+    function calcAngsuranRow(plafon, os, sb, jw) {
         const osNum = parseFloat(os) || 0;
         if (osNum <= 0) return 0; // If OS is 0 (Lunas), angsuran is ALWAYS 0!
-
-        const rawKondisi = String(kondisi || '').trim();
-        if (['01', '02', '03', '04', '07', '12'].includes(rawKondisi)) return 0;
-
-        if (angsuran !== undefined && angsuran !== null && parseFloat(angsuran) > 0) {
-            return parseFloat(angsuran);
-        }
 
         const plafonNum = parseFloat(plafon) || 0;
         const rawSb = parseFloat(sb) || 0;
@@ -1898,9 +1891,7 @@
         const jwNum = parseFloat(jw) || 0;
         if (jwNum <= 0) return 0;
 
-        const pokokBulan = plafonNum / jwNum;
-        const bungaBulan = (plafonNum * (sbNum / 100)) / 12;
-        return pokokBulan + bungaBulan;
+        return (plafonNum / jwNum) * (1 + (sbNum / 100));
     }
     function fmtDate(s) {
         if (!s || s === '0' || s === 'null') return '';
@@ -2223,7 +2214,7 @@
         data.records.forEach((rec, i) => {
             const coll = parseInt(rec.coll) || 0;
             const isBuruk = coll >= 3;
-            calcAngsSum += calcAngsuranRow(rec.plafon, rec.os, rec.sb, rec.jw, rec.angsuran, rec.kondisi);
+            calcAngsSum += calcAngsuranRow(rec.plafon, rec.os, rec.sb, rec.jw);
             const rawKondisi = String(rec.kondisi || '').trim();
             const ketText = ketMapUI[rawKondisi] || rawKondisi || '';
             html += `<tr class="${isBuruk?'coll-buruk':''}">` +
@@ -2325,7 +2316,7 @@
 
                 const osNum = parseFloat(rec.os) || 0;
                 totalBD += osNum;
-                totalAngs += calcAngsuranRow(rec.plafon, rec.os, rec.sb, rec.jw, rec.angsuran, rec.kondisi);
+                totalAngs += calcAngsuranRow(rec.plafon, rec.os, rec.sb, rec.jw);
 
                 rows += `<tr class="${isBuruk ? 'coll-buruk' : ''}" style="${isBuruk ? 'color:#cc0000; font-weight:bold;' : ''}">` +
                     `<td style="text-align:center; padding:1px 3px;">${i + 1}</td>` +
