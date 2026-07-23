@@ -1833,12 +1833,30 @@
 
     // ─── Format Numbers ─────────────────────────────────────────────────────────
     function fmtNum(v) {
-        if (v === null || v === undefined || v === '') return '0';
-        return Math.round(parseFloat(v)).toLocaleString('id-ID');
+        if (!v || isNaN(v)) return '0';
+        return Math.round(parseFloat(v)).toLocaleString('en-US');
+    }
+    function fmtNumComma(v) {
+        if (!v || isNaN(v)) return '0';
+        return Math.round(parseFloat(v)).toLocaleString('en-US');
+    }
+    function calcAngsuranRow(plafon, os, sb, jw, dbAngsuran) {
+        if (dbAngsuran && parseFloat(dbAngsuran) > 0) return parseFloat(dbAngsuran);
+        const osNum = parseFloat(os) || 0;
+        if (osNum <= 0) return 0; // Ignore Lunas (OS = 0) rows
+        
+        const plafonNum = parseFloat(plafon) || 0;
+        const sbNum = parseFloat(sb) || 0;
+        const jwNum = parseFloat(jw) || 0;
+        if (jwNum <= 0) return 0;
+
+        const pokokBln = plafonNum / jwNum;
+        const bungaBln = (plafonNum * (sbNum / 100)) / jwNum;
+        return pokokBln + bungaBln;
     }
     function fmtDate(s) {
         if (!s || s === '0' || s === 'null') return '';
-        s = String(s).trim();
+        s = String(s).trim().replace(/[-/]/g, '');
         if (s.length === 8) return s.slice(6,8)+'-'+s.slice(4,6)+'-'+s.slice(0,4);
         return s;
     }
@@ -1961,9 +1979,23 @@
         }
 
         let html = '';
+        let calcAngsSum = 0;
+        const ketMapUI = {
+            '00': 'AKTIF', '0': 'AKTIF',
+            '01': 'Dibatalkan',
+            '02': 'Lunas', '2': 'Lunas',
+            '03': 'WO', '3': 'WO',
+            '04': 'Hapus Tagih',
+            '05': 'Agunan',
+            '07': 'Dialihkan',
+            '12': 'Lunas Diskon'
+        };
         data.records.forEach((rec, i) => {
             const coll = parseInt(rec.coll) || 0;
             const isBuruk = coll >= 3;
+            calcAngsSum += calcAngsuranRow(rec.plafon, rec.os, rec.sb, rec.jw, rec.angsuran);
+            const rawKondisi = String(rec.kondisi || '').trim();
+            const ketText = ketMapUI[rawKondisi] || rawKondisi || '';
             html += `<tr class="${isBuruk?'coll-buruk':''}">` +
                 `<td style="text-align:center">${i+1}</td>` +
                 `<td style="text-align:left">${rec.bank||''}</td>` +
@@ -1975,13 +2007,13 @@
                 `<td style="text-align:center">${rec.frekuensirestrukturisasi??0}</td>` +
                 `<td style="text-align:center">${rec.tunggakan??0}</td>` +
                 `<td style="text-align:center"><span class="ideb-coll-badge ideb-coll-${coll}">${coll}</span></td>` +
-                `<td style="text-align:center">${rec.kondisi||''}</td>` +
+                `<td style="text-align:center">${ketText}</td>` +
                 `<td style="text-align:center">${rec.tung_hari??0}</td>` +
                 '</tr>';
         });
         tbody.innerHTML = html;
 
-        totalEl.innerHTML = `Total BD: <strong>${fmtNum(s.total_bd)}</strong> &nbsp;&mdash;&nbsp; Perkiraan Angs./Bulan: <strong>${fmtNum(s.total_angsuran)}</strong>`;
+        totalEl.innerHTML = `Total BD: <strong>${fmtNum(s.total_bd)}</strong> &nbsp;&mdash;&nbsp; Perkiraan Angs./Bulan: <strong>${fmtNum(calcAngsSum)}</strong>`;
     }
 
     // ─── Reset ──────────────────────────────────────────────────────────────────

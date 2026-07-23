@@ -77,10 +77,26 @@ exports.queryByRef = async (req, res) => {
         if (rows.length === 0) {
             return res.json({ found: false, records: [], summary: null });
         }
-        // Calculate summary
+        // Calculate summary matching legacy Desktop app formula
         const first = rows[0];
         const totalBD = rows.reduce((sum, r) => sum + (parseFloat(r.os) || 0), 0);
-        const totalAngsuran = rows.reduce((sum, r) => sum + (parseFloat(r.angsuran) || 0), 0);
+        const totalAngsuran = rows.reduce((sum, r) => {
+            const osNum = parseFloat(r.os) || 0;
+            if (osNum <= 0) return sum; // Ignore Lunas (OS = 0) rows
+
+            if (r.angsuran && parseFloat(r.angsuran) > 0) {
+                return sum + parseFloat(r.angsuran);
+            }
+            const plafonNum = parseFloat(r.plafon) || 0;
+            const sbNum = parseFloat(r.sb) || 0;
+            const jwNum = parseFloat(r.jw) || 0;
+            if (jwNum <= 0) return sum;
+
+            const pokokBln = plafonNum / jwNum;
+            const bungaBln = (plafonNum * (sbNum / 100)) / jwNum;
+            return sum + (pokokBln + bungaBln);
+        }, 0);
+
         const collBuruk = first.coll_buruk;
         res.json({
             found: true,
@@ -90,8 +106,8 @@ exports.queryByRef = async (req, res) => {
                 nama: first.nama,
                 alamat: first.alamat,
                 coll_buruk: collBuruk,
-                total_bd: totalBD,
-                total_angsuran: totalAngsuran,
+                total_bd: Math.round(totalBD),
+                total_angsuran: Math.round(totalAngsuran),
             }
         });
     } catch (e) {
