@@ -1401,7 +1401,8 @@
                                 <span class="section-badge" id="ideb-debitur-coll-badge"></span>
                             </div>
                             <div class="ideb-ref-row">
-                                <input type="text" id="ideb-ref-debitur" placeholder="Masukkan No. REF / Nomor Register..." onkeydown="if(event.key==='Enter') idebSearch('debitur')">
+                                <input type="text" id="ideb-ref-debitur" list="ideb-ref-list-debitur" autocomplete="off" placeholder="Ketik / pilih No. REF, Nama, atau NIK..." oninput="idebFetchRefSuggestions('debitur')" onfocus="idebFetchRefSuggestions('debitur')" onchange="idebSearch('debitur')" onkeydown="if(event.key==='Enter') idebSearch('debitur')">
+                                <datalist id="ideb-ref-list-debitur"></datalist>
                                 <button onclick="idebSearch('debitur')">Cari</button>
                             </div>
                             <div class="ideb-person-info" id="ideb-info-debitur">
@@ -1421,7 +1422,8 @@
                                 <span class="section-badge" id="ideb-pasangan-debitur-coll-badge"></span>
                             </div>
                             <div class="ideb-ref-row">
-                                <input type="text" id="ideb-ref-pasangan-debitur" placeholder="Masukkan No. REF / Nomor Register..." onkeydown="if(event.key==='Enter') idebSearch('pasangan-debitur')">
+                                <input type="text" id="ideb-ref-pasangan-debitur" list="ideb-ref-list-pasangan-debitur" autocomplete="off" placeholder="Ketik / pilih No. REF, Nama, atau NIK..." oninput="idebFetchRefSuggestions('pasangan-debitur')" onfocus="idebFetchRefSuggestions('pasangan-debitur')" onchange="idebSearch('pasangan-debitur')" onkeydown="if(event.key==='Enter') idebSearch('pasangan-debitur')">
+                                <datalist id="ideb-ref-list-pasangan-debitur"></datalist>
                                 <button onclick="idebSearch('pasangan-debitur')" style="background:#2e7d32;">Cari</button>
                             </div>
                             <div class="ideb-person-info" id="ideb-info-pasangan-debitur">
@@ -1441,7 +1443,8 @@
                                 <span class="section-badge" id="ideb-penjamin-coll-badge"></span>
                             </div>
                             <div class="ideb-ref-row">
-                                <input type="text" id="ideb-ref-penjamin" placeholder="Masukkan No. REF / Nomor Register..." onkeydown="if(event.key==='Enter') idebSearch('penjamin')">
+                                <input type="text" id="ideb-ref-penjamin" list="ideb-ref-list-penjamin" autocomplete="off" placeholder="Ketik / pilih No. REF, Nama, atau NIK..." oninput="idebFetchRefSuggestions('penjamin')" onfocus="idebFetchRefSuggestions('penjamin')" onchange="idebSearch('penjamin')" onkeydown="if(event.key==='Enter') idebSearch('penjamin')">
+                                <datalist id="ideb-ref-list-penjamin"></datalist>
                                 <button onclick="idebSearch('penjamin')" style="background:#bf360c;">Cari</button>
                             </div>
                             <div class="ideb-person-info" id="ideb-info-penjamin">
@@ -1461,7 +1464,8 @@
                                 <span class="section-badge" id="ideb-pasangan-penjamin-coll-badge"></span>
                             </div>
                             <div class="ideb-ref-row">
-                                <input type="text" id="ideb-ref-pasangan-penjamin" placeholder="Masukkan No. REF / Nomor Register..." onkeydown="if(event.key==='Enter') idebSearch('pasangan-penjamin')">
+                                <input type="text" id="ideb-ref-pasangan-penjamin" list="ideb-ref-list-pasangan-penjamin" autocomplete="off" placeholder="Ketik / pilih No. REF, Nama, atau NIK..." oninput="idebFetchRefSuggestions('pasangan-penjamin')" onfocus="idebFetchRefSuggestions('pasangan-penjamin')" onchange="idebSearch('pasangan-penjamin')" onkeydown="if(event.key==='Enter') idebSearch('pasangan-penjamin')">
+                                <datalist id="ideb-ref-list-pasangan-penjamin"></datalist>
                                 <button onclick="idebSearch('pasangan-penjamin')" style="background:#6a1b9a;">Cari</button>
                             </div>
                             <div class="ideb-person-info" id="ideb-info-pasangan-penjamin">
@@ -1830,6 +1834,31 @@
                 `<span>COLL 5 (WO): <strong style="color:#dc2626">${(s.total_coll5||0).toLocaleString('id-ID')}</strong></span>`+
                 (s.last_update ? `<span>Update Terakhir: <strong>${s.last_update}</strong></span>` : '');
         } catch(e) {}
+    }
+
+    // ─── Fetch REF Suggestions for Autocomplete ────────────────────────────────
+    let idebSuggestTimeout = null;
+    async function idebFetchRefSuggestions(role) {
+        const inputEl = document.getElementById('ideb-ref-' + role);
+        const datalist = document.getElementById('ideb-ref-list-' + role);
+        if (!inputEl || !datalist) return;
+
+        const q = inputEl.value.trim();
+
+        clearTimeout(idebSuggestTimeout);
+        idebSuggestTimeout = setTimeout(async () => {
+            try {
+                const res = await fetch('/api/ideb/search-ref?q=' + encodeURIComponent(q));
+                const data = await res.json();
+                if (Array.isArray(data)) {
+                    let optionsHtml = '';
+                    data.forEach(item => {
+                        optionsHtml += `<option value="${item.ref}">${item.nama ? item.nama : ''} ${item.nik ? '(' + item.nik + ')' : ''}</option>`;
+                    });
+                    datalist.innerHTML = optionsHtml;
+                }
+            } catch(e) {}
+        }, 200);
     }
 
     // ─── Search ─────────────────────────────────────────────────────────────────

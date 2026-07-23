@@ -100,6 +100,36 @@ exports.queryByRef = async (req, res) => {
     }
 };
 
+// ─── GET /api/ideb/search-ref ──────────────────────────────────────────────────
+// Returns top 30 matching REF numbers / debtor names for autocomplete dropdown
+exports.searchRefSuggestions = async (req, res) => {
+    try {
+        const q = (req.query.q || '').trim();
+        let rows = [];
+        if (!q) {
+            rows = await dbAll(
+                `SELECT DISTINCT ref, nama, nik FROM ideb_records 
+                 WHERE ref IS NOT NULL AND ref != '' 
+                 LIMIT 30`
+            );
+        } else {
+            const pattern = `%${q}%`;
+            rows = await dbAll(
+                `SELECT DISTINCT ref, nama, nik FROM ideb_records 
+                 WHERE UPPER(ref) LIKE UPPER(?) 
+                    OR UPPER(nama) LIKE UPPER(?) 
+                    OR UPPER(nik) LIKE UPPER(?)
+                 LIMIT 30`,
+                [pattern, pattern, pattern]
+            );
+        }
+        res.json(rows);
+    } catch (e) {
+        console.error('[iDEB] searchRefSuggestions error:', e);
+        res.status(500).json({ error: 'Gagal mengambil saran No. REF.' });
+    }
+};
+
 // ─── POST /api/ideb/import-csv ─────────────────────────────────────────────────
 // Import data from uploaded CSV/TXT export of SQL Server
 const upload = multer({
