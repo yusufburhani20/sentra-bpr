@@ -467,7 +467,7 @@ function parseSlikTxtBuffer(buffer) {
             coll_buruk: String(maxColl),
             bank: k.ljkKet || k.ljk || '',
             plafon: parseFloat(k.plafonAwal) || parseFloat(k.plafon) || 0,
-            os: parseFloat(k.bakiDebet || 0),
+            os: Math.round(parseFloat(k.bakiDebet || 0)),
             sb: parseFloat(k.sukuBungaImbalan || 0),
             jw: jw,
             jatem: k.tanggalJatuhTempo || '',

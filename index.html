@@ -2245,7 +2245,7 @@
                 coll_buruk: String(maxColl),
                 bank: k.ljkKet || k.ljk || '',
                 plafon: parseFloat(k.plafonAwal) || parseFloat(k.plafon) || 0,
-                os: parseFloat(k.bakiDebet || 0),
+                os: Math.round(parseFloat(k.bakiDebet || 0)),
                 sb: parseFloat(k.sukuBungaImbalan || 0),
                 jw: jw,
                 jatem: k.tanggalJatuhTempo || '',
@@ -2425,18 +2425,6 @@
         nama.textContent   = s.nama   || '—';
         nik.textContent    = s.nik    || '—';
         alamat.textContent = s.alamat || '—';
-
-        // Sort records: Bank Name ASC (A-Z) primary, then COLL ASC (1..5) secondary
-        data.records.sort((a, b) => {
-            const bankA = String(a.bank || '').toLowerCase();
-            const bankB = String(b.bank || '').toLowerCase();
-            const bankCmp = bankA.localeCompare(bankB);
-            if (bankCmp !== 0) return bankCmp;
-
-            const collA = parseInt(a.coll) || 1;
-            const collB = parseInt(b.coll) || 1;
-            return collA - collB;
-        });
 
         const collBuruk = data.records.reduce((max, r) => Math.max(max, parseInt(r.coll) || 1), 1);
         if (badge) {
