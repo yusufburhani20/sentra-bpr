@@ -14,7 +14,7 @@ import { fetchFileBackupList, setupFileBackup } from './js/fileBackup.js';
 // Check Permissions
 function checkPermission(view, role) {
     const permissions = {
-        "dashboard": ["Admin", "Kepala Bidang", "Teller", "SDMU", "Customer Service", "IT Support"],
+        "dashboard": ["Admin", "Kepala Bidang", "Teller", "SDMU", "Customer Service"],
         "input": ["Admin", "Kepala Bidang", "Teller", "SDMU", "Customer Service"],
         "riwayat": ["Admin", "Kepala Bidang", "Teller", "SDMU", "Customer Service"],
         "kodebiaya": ["Admin"],
@@ -242,15 +242,31 @@ export async function initApp() {
     document.getElementById("user-display-role").innerText = state.currentUser.role;
     document.getElementById("user-avatar-initial").innerText = state.currentUser.nama.charAt(0);
 
-    document.getElementById("nav-kodebiaya").style.display = checkPermission("kodebiaya", state.currentRole) ? "flex" : "none";
-    document.getElementById("nav-users").style.display = checkPermission("users", state.currentRole) ? "flex" : "none";
-    document.getElementById("nav-audit").style.display = checkPermission("audit", state.currentRole) ? "flex" : "none";
-    document.getElementById("nav-approvals").style.display = checkPermission("approvals", state.currentRole) ? "flex" : "none";
-    document.getElementById("nav-ideb").style.display = checkPermission("ideb", state.currentRole) ? "flex" : "none";
-    const navIdebMaster = document.getElementById("nav-ideb-master");
-    if (navIdebMaster) navIdebMaster.style.display = checkPermission("ideb-master", state.currentRole) ? "flex" : "none";
+    const setNavDisplay = (id, view) => {
+        const el = document.getElementById(id);
+        if (el) el.style.display = checkPermission(view, state.currentRole) ? "flex" : "none";
+    };
 
-    await showSection("dashboard");
+    setNavDisplay("nav-dashboard", "dashboard");
+    setNavDisplay("nav-input", "input");
+    setNavDisplay("nav-riwayat", "riwayat");
+    setNavDisplay("nav-kirimslip", "kirimslip");
+    setNavDisplay("nav-filebackup", "filebackup");
+    setNavDisplay("nav-kodebiaya", "kodebiaya");
+    setNavDisplay("nav-users", "users");
+    setNavDisplay("nav-audit", "audit");
+    setNavDisplay("nav-approvals", "approvals");
+    setNavDisplay("nav-ideb", "ideb");
+    setNavDisplay("nav-ideb-master", "ideb-master");
+
+    let initialView = "dashboard";
+    if (!checkPermission("dashboard", state.currentRole)) {
+        if (checkPermission("ideb", state.currentRole)) initialView = "ideb";
+        else if (checkPermission("ideb-master", state.currentRole)) initialView = "ideb-master";
+        else if (checkPermission("input", state.currentRole)) initialView = "input";
+    }
+
+    await showSection(initialView);
     await fetchPendingApprovalsCount();
 
     setInterval(async () => {

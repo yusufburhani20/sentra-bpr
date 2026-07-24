@@ -108,13 +108,13 @@
                         </a>
                     </li>
                     <li>
-                        <a class="nav-item-link" data-view="input">
+                        <a class="nav-item-link" data-view="input" id="nav-input">
                             <i data-lucide="plus-circle"></i>
                             <span>Input Transaksi</span>
                         </a>
                     </li>
                     <li>
-                        <a class="nav-item-link" data-view="riwayat">
+                        <a class="nav-item-link" data-view="riwayat" id="nav-riwayat">
                             <i data-lucide="history"></i>
                             <span>Riwayat Transaksi</span>
                         </a>
@@ -1287,8 +1287,7 @@
                             Maaf, peran aktif Anda saat ini tidak memiliki hak akses untuk membuka halaman atau modul
                             administrasi ini. Silakan ganti peran aktif pada panel simulasi di atas.
                         </p>
-                        <button class="btn btn-primary" onclick="showSection('input')">Kembali ke Input
-                            Transaksi</button>
+                        <button class="btn btn-primary" onclick="showSection(window.state && window.state.currentRole === 'IT Support' ? 'ideb' : 'dashboard')">Kembali ke Halaman Utama</button>
                     </div>
                 </section>
 
