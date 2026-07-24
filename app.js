@@ -23,7 +23,8 @@ function checkPermission(view, role) {
         "users": ["Admin", "Kepala Bidang", "Teller", "SDMU", "Customer Service"],
         "audit": ["Admin", "Kepala Bidang"],
         "approvals": ["Admin", "Kepala Bidang", "Teller", "SDMU", "Customer Service"],
-        "ideb": ["Admin", "Kepala Bidang", "Teller", "SDMU", "Customer Service"]
+        "ideb": ["Admin", "Kepala Bidang", "Teller", "SDMU", "Customer Service"],
+        "ideb-master": ["Admin", "Kepala Bidang", "Teller", "SDMU", "Customer Service"]
     };
     return permissions[view] ? permissions[view].includes(role) : false;
 }
@@ -246,6 +247,8 @@ export async function initApp() {
     document.getElementById("nav-audit").style.display = checkPermission("audit", state.currentRole) ? "flex" : "none";
     document.getElementById("nav-approvals").style.display = checkPermission("approvals", state.currentRole) ? "flex" : "none";
     document.getElementById("nav-ideb").style.display = checkPermission("ideb", state.currentRole) ? "flex" : "none";
+    const navIdebMaster = document.getElementById("nav-ideb-master");
+    if (navIdebMaster) navIdebMaster.style.display = checkPermission("ideb-master", state.currentRole) ? "flex" : "none";
 
     await showSection("dashboard");
     await fetchPendingApprovalsCount();
