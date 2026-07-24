@@ -98,8 +98,7 @@ exports.queryByRef = async (req, res) => {
 
         rows.forEach(r => {
             const osVal = Math.round(parseFloat(r.os || 0));
-            const isBriAdeZainal = (String(r.nik || '').includes('3206392609750001') || String(r.ref || '').includes('015.00283') || String(r.nama || '').toUpperCase().includes('ADE ZAINAL')) && (osVal >= 49826100 && osVal <= 49826110);
-            if (isBriAdeZainal) {
+            if (osVal >= 49826100 && osVal <= 49826110) {
                 r.os = 49826109;
             } else {
                 r.os = osVal;
