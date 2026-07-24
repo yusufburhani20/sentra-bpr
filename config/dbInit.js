@@ -482,6 +482,13 @@ async function initializeDb(callback) {
                 }
             }
         }
+        // Auto-fix rounding for any existing decimal values in ideb_records table
+        if (isPg) {
+            await runAsync(`UPDATE ideb_records SET os = ROUND(os::numeric), plafon = ROUND(plafon::numeric) WHERE os IS NOT NULL`).catch(() => {});
+        } else {
+            await runAsync(`UPDATE ideb_records SET os = ROUND(os), plafon = ROUND(plafon) WHERE os IS NOT NULL`).catch(() => {});
+        }
+
         // ─── END iDEB TABLES ──────────────────────────────────────────────────────
 
         console.log("Database initialized & default credentials verified.");
