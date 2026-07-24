@@ -1539,6 +1539,85 @@
                     </div><!-- end ideb-grid -->
                 </section><!-- end view-ideb -->
 
+                <!-- VIEW: DAFTAR DATA IDEB TERDAFTAR (MASTER DATA) -->
+                <section id="view-ideb-master" class="view-section" style="display:none;">
+                    <div class="card" style="padding:20px; margin-bottom:16px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+                            <div>
+                                <h2 style="margin:0 0 4px; font-size:18px; font-weight:700; display:flex; align-items:center; gap:8px;">
+                                    <i data-lucide="database" style="color:var(--primary); width:20px; height:20px;"></i>
+                                    Daftar Data iDEB Terdaftar
+                                </h2>
+                                <p style="margin:0; font-size:12px; color:var(--text-muted);">
+                                    Master Data Referensi Debitur iDEB / SLIK tersimpan di database Sentra BPR
+                                </p>
+                            </div>
+                            <div style="display:flex; gap:8px;">
+                                <button onclick="switchView('ideb')" class="btn btn-primary" style="padding:8px 16px; font-size:13px; font-weight:600; display:flex; align-items:center; gap:6px;">
+                                    <i data-lucide="search" style="width:15px;height:15px;"></i> Ke Ringkasan iDEB
+                                </button>
+                                <button onclick="document.getElementById('ideb-txt-file-input').click()" class="btn btn-success" style="padding:8px 16px; font-size:13px; font-weight:600; display:flex; align-items:center; gap:6px;">
+                                    <i data-lucide="upload" style="width:15px;height:15px;"></i> Import Data TXT
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Card Body & Data Table -->
+                    <div class="card" style="padding:20px;">
+                        <!-- Filter & Search Toolbar -->
+                        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:16px;">
+                            <div style="display:flex; gap:8px; flex:1; min-width:280px; max-width:500px;">
+                                <input type="text" id="ideb-master-search" placeholder="Cari Nama Debitur, NIK, No. Register (REF)..." 
+                                       class="form-control" style="font-size:13px;"
+                                       onkeydown="if(event.key==='Enter') idebLoadMasterList(1)">
+                                <button onclick="idebLoadMasterList(1)" class="btn btn-primary" style="padding:8px 16px; font-size:13px; font-weight:600;">
+                                    Cari
+                                </button>
+                            </div>
+                            <div style="display:flex; gap:8px; align-items:center;">
+                                <select id="ideb-master-coll-filter" onchange="idebLoadMasterList(1)" class="form-control" style="font-size:13px; min-width:180px;">
+                                    <option value="">Semua Kolektibilitas</option>
+                                    <option value="lancar">Lancar (Coll 1-2)</option>
+                                    <option value="npl">Macet / NPL (Coll 3-5)</option>
+                                    <option value="5">Khusus COLL 5 (WO)</option>
+                                </select>
+                                <button onclick="idebLoadMasterList(1)" class="btn btn-secondary" style="padding:8px 12px;" title="Refresh Data">
+                                    <i data-lucide="refresh-cw" style="width:15px; height:15px;"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Data Table Container -->
+                        <div class="table-container" style="border: 1px solid var(--border); border-radius: 8px; overflow-x: auto;">
+                            <table class="data-table" style="width:100%; border-collapse:collapse; font-size:13px;">
+                                <thead>
+                                    <tr style="background:var(--bg-secondary); text-align:left; border-bottom:1px solid var(--border);">
+                                        <th style="padding:10px 12px; width:45px; text-align:center;">NO</th>
+                                        <th style="padding:10px 12px;">NO. REGISTER (REF)</th>
+                                        <th style="padding:10px 12px;">NAMA DEBITUR</th>
+                                        <th style="padding:10px 12px;">NIK</th>
+                                        <th style="padding:10px 12px; text-align:right;">TOTAL BAKI DEBET</th>
+                                        <th style="padding:10px 12px; text-align:center;">COLL TERBURUK</th>
+                                        <th style="padding:10px 12px; text-align:center;">FASILITAS</th>
+                                        <th style="padding:10px 12px; text-align:center;">TGL INPUT</th>
+                                        <th style="padding:10px 12px; text-align:center; min-width:200px;">AKSI PILIH FORMS</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="ideb-master-tbody">
+                                    <tr><td colspan="9" style="text-align:center; padding:24px; color:var(--text-muted);">Memuat data...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Pagination Footer -->
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:16px; font-size:12px; color:var(--text-muted); flex-wrap:wrap; gap:10px;">
+                            <span id="ideb-master-pagination-info">Menampilkan 0 data</span>
+                            <div style="display:flex; gap:6px; align-items:center;" id="ideb-master-pagination-btns"></div>
+                        </div>
+                    </div>
+                </section>
+
             </main>
         </div>
 
@@ -1581,70 +1660,6 @@
 
         </div>
 
-        <!-- MODAL: DAFTAR DATA IDEB TERDAFTAR (MASTER DATA) -->
-        <div class="modal-overlay" id="modal-ideb-master">
-            <div class="modal-container" style="max-width: 950px; width: 95%;">
-                <div class="modal-header" style="border-bottom: 1px solid var(--border); padding-bottom: 12px;">
-                    <div style="display:flex; align-items:center; gap:8px;">
-                        <i data-lucide="database" style="width:20px; height:20px; color:var(--primary);"></i>
-                        <h3 class="modal-title" style="margin:0; font-size:16px; font-weight:700;">Daftar Data iDEB Terdaftar</h3>
-                    </div>
-                    <button class="modal-close" onclick="idebCloseMasterModal()"><i data-lucide="x"></i></button>
-                </div>
-                <div class="modal-body" style="padding: 16px;">
-                    <!-- Filter Toolbar -->
-                    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:14px;">
-                        <div style="display:flex; gap:8px; flex:1; min-width:260px;">
-                            <input type="text" id="ideb-master-search" placeholder="Cari Nama, NIK, No. Register..." 
-                                   style="padding:8px 12px; border-radius:8px; border:1px solid var(--border); background:var(--bg-secondary); color:var(--text-primary); font-size:13px; flex:1;"
-                                   onkeydown="if(event.key==='Enter') idebLoadMasterList(1)">
-                            <button onclick="idebLoadMasterList(1)" style="padding:8px 14px; background:var(--primary); color:#fff; border:none; border-radius:8px; cursor:pointer; font-size:13px; font-weight:600;">
-                                Cari
-                            </button>
-                        </div>
-                        <div style="display:flex; gap:8px;">
-                            <select id="ideb-master-coll-filter" onchange="idebLoadMasterList(1)" style="padding:8px 12px; border-radius:8px; border:1px solid var(--border); background:var(--bg-secondary); color:var(--text-primary); font-size:13px;">
-                                <option value="">Semua Kolektibilitas</option>
-                                <option value="lancar">Lancar (Coll 1-2)</option>
-                                <option value="npl">Macet/Buruk (Coll 3-5)</option>
-                                <option value="5">Khusus COLL 5 (WO)</option>
-                            </select>
-                            <button onclick="idebLoadMasterList(1)" style="padding:8px 12px; background:var(--bg-secondary); color:var(--text-primary); border:1px solid var(--border); border-radius:8px; cursor:pointer;" title="Refresh Data">
-                                <i data-lucide="refresh-cw" style="width:14px; height:14px;"></i>
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Master Table Container -->
-                    <div style="max-height: 420px; overflow-y: auto; border: 1px solid var(--border); border-radius: 8px;">
-                        <table class="data-table" style="width:100%; border-collapse:collapse; font-size:12px;">
-                            <thead>
-                                <tr style="background:var(--bg-secondary); text-align:left; border-bottom:1px solid var(--border);">
-                                    <th style="padding:8px 10px; width:40px; text-align:center;">NO</th>
-                                    <th style="padding:8px 10px;">NO. REGISTER (REF)</th>
-                                    <th style="padding:8px 10px;">NAMA DEBITUR</th>
-                                    <th style="padding:8px 10px;">NIK</th>
-                                    <th style="padding:8px 10px; text-align:right;">TOTAL BD</th>
-                                    <th style="padding:8px 10px; text-align:center;">COLL</th>
-                                    <th style="padding:8px 10px; text-align:center;">FASILITAS</th>
-                                    <th style="padding:8px 10px; text-align:center;">TGL INPUT</th>
-                                    <th style="padding:8px 10px; text-align:center; min-width:140px;">AKSI PILIH</th>
-                                </tr>
-                            </thead>
-                            <tbody id="ideb-master-tbody">
-                                <tr><td colspan="9" style="text-align:center; padding:20px; color:var(--text-muted);">Memuat data...</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <!-- Pagination Controls -->
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:12px; font-size:12px; color:var(--text-muted);">
-                        <span id="ideb-master-pagination-info">Menampilkan 0 data</span>
-                        <div style="display:flex; gap:6px;" id="ideb-master-pagination-btns"></div>
-                    </div>
-                </div>
-            </div>
-        </div>
 
         <!-- MODAL: ADD/EDIT USER -->
         <div class="modal-overlay" id="modal-user">
@@ -2318,18 +2333,21 @@
         });
     }
 
-    // ─── Master Data iDEB Modal & List ──────────────────────────────────────────
+    // ─── Master Data iDEB View & List ───────────────────────────────────────────
     let idebMasterCurrentPage = 1;
 
     function idebOpenMasterModal() {
-        const modal = document.getElementById('modal-ideb-master');
-        if (modal) modal.classList.add('active');
-        idebLoadMasterList(1);
+        if (typeof switchView === 'function') {
+            switchView('ideb-master');
+        } else {
+            idebLoadMasterList(1);
+        }
     }
 
     function idebCloseMasterModal() {
-        const modal = document.getElementById('modal-ideb-master');
-        if (modal) modal.classList.remove('active');
+        if (typeof switchView === 'function') {
+            switchView('ideb');
+        }
     }
 
     async function idebLoadMasterList(page = 1) {
@@ -2340,6 +2358,7 @@
         const q = (document.getElementById('ideb-master-search')?.value || '').trim();
         const coll = document.getElementById('ideb-master-coll-filter')?.value || '';
 
+        if (!tbody) return;
         tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; padding:20px; color:var(--primary);">⏳ Memuat data iDEB...</td></tr>';
 
         try {
@@ -2349,8 +2368,8 @@
 
             if (!data.success || !data.records || data.records.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; padding:24px; color:var(--text-muted);">Tidak ada data iDEB ditemukan.</td></tr>';
-                infoEl.textContent = 'Menampilkan 0 data';
-                btnsEl.innerHTML = '';
+                if (infoEl) infoEl.textContent = 'Menampilkan 0 data';
+                if (btnsEl) btnsEl.innerHTML = '';
                 return;
             }
 
@@ -2362,19 +2381,19 @@
                 const totalBD = Math.round(parseFloat(r.total_bd) || 0);
 
                 html += `<tr style="border-bottom: 1px solid var(--border); ${isBuruk ? 'background: rgba(220,38,38,0.05);' : ''}">` +
-                    `<td style="text-align:center; padding:8px 6px;">${rowNo}</td>` +
-                    `<td style="padding:8px 10px; font-weight:700; font-family:monospace; color:var(--primary);">${r.ref || '—'}</td>` +
-                    `<td style="padding:8px 10px; font-weight:600;">${r.nama || '—'}</td>` +
-                    `<td style="padding:8px 10px; font-family:monospace;">${r.nik || '—'}</td>` +
-                    `<td style="text-align:right; padding:8px 10px; font-weight:600;">${fmtNum(totalBD)}</td>` +
-                    `<td style="text-align:center; padding:8px 6px;"><span class="ideb-coll-badge ideb-coll-${collVal}">${collVal}</span></td>` +
-                    `<td style="text-align:center; padding:8px 6px;">${r.total_fasilitas || 0}</td>` +
-                    `<td style="text-align:center; padding:8px 6px; font-size:11px;">${r.tgl_input || '—'}</td>` +
-                    `<td style="text-align:center; padding:6px 8px; white-space:nowrap;">` +
-                        `<button onclick="idebSelectRefForRole('${r.ref}', 'debitur')" style="padding:3px 7px; margin-right:3px; background:var(--primary); color:#fff; border:none; border-radius:4px; font-size:11px; cursor:pointer;" title="Muat ke Debitur">Debitur</button>` +
-                        `<button onclick="idebSelectRefForRole('${r.ref}', 'pasangan-debitur')" style="padding:3px 7px; margin-right:3px; background:#2e7d32; color:#fff; border:none; border-radius:4px; font-size:11px; cursor:pointer;" title="Muat ke Pasangan">Pasangan</button>` +
-                        `<button onclick="idebSelectRefForRole('${r.ref}', 'penjamin')" style="padding:3px 7px; margin-right:3px; background:#bf360c; color:#fff; border:none; border-radius:4px; font-size:11px; cursor:pointer;" title="Muat ke Penjamin">Penjamin</button>` +
-                        `<button onclick="idebDeleteMasterRef('${r.ref}')" style="padding:3px 6px; background:#dc2626; color:#fff; border:none; border-radius:4px; font-size:11px; cursor:pointer;" title="Hapus Data REF ini">🗑️</button>` +
+                    `<td style="text-align:center; padding:10px 8px;">${rowNo}</td>` +
+                    `<td style="padding:10px; font-weight:700; font-family:monospace; color:var(--primary);">${r.ref || '—'}</td>` +
+                    `<td style="padding:10px; font-weight:600;">${r.nama || '—'}</td>` +
+                    `<td style="padding:10px; font-family:monospace;">${r.nik || '—'}</td>` +
+                    `<td style="text-align:right; padding:10px; font-weight:600;">${fmtNum(totalBD)}</td>` +
+                    `<td style="text-align:center; padding:10px 8px;"><span class="ideb-coll-badge ideb-coll-${collVal}">${collVal}</span></td>` +
+                    `<td style="text-align:center; padding:10px 8px;">${r.total_fasilitas || 0}</td>` +
+                    `<td style="text-align:center; padding:10px 8px; font-size:11px;">${r.tgl_input || '—'}</td>` +
+                    `<td style="text-align:center; padding:8px; white-space:nowrap;">` +
+                        `<button onclick="idebSelectRefForRole('${r.ref}', 'debitur')" style="padding:4px 8px; margin-right:4px; background:var(--primary); color:#fff; border:none; border-radius:6px; font-size:11px; font-weight:600; cursor:pointer;" title="Muat ke Debitur">Debitur</button>` +
+                        `<button onclick="idebSelectRefForRole('${r.ref}', 'pasangan-debitur')" style="padding:4px 8px; margin-right:4px; background:#2e7d32; color:#fff; border:none; border-radius:6px; font-size:11px; font-weight:600; cursor:pointer;" title="Muat ke Pasangan">Pasangan</button>` +
+                        `<button onclick="idebSelectRefForRole('${r.ref}', 'penjamin')" style="padding:4px 8px; margin-right:4px; background:#bf360c; color:#fff; border:none; border-radius:6px; font-size:11px; font-weight:600; cursor:pointer;" title="Muat ke Penjamin">Penjamin</button>` +
+                        `<button onclick="idebDeleteMasterRef('${r.ref}')" style="padding:4px 8px; background:#dc2626; color:#fff; border:none; border-radius:6px; font-size:11px; font-weight:600; cursor:pointer;" title="Hapus Data REF ini">🗑️</button>` +
                     `</td>` +
                     `</tr>`;
             });
@@ -2384,31 +2403,32 @@
             const p = data.pagination;
             const startItem = (p.page - 1) * p.limit + 1;
             const endItem = Math.min(p.page * p.limit, p.total);
-            infoEl.textContent = `Menampilkan ${startItem}-${endItem} dari total ${p.total} data`;
+            if (infoEl) infoEl.textContent = `Menampilkan ${startItem}-${endItem} dari total ${p.total} data`;
 
             // Pagination buttons
             let navHtml = '';
             if (p.page > 1) {
-                navHtml += `<button onclick="idebLoadMasterList(${p.page - 1})" style="padding:4px 10px; border-radius:6px; border:1px solid var(--border); background:var(--bg-secondary); cursor:pointer;">&laquo; Prev</button>`;
+                navHtml += `<button onclick="idebLoadMasterList(${p.page - 1})" class="btn btn-secondary" style="padding:4px 10px; font-size:12px;">&laquo; Prev</button>`;
             }
-            navHtml += `<span style="padding:4px 8px; font-weight:700;">Halaman ${p.page} dari ${p.totalPages}</span>`;
+            navHtml += `<span style="padding:4px 10px; font-weight:700;">Halaman ${p.page} dari ${p.totalPages}</span>`;
             if (p.page < p.totalPages) {
-                navHtml += `<button onclick="idebLoadMasterList(${p.page + 1})" style="padding:4px 10px; border-radius:6px; border:1px solid var(--border); background:var(--bg-secondary); cursor:pointer;">Next &raquo;</button>`;
+                navHtml += `<button onclick="idebLoadMasterList(${p.page + 1})" class="btn btn-secondary" style="padding:4px 10px; font-size:12px;">Next &raquo;</button>`;
             }
-            btnsEl.innerHTML = navHtml;
+            if (btnsEl) btnsEl.innerHTML = navHtml;
 
         } catch (err) {
             console.error('Error loading iDEB master list:', err);
-            tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; padding:20px; color:#dc2626;">Gagal memuat data iDEB.</td></tr>';
+            if (tbody) tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; padding:20px; color:#dc2626;">Gagal memuat data iDEB.</td></tr>';
         }
     }
+    window.idebLoadMasterList = idebLoadMasterList;
 
     function idebSelectRefForRole(ref, role) {
+        if (typeof switchView === 'function') switchView('ideb');
         const input = document.getElementById('ideb-ref-' + role);
         if (input) {
             input.value = ref;
             idebSearch(role);
-            idebCloseMasterModal();
             if (typeof showToast === 'function') {
                 showToast(`✅ Data REF ${ref} dimuat ke ${role.replace('-', ' ').toUpperCase()}`, 'success');
             }

@@ -181,6 +181,7 @@ export async function showSection(sectionId) {
         "users": "Manajemen Pengguna",
         "audit": "System Audit Trail",
         "ideb": "Informasi Debitur iDEB / SLIK",
+        "ideb-master": "Data iDEB Terdaftar (Master Data SLIK)",
         "access-denied": "Akses Ditolak / Terbatas"
     };
     
@@ -208,6 +209,8 @@ export async function showSection(sectionId) {
     } else if (sectionId === "audit") {
         renderAuditTrailView();
         initDeployPanel();
+    } else if (sectionId === "ideb-master") {
+        if (typeof window.idebLoadMasterList === 'function') window.idebLoadMasterList(1);
     }
     
     document.getElementById("app-sidebar").classList.remove("mobile-open");
