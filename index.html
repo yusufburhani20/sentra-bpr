@@ -1526,6 +1526,9 @@
                                 <button onclick="idebOpenMasterModal()" style="padding:8px 16px; background:#0284c7; color:#fff; border:none; border-radius:8px; cursor:pointer; font-size:13px; font-weight:600; display:flex; align-items:center; gap:6px;">
                                     <i data-lucide="database" style="width:15px;height:15px;"></i> Data Terdaftar
                                 </button>
+                                <button onclick="idebOpenManualModal()" style="padding:8px 16px; background:#7c3aed; color:#fff; border:none; border-radius:8px; cursor:pointer; font-size:13px; font-weight:600; display:flex; align-items:center; gap:6px;" title="Input Debitur Tanpa Fasilitas">
+                                    <i data-lucide="user-plus" style="width:15px;height:15px;"></i> Input iDEB Nihil
+                                </button>
                                 <button id="ideb-print-btn" onclick="idebPrint()" style="padding:8px 18px; background:#1a237e; color:#fff; border:none; border-radius:8px; cursor:pointer; font-size:13px; font-weight:600; display:flex; align-items:center; gap:6px;">
                                     <i data-lucide="printer" style="width:15px;height:15px;"></i> Cetak
                                 </button>
@@ -1648,6 +1651,9 @@
                             <div style="display:flex; gap:8px;">
                                 <button onclick="switchView('ideb')" class="btn btn-primary" style="padding:8px 16px; font-size:13px; font-weight:600; display:flex; align-items:center; gap:6px;">
                                     <i data-lucide="search" style="width:15px;height:15px;"></i> Ke Ringkasan iDEB
+                                </button>
+                                <button onclick="idebOpenManualModal()" class="btn btn-secondary" style="padding:8px 16px; font-size:13px; font-weight:600; display:flex; align-items:center; gap:6px;">
+                                    <i data-lucide="user-plus" style="width:15px;height:15px;"></i> Input iDEB Nihil
                                 </button>
                                 <button onclick="document.getElementById('ideb-txt-file-input').click()" class="btn btn-success" style="padding:8px 16px; font-size:13px; font-weight:600; display:flex; align-items:center; gap:6px;">
                                     <i data-lucide="upload" style="width:15px;height:15px;"></i> Import Data TXT
@@ -1851,6 +1857,53 @@
                 <div class="modal-footer" style="padding:12px 16px; border-top:1px solid var(--border); display:flex; justify-content:flex-end; gap:8px; background:#f8fafc;">
                     <button class="btn btn-secondary" onclick="idebCloseEditModal()">Batal</button>
                     <button class="btn btn-primary" onclick="idebSaveEditRecord()">Simpan Perubahan</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- MODAL: INPUT MANUAL iDEB NIHIL -->
+        <div class="modal-overlay" id="modal-ideb-manual" style="z-index:10000;">
+            <div class="modal-container" style="max-width: 540px; width: 95%;">
+                <div class="modal-header" style="background:#f8fafc; border-bottom:1px solid var(--border);">
+                    <h3 class="modal-title" style="font-size:16px; display:flex; align-items:center; gap:8px;">
+                        <i data-lucide="user-check" style="color:var(--primary); width:18px; height:18px;"></i> Input Manual iDEB Nihil (Tanpa Fasilitas)
+                    </h3>
+                    <button class="modal-close" onclick="idebCloseManualModal()">&times;</button>
+                </div>
+                <div class="modal-body" style="padding:20px;">
+                    <p style="margin:0 0 16px; font-size:12px; color:var(--text-muted);">
+                        Gunakan form ini untuk mendaftarkan debitur yang <strong>tidak memiliki fasilitas pinjaman sama sekali (Nihil / Bersih)</strong> ke dalam sistem Sentra BPR.
+                    </p>
+                    <div class="form-group" style="margin-bottom:12px;">
+                        <label class="form-label" style="font-size:12px; font-weight:600;">No. Register (REF) <span style="color:#dc2626;">*</span></label>
+                        <input type="text" id="ideb-manual-ref" class="form-control" placeholder="Contoh: 015.00284.07-26.1" style="font-size:13px;">
+                    </div>
+                    <div class="form-group" style="margin-bottom:12px;">
+                        <label class="form-label" style="font-size:12px; font-weight:600;">Nama Lengkap Debitur <span style="color:#dc2626;">*</span></label>
+                        <input type="text" id="ideb-manual-nama" class="form-control" placeholder="Masukkan nama debitur..." style="font-size:13px;">
+                    </div>
+                    <div class="form-group" style="margin-bottom:12px;">
+                        <label class="form-label" style="font-size:12px; font-weight:600;">NIK / No. Identitas <span style="color:#dc2626;">*</span></label>
+                        <input type="text" id="ideb-manual-nik" class="form-control" maxlength="16" placeholder="Masukkan 16 digit NIK..." style="font-size:13px;">
+                    </div>
+                    <div class="form-group" style="margin-bottom:12px;">
+                        <label class="form-label" style="font-size:12px; font-weight:600;">Alamat Lengkap</label>
+                        <textarea id="ideb-manual-alamat" class="form-control" rows="2" placeholder="Masukkan alamat debitur..." style="font-size:13px;"></textarea>
+                    </div>
+                    <div class="grid-2col" style="grid-template-columns: 1fr 1fr; gap:12px;">
+                        <div class="form-group">
+                            <label class="form-label" style="font-size:12px; font-weight:600;">Status Fasilitas</label>
+                            <input type="text" id="ideb-manual-bank" class="form-control" value="TIDAK ADA FASILITAS" readonly style="font-size:13px; background:var(--bg-secondary);">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" style="font-size:12px; font-weight:600;">Kode Cabang</label>
+                            <input type="text" id="ideb-manual-cabang" class="form-control" value="015" style="font-size:13px;">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer" style="padding:12px 16px; border-top:1px solid var(--border); display:flex; justify-content:flex-end; gap:8px; background:#f8fafc;">
+                    <button class="btn btn-secondary" onclick="idebCloseManualModal()">Batal</button>
+                    <button class="btn btn-primary" onclick="idebSaveManualNihil()">Simpan Data Nihil</button>
                 </div>
             </div>
         </div>
@@ -2679,6 +2732,68 @@
         if (modal) modal.classList.remove('active');
     }
     window.idebCloseEditModal = idebCloseEditModal;
+
+    // ─── Manual Input iDEB Nihil Modal Handlers ─────────────────────────────────
+    function idebOpenManualModal() {
+        document.getElementById('ideb-manual-ref').value = '';
+        document.getElementById('ideb-manual-nama').value = '';
+        document.getElementById('ideb-manual-nik').value = '';
+        document.getElementById('ideb-manual-alamat').value = '';
+        const modal = document.getElementById('modal-ideb-manual');
+        if (modal) modal.classList.add('active');
+        if (window.lucide) window.lucide.createIcons();
+    }
+    window.idebOpenManualModal = idebOpenManualModal;
+
+    function idebCloseManualModal() {
+        const modal = document.getElementById('modal-ideb-manual');
+        if (modal) modal.classList.remove('active');
+    }
+    window.idebCloseManualModal = idebCloseManualModal;
+
+    async function idebSaveManualNihil() {
+        const ref = document.getElementById('ideb-manual-ref').value.trim();
+        const nama = document.getElementById('ideb-manual-nama').value.trim();
+        const nik = document.getElementById('ideb-manual-nik').value.trim();
+        const alamat = document.getElementById('ideb-manual-alamat').value.trim();
+        const cabang = document.getElementById('ideb-manual-cabang').value.trim();
+
+        if (!nama) {
+            alert('Nama debitur wajib diisi.');
+            return;
+        }
+        if (!nik) {
+            alert('NIK debitur wajib diisi.');
+            return;
+        }
+
+        try {
+            const res = await fetch('/api/ideb/create-manual', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ref, nik, nama, alamat, cabang })
+            });
+            const data = await res.json();
+            if (data.success) {
+                if (typeof showToast === 'function') showToast(data.message, 'success');
+                idebCloseManualModal();
+                
+                // Cari REF / NIK yang baru diinput
+                const refToUse = ref || nik;
+                const debiturInp = document.getElementById('ideb-ref-debitur');
+                if (debiturInp && refToUse) {
+                    debiturInp.value = refToUse;
+                    idebSearch('debitur');
+                }
+                if (typeof idebLoadMasterList === 'function') idebLoadMasterList(1);
+            } else {
+                alert(data.error || 'Gagal menyimpan data manual.');
+            }
+        } catch(e) {
+            alert('Terjadi kesalahan jaringan.');
+        }
+    }
+    window.idebSaveManualNihil = idebSaveManualNihil;
 
     async function idebSaveEditRecord() {
         const id = document.getElementById('ideb-edit-id').value;

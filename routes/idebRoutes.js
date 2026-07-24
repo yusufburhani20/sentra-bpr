@@ -27,6 +27,7 @@ router.post('/record/update/:id', idebController.updateRecord);
 // ─── Import ────────────────────────────────────────────────────────────────────
 router.post('/import-csv',     idebController.uploadMiddleware, idebController.importData);
 router.post('/import-records', idebController.importRecords);
+router.post('/create-manual',  idebController.createManualNihil);
 router.post('/import-kantor',  idebController.upsertKantor);
 router.post('/import-users',   idebController.upsertUsers);
 router.post('/sync-txt-folder', idebController.syncTxtFolder);

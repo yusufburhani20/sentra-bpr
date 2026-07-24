@@ -852,4 +852,75 @@ exports.updateRecord = async (req, res) => {
     }
 };
 
+// ─── POST /api/ideb/create-manual ─────────────────────────────────────────────
+// Manual input for iDEB Nihil / Tanpa Fasilitas
+exports.createManualNihil = async (req, res) => {
+    try {
+        const { ref, nik, nama, alamat, cabang, bank, tgl_input } = req.body;
+        if (!nama || !nama.trim()) {
+            return res.status(400).json({ error: 'Nama debitur wajib diisi.' });
+        }
+        if (!nik || !nik.trim()) {
+            return res.status(400).json({ error: 'NIK debitur wajib diisi.' });
+        }
+
+        const trimmedRef = (ref || '').trim() || `MANUAL-${Date.now()}`;
+        const trimmedNik = nik.trim();
+        const trimmedNama = nama.trim().toUpperCase();
+        const trimmedAlamat = (alamat || '').trim().toUpperCase();
+        const trimmedCabang = (cabang || '015').trim();
+        const bankName = (bank || 'TIDAK ADA FASILITAS (NIHIL)').trim();
+
+        const todayStr = new Date().toISOString().slice(0,10).replace(/-/g,'');
+        const inputDate = (tgl_input || todayStr).replace(/-/g,'');
+
+        const isPg = process.env.DB_TYPE === 'postgres';
+
+        // Delete existing records matching same NIK or REF first
+        await dbRun(isPg ? 'DELETE FROM ideb_records WHERE UPPER(ref) = UPPER($1) OR UPPER(nik) = UPPER($1)' : 'DELETE FROM ideb_records WHERE UPPER(ref) = UPPER(?) OR UPPER(nik) = UPPER(?)', [trimmedRef]).catch(() => {});
+        await dbRun(isPg ? 'DELETE FROM ideb_records WHERE UPPER(nik) = UPPER($1)' : 'DELETE FROM ideb_records WHERE UPPER(nik) = UPPER(?)', [trimmedNik]).catch(() => {});
+
+        const sql = isPg
+            ? `INSERT INTO ideb_records (ref, nik, nama, alamat, coll_buruk, bank, plafon, os, sb, jw, jatem, tunggakan, coll, kondisi, tgl_update, tgl_input, cabang, tung_hari, tunggakanpokok, tunggakanbunga, frekuensirestrukturisasi, angsuran)
+               VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22)`
+            : `INSERT INTO ideb_records (ref, nik, nama, alamat, coll_buruk, bank, plafon, os, sb, jw, jatem, tunggakan, coll, kondisi, tgl_update, tgl_input, cabang, tung_hari, tunggakanpokok, tunggakanbunga, frekuensirestrukturisasi, angsuran)
+               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`;
+
+        const params = [
+            trimmedRef,
+            trimmedNik,
+            trimmedNama,
+            trimmedAlamat,
+            '1',
+            bankName,
+            0,
+            0,
+            0,
+            0,
+            '',
+            '0',
+            '1',
+            'Bersih',
+            '',
+            inputDate,
+            trimmedCabang,
+            '0',
+            0,
+            0,
+            0,
+            0
+        ];
+
+        await dbRun(sql, params);
+
+        res.json({
+            success: true,
+            message: `Data iDEB Nihil untuk ${trimmedNama} (REF: ${trimmedRef}) berhasil disimpan.`
+        });
+    } catch (e) {
+        console.error('[iDEB] createManualNihil error:', e);
+        res.status(500).json({ error: 'Gagal menyimpan data iDEB Nihil secara manual.' });
+    }
+};
+
 
