@@ -2456,6 +2456,7 @@
 
         let html = '';
         let calcAngsSum = 0;
+        let calcTotalBD = 0;
         const ketMapUI = {
             '00': 'AKTIF', '0': 'AKTIF',
             '01': 'Dibatalkan',
@@ -2469,6 +2470,8 @@
         data.records.forEach((rec, i) => {
             const coll = parseInt(rec.coll) || 0;
             const isBuruk = coll >= 3;
+            const osVal = Math.round(parseFloat(rec.os) || 0);
+            calcTotalBD += osVal;
             calcAngsSum += calcAngsuranRow(rec.plafon, rec.os, rec.sb, rec.jw);
             const rawKondisi = String(rec.kondisi || '').trim();
             const ketText = ketMapUI[rawKondisi] || rawKondisi || '';
@@ -2476,7 +2479,7 @@
                 `<td style="text-align:center">${i+1}</td>` +
                 `<td style="text-align:left">${rec.bank||''}</td>` +
                 `<td>${fmtNum(rec.plafon)}</td>` +
-                `<td>${fmtNum(rec.os)}</td>` +
+                `<td>${fmtNum(osVal)}</td>` +
                 `<td style="text-align:center">${fmtSB(rec.sb)}</td>` +
                 `<td style="text-align:center">${rec.jw||'0'}</td>` +
                 `<td style="text-align:center">${fmtDate(rec.jatem)}</td>` +
@@ -2489,7 +2492,7 @@
         });
         tbody.innerHTML = html;
 
-        totalEl.innerHTML = `Total BD: <strong>${fmtNum(s.total_bd)}</strong> &nbsp;&mdash;&nbsp; Perkiraan Angs./Bulan: <strong>${fmtNum(calcAngsSum)}</strong>`;
+        totalEl.innerHTML = `Total BD: <strong>${fmtNum(calcTotalBD)}</strong> &nbsp;&mdash;&nbsp; Perkiraan Angs./Bulan: <strong>${fmtNum(calcAngsSum)}</strong>`;
     }
 
     // ─── Reset ──────────────────────────────────────────────────────────────────

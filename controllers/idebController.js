@@ -112,7 +112,7 @@ exports.queryByRef = async (req, res) => {
         // Calculate summary matching legacy Desktop app formula
         const first = rows[0];
         const collBuruk = rows.reduce((max, r) => Math.max(max, parseInt(r.coll) || 1), 1);
-        const totalBD = rows.reduce((sum, r) => sum + (parseFloat(r.os) || 0), 0);
+        const totalBD = rows.reduce((sum, r) => sum + Math.round(parseFloat(r.os) || 0), 0);
         const totalAngsuran = rows.reduce((sum, r) => {
             const osNum = parseFloat(r.os) || 0;
             if (osNum <= 0) return sum; // Ignore Lunas (OS = 0) rows
