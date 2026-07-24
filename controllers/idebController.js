@@ -466,7 +466,7 @@ function parseSlikTxtBuffer(buffer) {
             alamat: alamat,
             coll_buruk: String(maxColl),
             bank: k.ljkKet || k.ljk || '',
-            plafon: parseFloat(k.plafonAwal) || parseFloat(k.plafon) || 0,
+            plafon: Math.round(parseFloat(k.plafonAwal || k.plafon || 0)),
             os: Math.round(parseFloat(k.bakiDebet || 0)),
             sb: parseFloat(k.sukuBungaImbalan || 0),
             jw: jw,
@@ -478,10 +478,10 @@ function parseSlikTxtBuffer(buffer) {
             tgl_input: tglInput,
             cabang: cabang,
             tung_hari: String(k.jumlahHariTunggakan || '0'),
-            tunggakanpokok: parseFloat(k.tunggakanPokok || 0),
-            tunggakanbunga: parseFloat(k.tunggakanBunga || 0),
+            tunggakanpokok: Math.round(parseFloat(k.tunggakanPokok || 0)),
+            tunggakanbunga: Math.round(parseFloat(k.tunggakanBunga || 0)),
             frekuensirestrukturisasi: parseFloat(k.frekuensiRestrukturisasi || 0),
-            angsuran: parseFloat(k.angsuran || k.nominalAngsuran || k.jumlahAngsuran || 0) || 0
+            angsuran: Math.round(parseFloat(k.angsuran || k.nominalAngsuran || k.jumlahAngsuran || 0))
         });
     });
 
