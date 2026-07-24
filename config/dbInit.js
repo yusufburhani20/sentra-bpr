@@ -485,10 +485,12 @@ async function initializeDb(callback) {
         // Auto-fix rounding for any existing decimal values in ideb_records table
         if (isPg) {
             await runAsync(`UPDATE ideb_records SET os = ROUND(os::numeric), plafon = ROUND(plafon::numeric) WHERE os IS NOT NULL`).catch(() => {});
+            await runAsync(`UPDATE ideb_records SET os = 0 WHERE LOWER(kondisi) LIKE '%lunas%' OR kondisi IN ('01','02')`).catch(() => {});
             await runAsync(`UPDATE ideb_records SET os = 49826109, plafon = 60000000 WHERE (nik = '3206392609750001' OR ref = '015.00283.07-26.1') AND (os BETWEEN 49826100 AND 49826110)`).catch(() => {});
             await runAsync(`UPDATE ideb_records SET os = 13939042, plafon = 25417854 WHERE (nik = '3206392609750001' OR ref = '015.00283.07-26.1') AND bank LIKE '%Mega Tbk%'`).catch(() => {});
         } else {
             await runAsync(`UPDATE ideb_records SET os = ROUND(os), plafon = ROUND(plafon) WHERE os IS NOT NULL`).catch(() => {});
+            await runAsync(`UPDATE ideb_records SET os = 0 WHERE LOWER(kondisi) LIKE '%lunas%' OR kondisi IN ('01','02')`).catch(() => {});
             await runAsync(`UPDATE ideb_records SET os = 49826109, plafon = 60000000 WHERE (nik = '3206392609750001' OR ref = '015.00283.07-26.1') AND (os BETWEEN 49826100 AND 49826110)`).catch(() => {});
             await runAsync(`UPDATE ideb_records SET os = 13939042, plafon = 25417854 WHERE (nik = '3206392609750001' OR ref = '015.00283.07-26.1') AND bank LIKE '%Mega Tbk%'`).catch(() => {});
         }
