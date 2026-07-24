@@ -618,7 +618,7 @@ exports.getIdebList = async (req, res) => {
                 MAX(nama) as nama,
                 MAX(alamat) as alamat,
                 MAX(CAST(NULLIF(coll, '') AS INTEGER)) as max_coll,
-                SUM(CASE WHEN CAST(NULLIF(os, '') AS REAL) > 0 THEN CAST(NULLIF(os, '') AS REAL) ELSE 0 END) as total_bd,
+                SUM(CASE WHEN os > 0 THEN os ELSE 0 END) as total_bd,
                 COUNT(*) as total_fasilitas,
                 MAX(tgl_input) as tgl_input,
                 MAX(cabang) as cabang
