@@ -414,7 +414,13 @@ function parseSlikTxtBuffer(buffer) {
     const alamat = ((dataPokok.alamat || '') + ' ' + (dataPokok.kabKotaKet || '')).trim();
 
     const records = [];
-    const kreList = (ind.fasilitas && ind.fasilitas.kreditPembiayan) || [];
+    const fas = ind.fasilitas || {};
+    const kreList = [
+        ...(fas.kreditPembiayan || []),
+        ...(fas.lc || []),
+        ...(fas.garansiYgDiberikan || []),
+        ...(fas.fasilitasLain || [])
+    ];
 
     let maxColl = 1;
     kreList.forEach(k => {
@@ -453,9 +459,38 @@ function parseSlikTxtBuffer(buffer) {
             tung_hari: String(k.jumlahHariTunggakan || '0'),
             tunggakanpokok: parseFloat(k.tunggakanPokok || 0),
             tunggakanbunga: parseFloat(k.tunggakanBunga || 0),
-            frekuensirestrukturisasi: parseFloat(k.frekuensiRestrukturisasi || 0)
+            frekuensirestrukturisasi: parseFloat(k.frekuensiRestrukturisasi || 0),
+            angsuran: parseFloat(k.angsuran || k.nominalAngsuran || k.jumlahAngsuran || 0) || 0
         });
     });
+
+    // Jika fasilitas kosong / tidak ada pinjaman, tetap buat 1 record agar data debitur terimpor
+    if (records.length === 0) {
+        records.push({
+            ref: ref,
+            nik: nik,
+            nama: nama,
+            alamat: alamat,
+            coll_buruk: '1',
+            bank: 'TIDAK ADA FASILITAS',
+            plafon: 0,
+            os: 0,
+            sb: 0,
+            jw: 0,
+            jatem: '',
+            tunggakan: '0',
+            coll: '1',
+            kondisi: 'Bersih',
+            tgl_update: '',
+            tgl_input: tglInput,
+            cabang: cabang,
+            tung_hari: '0',
+            tunggakanpokok: 0,
+            tunggakanbunga: 0,
+            frekuensirestrukturisasi: 0,
+            angsuran: 0
+        });
+    }
 
     return { ref, nama, nik, records };
 }
