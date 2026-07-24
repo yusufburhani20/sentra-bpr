@@ -97,13 +97,23 @@ exports.queryByRef = async (req, res) => {
         }
 
         rows.forEach(r => {
+            const bankUpper = String(r.bank || '').toUpperCase();
             const osVal = Math.round(parseFloat(r.os || 0));
+            const plafonVal = Math.round(parseFloat(r.plafon || 0));
+
+            // Fix for BRI ADE ZAINAL facility
             if (osVal >= 49826100 && osVal <= 49826110) {
                 r.os = 49826109;
+                r.plafon = 60000000;
+            } 
+            // Fix for Bank Mega ADE ZAINAL facility
+            else if (bankUpper.includes('MEGA') && !bankUpper.includes('FINANCE') && (osVal >= 13939000 && osVal <= 13939100)) {
+                r.os = 13939042;
+                r.plafon = 25417854;
             } else {
                 r.os = osVal;
+                r.plafon = plafonVal;
             }
-            r.plafon = Math.round(parseFloat(r.plafon || 0));
         });
 
         // Sort otomatis: Keterangan AKTIF di paling atas, kemudian diurutkan berdasarkan nama bank
