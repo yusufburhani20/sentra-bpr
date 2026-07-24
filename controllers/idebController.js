@@ -364,6 +364,10 @@ exports.importRecords = async (req, res) => {
         for (const ref of refsToDelete) {
             await dbRun(isPg ? 'DELETE FROM ideb_records WHERE UPPER(ref) = UPPER($1)' : 'DELETE FROM ideb_records WHERE UPPER(ref) = UPPER(?)', [ref]).catch(() => {});
         }
+        const niksToDelete = new Set(records.map(r => r.nik).filter(Boolean));
+        for (const nik of niksToDelete) {
+            await dbRun(isPg ? 'DELETE FROM ideb_records WHERE UPPER(nik) = UPPER($1)' : 'DELETE FROM ideb_records WHERE UPPER(nik) = UPPER(?)', [nik]).catch(() => {});
+        }
         for (const r of records) {
             const sql = isPg
                 ? `INSERT INTO ideb_records (ref, nik, nama, alamat, coll_buruk, bank, plafon, os, sb, jw, jatem, tunggakan, coll, kondisi, tgl_update, tgl_input, cabang, tung_hari, tunggakanpokok, tunggakanbunga, frekuensirestrukturisasi, angsuran)
@@ -556,9 +560,12 @@ exports.syncTxtFolder = async (req, res) => {
             try {
                 const filePath = path.join(targetDir, file);
                 const buf = fs.readFileSync(filePath);
-                const { ref, records } = parseSlikTxtBuffer(buf);
+                const { ref, nik, records } = parseSlikTxtBuffer(buf);
                 if (ref) {
                     await dbRun(isPg ? 'DELETE FROM ideb_records WHERE UPPER(ref) = UPPER($1)' : 'DELETE FROM ideb_records WHERE UPPER(ref) = UPPER(?)', [ref]).catch(() => {});
+                }
+                if (nik) {
+                    await dbRun(isPg ? 'DELETE FROM ideb_records WHERE UPPER(nik) = UPPER($1)' : 'DELETE FROM ideb_records WHERE UPPER(nik) = UPPER(?)', [nik]).catch(() => {});
                 }
                 if (records && records.length > 0) {
                     for (const r of records) {
