@@ -2422,9 +2422,12 @@
         }
     }
     window.idebLoadMasterList = idebLoadMasterList;
+    window.idebSelectRefForRole = idebSelectRefForRole;
+    window.idebDeleteMasterRef = idebDeleteMasterRef;
 
     function idebSelectRefForRole(ref, role) {
-        if (typeof switchView === 'function') switchView('ideb');
+        const navBtn = document.getElementById('nav-ideb');
+        if (navBtn) navBtn.click();
         const input = document.getElementById('ideb-ref-' + role);
         if (input) {
             input.value = ref;
@@ -2774,6 +2777,13 @@
             });
         });
     });
+
+    // Expose functions to global scope for inline HTML handlers
+    window.idebSearch = idebSearch;
+    window.idebFetchRefSuggestions = idebFetchRefSuggestions;
+    window.idebSyncServerTxtFolder = idebSyncServerTxtFolder;
+    window.idebOpenMasterModal = idebOpenMasterModal;
+    window.idebCloseMasterModal = idebCloseMasterModal;
     </script>
 
     <!-- Ikon Lucide -->
