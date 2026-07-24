@@ -14,7 +14,7 @@ import { fetchFileBackupList, setupFileBackup } from './js/fileBackup.js';
 // Check Permissions
 function checkPermission(view, role) {
     const permissions = {
-        "dashboard": ["Admin", "Kepala Bidang", "Teller", "SDMU", "Customer Service"],
+        "dashboard": ["Admin", "Kepala Bidang", "Teller", "SDMU", "Customer Service", "IT Support"],
         "input": ["Admin", "Kepala Bidang", "Teller", "SDMU", "Customer Service"],
         "riwayat": ["Admin", "Kepala Bidang", "Teller", "SDMU", "Customer Service"],
         "kodebiaya": ["Admin"],
@@ -23,8 +23,8 @@ function checkPermission(view, role) {
         "users": ["Admin", "Kepala Bidang", "Teller", "SDMU", "Customer Service"],
         "audit": ["Admin", "Kepala Bidang"],
         "approvals": ["Admin", "Kepala Bidang", "Teller", "SDMU", "Customer Service"],
-        "ideb": ["Admin", "Kepala Bidang", "Teller", "SDMU", "Customer Service"],
-        "ideb-master": ["Admin", "Kepala Bidang", "Teller", "SDMU", "Customer Service"]
+        "ideb": ["Admin", "Kepala Bidang", "Teller", "SDMU", "Customer Service", "IT Support"],
+        "ideb-master": ["Admin", "Kepala Bidang", "Teller", "SDMU", "Customer Service", "IT Support"]
     };
     return permissions[view] ? permissions[view].includes(role) : false;
 }

@@ -219,6 +219,7 @@ async function initializeDb(callback) {
         await seedUser("USR-003", "teller1", "Budi Utomo", "Teller", "Teller", "Aktif", "CSSPA0148", defaultHash);
         await seedUser("USR-004", "sdm1", "Siti Rahma", "SDMU", "SDMU", "Aktif", "CSSPA0149", defaultHash);
         await seedUser("USR-005", "kas1", "Rian Hidayat", "Customer Service", "Customer Service", "Aktif", "CSSPA0150", defaultHash);
+        await seedUser("USR-006", "itsupport", "IT Support", "IT Support", "IT Support", "Aktif", "ITSUP0151", defaultHash);
 
         // Force-seed default cost codes
         const seedCc = async (id, kode, deskripsi) => {
