@@ -630,6 +630,72 @@ exports.getStats = async (req, res) => {
     }
 };
 
+// ─── GET /api/ideb/dashboard-itsupport ─────────────────────────────────────────
+exports.getITSupportDashboard = async (req, res) => {
+    try {
+        const totalRecs = await dbGet('SELECT COUNT(*) as count FROM ideb_records');
+        const totalCollNpl = await dbGet("SELECT COUNT(*) as count FROM ideb_records WHERE CAST(NULLIF(coll, '') AS INTEGER) >= 3");
+        const totalCollLancar = await dbGet("SELECT COUNT(*) as count FROM ideb_records WHERE CAST(NULLIF(coll, '') AS INTEGER) < 3 OR coll IS NULL OR coll = ''");
+        const totalBd = await dbGet("SELECT SUM(CASE WHEN os > 0 THEN os ELSE 0 END) as total FROM ideb_records");
+        
+        // Count today's imports
+        const todayStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+        const todayCount = await dbGet("SELECT COUNT(*) as count FROM ideb_records WHERE tgl_input LIKE ? OR tgl_update LIKE ?", [`%${todayStr}%`, `%${todayStr}%`]);
+
+        // Coll distribution
+        const coll1 = await dbGet("SELECT COUNT(*) as count FROM ideb_records WHERE coll = '1'");
+        const coll2 = await dbGet("SELECT COUNT(*) as count FROM ideb_records WHERE coll = '2'");
+        const coll3 = await dbGet("SELECT COUNT(*) as count FROM ideb_records WHERE coll = '3'");
+        const coll4 = await dbGet("SELECT COUNT(*) as count FROM ideb_records WHERE coll = '4'");
+        const coll5 = await dbGet("SELECT COUNT(*) as count FROM ideb_records WHERE coll = '5'");
+
+        // Branch / Cabang comparison
+        const cabangList = await dbAll(`
+            SELECT cabang, COUNT(*) as total_records, 
+                   SUM(CASE WHEN CAST(NULLIF(coll, '') AS INTEGER) >= 3 THEN 1 ELSE 0 END) as total_npl,
+                   MAX(tgl_input) as last_update
+            FROM ideb_records 
+            WHERE cabang IS NOT NULL AND cabang != ''
+            GROUP BY cabang 
+            ORDER BY total_records DESC 
+            LIMIT 10
+        `);
+
+        // Monthly / period trend
+        const trend = await dbAll(`
+            SELECT SUBSTR(tgl_input, 1, 6) as period, COUNT(*) as count 
+            FROM ideb_records 
+            WHERE tgl_input IS NOT NULL AND tgl_input != '' 
+            GROUP BY period 
+            ORDER BY period DESC 
+            LIMIT 6
+        `);
+
+        res.json({
+            success: true,
+            kpis: {
+                total_records: totalRecs?.count || 0,
+                total_bd: totalBd?.total || 0,
+                total_npl: totalCollNpl?.count || 0,
+                total_lancar: totalCollLancar?.count || 0,
+                today_count: todayCount?.count || 0
+            },
+            coll_distribution: {
+                coll1: coll1?.count || 0,
+                coll2: coll2?.count || 0,
+                coll3: coll3?.count || 0,
+                coll4: coll4?.count || 0,
+                coll5: coll5?.count || 0
+            },
+            cabang_list: cabangList || [],
+            trend: (trend || []).reverse()
+        });
+    } catch (e) {
+        console.error('[iDEB] getITSupportDashboard error:', e);
+        res.status(500).json({ error: 'Gagal mengambil data dashboard IT Support.' });
+    }
+};
+
 // ─── GET /api/ideb/list ────────────────────────────────────────────────────────
 // Returns paginated list of distinct iDEB references/debtors stored in database
 exports.getIdebList = async (req, res) => {

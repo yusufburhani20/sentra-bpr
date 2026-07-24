@@ -12,6 +12,7 @@ router.get('/ref-kondisi',  idebController.getRefKondisi);
 router.get('/user-info',    idebController.getUserInfo);
 router.get('/users',        idebController.getAllUsers);
 router.get('/stats',        idebController.getStats);
+router.get('/dashboard-itsupport', idebController.getITSupportDashboard);
 router.get('/search-ref',   idebController.searchRefSuggestions);
 
 // ─── Query & List ──────────────────────────────────────────────────────────────

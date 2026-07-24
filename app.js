@@ -14,7 +14,7 @@ import { fetchFileBackupList, setupFileBackup } from './js/fileBackup.js';
 // Check Permissions
 function checkPermission(view, role) {
     const permissions = {
-        "dashboard": ["Admin", "Kepala Bidang", "Teller", "SDMU", "Customer Service"],
+        "dashboard": ["Admin", "Kepala Bidang", "Teller", "SDMU", "Customer Service", "IT Support"],
         "input": ["Admin", "Kepala Bidang", "Teller", "SDMU", "Customer Service"],
         "riwayat": ["Admin", "Kepala Bidang", "Teller", "SDMU", "Customer Service"],
         "kodebiaya": ["Admin"],
@@ -27,6 +27,101 @@ function checkPermission(view, role) {
         "ideb-master": ["Admin", "Kepala Bidang", "Teller", "SDMU", "Customer Service", "IT Support"]
     };
     return permissions[view] ? permissions[view].includes(role) : false;
+}
+
+let chartSlikTrend = null;
+let chartCollPie = null;
+
+async function renderITSupportDashboardView() {
+    try {
+        const res = await fetch('/api/ideb/dashboard-itsupport').then(r => r.json());
+        if (!res.success) return;
+
+        const k = res.kpis;
+        const c = res.coll_distribution;
+
+        const elTotal = document.getElementById("it-kpi-total");
+        const elToday = document.getElementById("it-kpi-today");
+        const elNpl = document.getElementById("it-kpi-npl");
+        const elBd = document.getElementById("it-kpi-bd");
+
+        if (elTotal) elTotal.innerText = (k.total_records || 0).toLocaleString('en-US');
+        if (elToday) elToday.innerText = (k.today_count || 0).toLocaleString('en-US');
+        if (elNpl) elNpl.innerText = (k.total_npl || 0).toLocaleString('en-US');
+        if (elBd) elBd.innerText = 'Rp ' + Math.round(k.total_bd || 0).toLocaleString('id-ID');
+
+        if (typeof Chart === 'undefined') return;
+
+        // 1. Doughnut Chart: Distribution Coll
+        const ctxPie = document.getElementById("chart-it-coll-pie")?.getContext("2d");
+        if (ctxPie) {
+            if (chartCollPie) chartCollPie.destroy();
+            chartCollPie = new Chart(ctxPie, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Kol 1 (Lancar)', 'Kol 2 (DPK)', 'Kol 3 (Kurang Lancar)', 'Kol 4 (Diragukan)', 'Kol 5 (Macet)'],
+                    datasets: [{
+                        data: [c.coll1, c.coll2, c.coll3, c.coll4, c.coll5],
+                        backgroundColor: ['#10b981', '#3b82f6', '#f59e0b', '#f97316', '#ef4444']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'bottom' } }
+                }
+            });
+        }
+
+        // 2. Bar Chart: Trend SLIK
+        const ctxTrend = document.getElementById("chart-it-slik-trend")?.getContext("2d");
+        if (ctxTrend) {
+            if (chartSlikTrend) chartSlikTrend.destroy();
+            const labels = res.trend.map(t => t.period || 'Periode');
+            const dataCounts = res.trend.map(t => t.count);
+
+            chartSlikTrend = new Chart(ctxTrend, {
+                type: 'bar',
+                data: {
+                    labels: labels.length > 0 ? labels : ['Bulan lalu', 'Bulan ini'],
+                    datasets: [{
+                        label: 'Jumlah Impor iDEB',
+                        data: dataCounts.length > 0 ? dataCounts : [0, k.today_count || 0],
+                        backgroundColor: '#0284c7',
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } }
+                }
+            });
+        }
+
+        // 3. Cabang Comparison Table
+        const tbody = document.getElementById("it-table-cabang-body");
+        if (tbody) {
+            if (!res.cabang_list || res.cabang_list.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:16px; color:var(--text-muted);">Belum ada data aktivitas cabang.</td></tr>';
+            } else {
+                let html = '';
+                res.cabang_list.forEach((cb, idx) => {
+                    html += `<tr style="border-bottom: 1px solid var(--border);">
+                        <td style="text-align:center; padding:8px;">${idx + 1}</td>
+                        <td style="font-weight:700; padding:8px;">Kode Cabang ${cb.cabang}</td>
+                        <td style="text-align:right; padding:8px;">${(cb.total_records || 0).toLocaleString()}</td>
+                        <td style="text-align:right; color:#ef4444; font-weight:600; padding:8px;">${(cb.total_npl || 0).toLocaleString()}</td>
+                        <td style="text-align:center; padding:8px;">${cb.last_update || '-'}</td>
+                    </tr>`;
+                });
+                tbody.innerHTML = html;
+            }
+        }
+
+    } catch (e) {
+        console.error("Gagal memuat dashboard IT Support:", e);
+    }
 }
 
 // 1. DATA SYNCHRONIZATION WITH BACKEND
@@ -137,7 +232,10 @@ export async function showSection(sectionId) {
 
     // Render data lama dari memory secara instan (jika ada) agar transisi tab terasa cepat (0ms),
     // jika data belum dimuat sama sekali baru tampilkan loading spinner.
-    if (sectionId === "kodebiaya") {
+    if (sectionId === "dashboard") {
+        if (state.currentRole === "IT Support") renderITSupportDashboardView();
+        else renderDashboardView();
+    } else if (sectionId === "kodebiaya") {
         if (state.costCodesDB && state.costCodesDB.length > 0) renderKodeBiayaView();
         else showTableLoading("codes-table-body", 4);
     } else if (sectionId === "riwayat") {
@@ -159,7 +257,12 @@ export async function showSection(sectionId) {
         view.style.display = "none";
     });
 
-    const activeElem = document.getElementById("view-" + sectionId);
+    let targetViewId = "view-" + sectionId;
+    if (sectionId === "dashboard" && state.currentRole === "IT Support") {
+        targetViewId = "view-dashboard-itsupport";
+    }
+
+    const activeElem = document.getElementById(targetViewId);
     if (activeElem) {
         activeElem.style.display = "block";
     }
@@ -274,7 +377,10 @@ export async function initApp() {
             await refreshData();
             if (state.activeView === "riwayat") renderRiwayatView();
             else if (state.activeView === "audit") renderAuditTrailView();
-            else if (state.activeView === "dashboard") renderDashboardView();
+            else if (state.activeView === "dashboard") {
+                if (state.currentRole === "IT Support") renderITSupportDashboardView();
+                else renderDashboardView();
+            }
             else if (state.activeView === "approvals") renderApprovalsView();
             updateNotifBadge();
             await fetchPendingApprovalsCount();
