@@ -375,10 +375,10 @@ exports.importRecords = async (req, res) => {
                 r.ref || null, r.nik || null, r.nama || null, r.alamat || null,
                 r.coll_buruk !== undefined ? String(r.coll_buruk) : null,
                 r.bank || r.nama_lik || null,
-                parseFloat(r.plafon) || 0,
-                parseFloat(r.os || r.baki_debet) || 0,
-                parseFloat(r.sb || r.suku_bunga) || 0,
-                parseFloat(r.jw || r.jangka_waktu) || 0,
+                Math.round(parseFloat(r.plafon || 0)),
+                Math.round(parseFloat(r.os || r.baki_debet || 0)),
+                parseFloat(r.sb || r.suku_bunga || 0),
+                parseFloat(r.jw || r.jangka_waktu || 0),
                 r.jatem || r.jatuh_tempo || null,
                 r.tunggakan !== undefined ? String(r.tunggakan) : null,
                 r.coll !== undefined ? String(r.coll) : null,
@@ -387,10 +387,10 @@ exports.importRecords = async (req, res) => {
                 r.tgl_input || null,
                 r.cabang || null,
                 r.tung_hari !== undefined ? String(r.tung_hari) : null,
-                r.tunggakanpokok !== undefined ? parseFloat(r.tunggakanpokok) : null,
-                r.tunggakanbunga !== undefined ? parseFloat(r.tunggakanbunga) : null,
+                r.tunggakanpokok !== undefined ? Math.round(parseFloat(r.tunggakanpokok)) : null,
+                r.tunggakanbunga !== undefined ? Math.round(parseFloat(r.tunggakanbunga)) : null,
                 r.frekuensirestrukturisasi !== undefined ? parseFloat(r.frekuensirestrukturisasi) : null,
-                r.angsuran !== undefined ? parseFloat(r.angsuran) : null,
+                r.angsuran !== undefined ? Math.round(parseFloat(r.angsuran)) : null,
             ];
             try {
                 await dbRun(sql, params);
@@ -572,10 +572,10 @@ exports.syncTxtFolder = async (req, res) => {
                             r.ref || null, r.nik || null, r.nama || null, r.alamat || null,
                             r.coll_buruk !== undefined ? String(r.coll_buruk) : null,
                             r.bank || null,
-                            parseFloat(r.plafon) || 0,
-                            parseFloat(r.os) || 0,
-                            parseFloat(r.sb) || 0,
-                            parseFloat(r.jw) || 0,
+                            Math.round(parseFloat(r.plafon || 0)),
+                            Math.round(parseFloat(r.os || 0)),
+                            parseFloat(r.sb || 0),
+                            parseFloat(r.jw || 0),
                             r.jatem || null,
                             r.tunggakan !== undefined ? String(r.tunggakan) : null,
                             r.coll !== undefined ? String(r.coll) : null,
@@ -584,10 +584,10 @@ exports.syncTxtFolder = async (req, res) => {
                             r.tgl_input || null,
                             r.cabang || null,
                             r.tung_hari !== undefined ? String(r.tung_hari) : null,
-                            r.tunggakanpokok !== undefined ? parseFloat(r.tunggakanpokok) : null,
-                            r.tunggakanbunga !== undefined ? parseFloat(r.tunggakanbunga) : null,
+                            r.tunggakanpokok !== undefined ? Math.round(parseFloat(r.tunggakanpokok)) : null,
+                            r.tunggakanbunga !== undefined ? Math.round(parseFloat(r.tunggakanbunga)) : null,
                             r.frekuensirestrukturisasi !== undefined ? parseFloat(r.frekuensirestrukturisasi) : null,
-                            null
+                            r.angsuran !== undefined ? Math.round(parseFloat(r.angsuran)) : null
                         ];
                         await dbRun(sql, params).catch(() => {});
                         totalRecords++;
