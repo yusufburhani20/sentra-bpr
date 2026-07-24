@@ -2744,16 +2744,18 @@
                 return '';
             }
 
-            // Sort records: Bank Name ASC (A-Z) primary, then COLL ASC (1..5) secondary
+            // Sort records: AKTIF di paling atas, kemudian berdasarkan nama bank (A-Z)
             s.records.sort((a, b) => {
-                const bankA = String(a.bank || '').toLowerCase();
-                const bankB = String(b.bank || '').toLowerCase();
-                const bankCmp = bankA.localeCompare(bankB);
-                if (bankCmp !== 0) return bankCmp;
+                const condA = String(a.kondisi || '').trim().toUpperCase();
+                const condB = String(b.kondisi || '').trim().toUpperCase();
+                const osA = parseFloat(a.os || 0);
+                const osB = parseFloat(b.os || 0);
 
-                const collA = parseInt(a.coll) || 1;
-                const collB = parseInt(b.coll) || 1;
-                return collA - collB;
+                const isAktifA = (condA === '00' || condA === '0' || condA === 'AKTIF' || osA > 0) ? 0 : 1;
+                const isAktifB = (condB === '00' || condB === '0' || condB === 'AKTIF' || osB > 0) ? 0 : 1;
+
+                if (isAktifA !== isAktifB) return isAktifA - isAktifB;
+                return String(a.bank || '').trim().toUpperCase().localeCompare(String(b.bank || '').trim().toUpperCase());
             });
 
             const nama = s.summary.nama || '—';
