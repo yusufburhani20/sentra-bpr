@@ -2461,6 +2461,8 @@
     window.idebLoadMasterList = idebLoadMasterList;
     window.idebSelectRefForRole = idebSelectRefForRole;
     window.idebDeleteMasterRef = idebDeleteMasterRef;
+    window.idebViewMasterRef = idebViewMasterRef;
+    window.idebCloseViewModal = idebCloseViewModal;
 
     function idebCloseViewModal() {
         const modal = document.getElementById('modal-ideb-view');
@@ -2472,12 +2474,17 @@
         const tbody = document.getElementById('ideb-view-tbody');
         const titleEl = document.getElementById('ideb-view-title');
         const subtitleEl = document.getElementById('ideb-view-subtitle');
-        if (!modal || !tbody) return;
+        if (!modal || !tbody) {
+            console.error('[iDEB] Modal or tbody element for view not found');
+            return;
+        }
 
         modal.classList.add('active');
+        if (window.lucide) window.lucide.createIcons();
+
         tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:30px; color:var(--primary);">⏳ Mengambil data...</td></tr>';
-        titleEl.textContent = 'Detail Data iDEB';
-        subtitleEl.textContent = 'REF: ' + ref;
+        if (titleEl) titleEl.textContent = 'Detail Data iDEB';
+        if (subtitleEl) subtitleEl.textContent = 'REF: ' + ref;
 
         try {
             const res = await fetch('/api/ideb/query?ref=' + encodeURIComponent(ref));
@@ -2489,8 +2496,8 @@
             }
 
             const first = data.records[0];
-            titleEl.textContent = first.nama || 'Tanpa Nama';
-            subtitleEl.innerHTML = `NIK: ${first.nik || '-'} &nbsp;|&nbsp; Alamat: ${first.alamat || '-'} &nbsp;|&nbsp; REF: <strong>${first.ref}</strong>`;
+            if (titleEl) titleEl.textContent = first.nama || 'Tanpa Nama';
+            if (subtitleEl) subtitleEl.innerHTML = `NIK: ${first.nik || '-'} &nbsp;|&nbsp; Alamat: ${first.alamat || '-'} &nbsp;|&nbsp; REF: <strong>${first.ref}</strong>`;
 
             let html = '';
             data.records.forEach((r, i) => {
@@ -2509,6 +2516,7 @@
             });
             tbody.innerHTML = html;
         } catch (e) {
+            console.error('[iDEB] Error fetching detail for modal:', e);
             tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:20px; color:#dc2626;">Gagal mengambil data dari server.</td></tr>';
         }
     }
