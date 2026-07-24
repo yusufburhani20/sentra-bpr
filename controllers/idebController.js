@@ -84,7 +84,7 @@ exports.queryByRef = async (req, res) => {
                 OR UPPER(ref) LIKE UPPER(?)
              ORDER BY 
                 CASE 
-                    WHEN UPPER(kondisi) IN ('00', '0', 'AKTIF') OR CAST(NULLIF(os, '') AS REAL) > 0 THEN 0 
+                    WHEN (kondisi IS NOT NULL AND UPPER(kondisi) IN ('00', '0', 'AKTIF')) OR os > 0 THEN 0 
                     ELSE 1 
                 END ASC,
                 UPPER(bank) ASC, 
