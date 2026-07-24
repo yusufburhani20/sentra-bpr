@@ -14,9 +14,12 @@ router.get('/users',        idebController.getAllUsers);
 router.get('/stats',        idebController.getStats);
 router.get('/search-ref',   idebController.searchRefSuggestions);
 
-// ─── Query ─────────────────────────────────────────────────────────────────────
-router.get('/query',  idebController.queryByRef);
-router.post('/query', idebController.queryByRef);
+// ─── Query & List ──────────────────────────────────────────────────────────────
+router.get('/query',       idebController.queryByRef);
+router.post('/query',      idebController.queryByRef);
+router.get('/list',        idebController.getIdebList);
+router.delete('/delete-ref', idebController.deleteByRef);
+router.post('/delete-ref',   idebController.deleteByRef);
 
 // ─── Import ────────────────────────────────────────────────────────────────────
 router.post('/import-csv',     idebController.uploadMiddleware, idebController.importData);

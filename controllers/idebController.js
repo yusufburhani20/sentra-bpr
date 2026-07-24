@@ -574,3 +574,97 @@ exports.getStats = async (req, res) => {
     }
 };
 
+// ─── GET /api/ideb/list ────────────────────────────────────────────────────────
+// Returns paginated list of distinct iDEB references/debtors stored in database
+exports.getIdebList = async (req, res) => {
+    try {
+        const q = (req.query.q || '').trim();
+        const collFilter = (req.query.coll || '').trim();
+        const page = Math.max(1, parseInt(req.query.page) || 1);
+        const limit = Math.max(1, Math.min(100, parseInt(req.query.limit) || 15));
+        const offset = (page - 1) * limit;
+
+        let whereClauses = ["ref IS NOT NULL AND ref != ''"];
+        let params = [];
+
+        if (q) {
+            whereClauses.push("(UPPER(ref) LIKE UPPER(?) OR UPPER(nama) LIKE UPPER(?) OR UPPER(nik) LIKE UPPER(?) OR UPPER(bank) LIKE UPPER(?))");
+            const pattern = `%${q}%`;
+            params.push(pattern, pattern, pattern, pattern);
+        }
+
+        if (collFilter === 'npl') {
+            whereClauses.push("CAST(coll AS INTEGER) >= 3");
+        } else if (collFilter === 'lancar') {
+            whereClauses.push("CAST(coll AS INTEGER) < 3");
+        } else if (collFilter && !isNaN(collFilter)) {
+            whereClauses.push("CAST(coll AS INTEGER) = ?");
+            params.push(parseInt(collFilter));
+        }
+
+        const whereSql = whereClauses.join(' AND ');
+
+        const countRow = await dbGet(
+            `SELECT COUNT(DISTINCT UPPER(ref)) as total FROM ideb_records WHERE ${whereSql}`,
+            params
+        );
+        const total = countRow ? parseInt(countRow.total || 0) : 0;
+        const totalPages = Math.ceil(total / limit) || 1;
+
+        const rows = await dbAll(
+            `SELECT 
+                ref,
+                MAX(nik) as nik,
+                MAX(nama) as nama,
+                MAX(alamat) as alamat,
+                MAX(CAST(coll AS INTEGER)) as max_coll,
+                SUM(CASE WHEN CAST(os AS REAL) > 0 THEN CAST(os AS REAL) ELSE 0 END) as total_bd,
+                COUNT(*) as total_fasilitas,
+                MAX(tgl_input) as tgl_input,
+                MAX(cabang) as cabang
+             FROM ideb_records
+             WHERE ${whereSql}
+             GROUP BY ref
+             ORDER BY MAX(tgl_input) DESC, UPPER(MAX(nama)) ASC
+             LIMIT ? OFFSET ?`,
+            [...params, limit, offset]
+        );
+
+        res.json({
+            success: true,
+            records: rows,
+            pagination: {
+                total,
+                page,
+                limit,
+                totalPages
+            }
+        });
+    } catch (e) {
+        console.error('[iDEB] getIdebList error:', e);
+        res.status(500).json({ error: 'Gagal mengambil daftar data iDEB.' });
+    }
+};
+
+// ─── DELETE /api/ideb/delete-ref ───────────────────────────────────────────────
+exports.deleteByRef = async (req, res) => {
+    try {
+        const ref = (req.body && req.body.ref) || req.query.ref || '';
+        if (!ref || !ref.trim()) {
+            return res.status(400).json({ error: 'Nomor REF tidak boleh kosong.' });
+        }
+        const trimmed = ref.trim();
+        const isPg = process.env.DB_TYPE === 'postgres';
+        const sql = isPg
+            ? 'DELETE FROM ideb_records WHERE UPPER(ref) = UPPER($1)'
+            : 'DELETE FROM ideb_records WHERE UPPER(ref) = UPPER(?)';
+
+        await dbRun(sql, [trimmed]);
+        res.json({ success: true, message: `Data iDEB dengan No. Register ${trimmed} berhasil dihapus.` });
+    } catch (e) {
+        console.error('[iDEB] deleteByRef error:', e);
+        res.status(500).json({ error: 'Gagal menghapus data iDEB.' });
+    }
+};
+
+
