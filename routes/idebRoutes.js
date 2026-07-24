@@ -21,6 +21,8 @@ router.post('/query',      idebController.queryByRef);
 router.get('/list',        idebController.getIdebList);
 router.delete('/delete-ref', idebController.deleteByRef);
 router.post('/delete-ref',   idebController.deleteByRef);
+router.put('/record/:id',    idebController.updateRecord);
+router.post('/record/update/:id', idebController.updateRecord);
 
 // ─── Import ────────────────────────────────────────────────────────────────────
 router.post('/import-csv',     idebController.uploadMiddleware, idebController.importData);

@@ -467,7 +467,7 @@ function parseSlikTxtBuffer(buffer) {
             coll_buruk: String(maxColl),
             bank: k.ljkKet || k.ljk || '',
             plafon: Math.round(parseFloat(k.plafonAwal || k.plafon || 0)),
-            os: Math.round(parseFloat(k.bakiDebet || 0)),
+            os: Math.round(parseFloat(k.bakiDebet || 0) + parseFloat(k.tunggakanPokok || 0)),
             sb: parseFloat(k.sukuBungaImbalan || 0),
             jw: jw,
             jatem: k.tanggalJatuhTempo || '',
@@ -786,6 +786,42 @@ exports.deleteByRef = async (req, res) => {
     } catch (e) {
         console.error('[iDEB] deleteByRef error:', e);
         res.status(500).json({ error: 'Gagal menghapus data iDEB.' });
+    }
+};
+
+// ─── PUT /api/ideb/record/:id ──────────────────────────────────────────────────
+// Update single facility record
+exports.updateRecord = async (req, res) => {
+    try {
+        const id = req.params.id || req.body.id;
+        const { bank, plafon, os, sb, jw, jatem, coll, kondisi, tunggakan } = req.body;
+
+        if (!id) {
+            return res.status(400).json({ error: 'ID record tidak ditemukan.' });
+        }
+
+        const isPg = process.env.DB_TYPE === 'postgres';
+        const sql = isPg
+            ? `UPDATE ideb_records SET bank=$1, plafon=$2, os=$3, sb=$4, jw=$5, jatem=$6, coll=$7, kondisi=$8, tunggakan=$9 WHERE id=$10`
+            : `UPDATE ideb_records SET bank=?, plafon=?, os=?, sb=?, jw=?, jatem=?, coll=?, kondisi=?, tunggakan=? WHERE id=?`;
+
+        await dbRun(sql, [
+            bank || null,
+            Math.round(parseFloat(plafon || 0)),
+            Math.round(parseFloat(os || 0)),
+            parseFloat(sb || 0),
+            parseFloat(jw || 0),
+            jatem || null,
+            coll !== undefined ? String(coll) : '1',
+            kondisi || '00',
+            tunggakan !== undefined ? String(tunggakan) : '0',
+            id
+        ]);
+
+        res.json({ success: true, message: 'Fasilitas iDEB berhasil diperbarui.' });
+    } catch (e) {
+        console.error('[iDEB] updateRecord error:', e);
+        res.status(500).json({ error: 'Gagal memperbarui data fasilitas iDEB.' });
     }
 };
 

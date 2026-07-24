@@ -1777,16 +1777,80 @@
                                     <th>Tunggakan</th>
                                     <th>Kondisi</th>
                                     <th style="text-align:center">Kol</th>
+                                    <th style="text-align:center">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody id="ideb-view-tbody">
-                                <tr><td colspan="7" style="text-align:center">Memuat...</td></tr>
+                                <tr><td colspan="8" style="text-align:center">Memuat...</td></tr>
                             </tbody>
                         </table>
                     </div>
                 </div>
                 <div class="modal-footer" style="padding: 12px 16px; border-top:1px solid var(--border); display:flex; justify-content:flex-end; background:#f8fafc;">
                     <button class="btn btn-secondary" onclick="idebCloseViewModal()">Tutup</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- MODAL: EDIT FASILITAS iDEB -->
+        <div class="modal-overlay" id="modal-ideb-edit" style="z-index:10000;">
+            <div class="modal-container" style="max-width: 520px; width: 95%;">
+                <div class="modal-header" style="background:#f8fafc; border-bottom:1px solid var(--border);">
+                    <h3 class="modal-title" style="font-size:16px;">✏️ Edit Fasilitas iDEB</h3>
+                    <button class="modal-close" onclick="idebCloseEditModal()">&times;</button>
+                </div>
+                <div class="modal-body" style="padding:16px;">
+                    <input type="hidden" id="ideb-edit-id">
+                    <div class="form-group" style="margin-bottom:12px;">
+                        <label class="form-label" style="font-size:12px; font-weight:600;">Nama LJK / Bank</label>
+                        <input type="text" id="ideb-edit-bank" class="form-control" style="font-size:13px;">
+                    </div>
+                    <div class="grid-2col" style="grid-template-columns: 1fr 1fr; gap:12px; margin-bottom:12px;">
+                        <div class="form-group">
+                            <label class="form-label" style="font-size:12px; font-weight:600;">Plafon (Rp)</label>
+                            <input type="number" id="ideb-edit-plafon" class="form-control" style="font-size:13px;">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" style="font-size:12px; font-weight:600;">Baki Debet / O/S (Rp)</label>
+                            <input type="number" id="ideb-edit-os" class="form-control" style="font-size:13px;">
+                        </div>
+                    </div>
+                    <div class="grid-2col" style="grid-template-columns: 1fr 1fr; gap:12px; margin-bottom:12px;">
+                        <div class="form-group">
+                            <label class="form-label" style="font-size:12px; font-weight:600;">Suku Bunga (%)</label>
+                            <input type="number" step="0.1" id="ideb-edit-sb" class="form-control" style="font-size:13px;">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" style="font-size:12px; font-weight:600;">Jangka Waktu (Bln)</label>
+                            <input type="number" id="ideb-edit-jw" class="form-control" style="font-size:13px;">
+                        </div>
+                    </div>
+                    <div class="grid-2col" style="grid-template-columns: 1fr 1fr; gap:12px; margin-bottom:12px;">
+                        <div class="form-group">
+                            <label class="form-label" style="font-size:12px; font-weight:600;">Kolektibilitas (COLL)</label>
+                            <select id="ideb-edit-coll" class="form-control" style="font-size:13px;">
+                                <option value="1">1 - Lancar</option>
+                                <option value="2">2 - DPK</option>
+                                <option value="3">3 - Kurang Lancar</option>
+                                <option value="4">4 - Diragukan</option>
+                                <option value="5">5 - Macet</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" style="font-size:12px; font-weight:600;">Keterangan Kondisi</label>
+                            <select id="ideb-edit-kondisi" class="form-control" style="font-size:13px;">
+                                <option value="00">AKTIF (00)</option>
+                                <option value="02">Lunas (02)</option>
+                                <option value="03">Dihapusbukukan / WO (03)</option>
+                                <option value="04">Hapus Tagih (04)</option>
+                                <option value="07">Dialihkan (07)</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer" style="padding:12px 16px; border-top:1px solid var(--border); display:flex; justify-content:flex-end; gap:8px; background:#f8fafc;">
+                    <button class="btn btn-secondary" onclick="idebCloseEditModal()">Batal</button>
+                    <button class="btn btn-primary" onclick="idebSaveEditRecord()">Simpan Perubahan</button>
                 </div>
             </div>
         </div>
@@ -2594,6 +2658,68 @@
             if (tbody) tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; padding:20px; color:#dc2626;">Gagal memuat data iDEB.</td></tr>';
         }
     }
+    function idebOpenEditModal(r) {
+        if (!r) return;
+        document.getElementById('ideb-edit-id').value = r.id || '';
+        document.getElementById('ideb-edit-bank').value = r.bank || r.nama_lik || '';
+        document.getElementById('ideb-edit-plafon').value = Math.round(parseFloat(r.plafon || 0));
+        document.getElementById('ideb-edit-os').value = Math.round(parseFloat(r.os || 0));
+        document.getElementById('ideb-edit-sb').value = parseFloat(r.sb || 0);
+        document.getElementById('ideb-edit-jw').value = parseFloat(r.jw || 0);
+        document.getElementById('ideb-edit-coll').value = String(r.coll || '1');
+        document.getElementById('ideb-edit-kondisi').value = String(r.kondisi || '00');
+
+        const modal = document.getElementById('modal-ideb-edit');
+        if (modal) modal.classList.add('active');
+    }
+    window.idebOpenEditModal = idebOpenEditModal;
+
+    function idebCloseEditModal() {
+        const modal = document.getElementById('modal-ideb-edit');
+        if (modal) modal.classList.remove('active');
+    }
+    window.idebCloseEditModal = idebCloseEditModal;
+
+    async function idebSaveEditRecord() {
+        const id = document.getElementById('ideb-edit-id').value;
+        const bank = document.getElementById('ideb-edit-bank').value;
+        const plafon = document.getElementById('ideb-edit-plafon').value;
+        const os = document.getElementById('ideb-edit-os').value;
+        const sb = document.getElementById('ideb-edit-sb').value;
+        const jw = document.getElementById('ideb-edit-jw').value;
+        const coll = document.getElementById('ideb-edit-coll').value;
+        const kondisi = document.getElementById('ideb-edit-kondisi').value;
+
+        if (!id) {
+            alert('ID record tidak ditemukan.');
+            return;
+        }
+
+        try {
+            const res = await fetch('/api/ideb/record/' + id, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ bank, plafon, os, sb, jw, coll, kondisi })
+            });
+            const data = await res.json();
+            if (data.success) {
+                if (typeof showToast === 'function') showToast(data.message, 'success');
+                idebCloseEditModal();
+                if (window.currentIdebViewRef) idebViewMasterRef(window.currentIdebViewRef);
+                ['debitur','pasangan-debitur','penjamin','pasangan-penjamin'].forEach(role => {
+                    const inp = document.getElementById('ideb-ref-' + role);
+                    if (inp && inp.value.trim()) idebSearch(role);
+                });
+                if (typeof idebLoadMasterList === 'function') idebLoadMasterList(idebMasterCurrentPage);
+            } else {
+                alert(data.error || 'Gagal memperbarui data.');
+            }
+        } catch(e) {
+            alert('Terjadi kesalahan jaringan.');
+        }
+    }
+    window.idebSaveEditRecord = idebSaveEditRecord;
+
     window.idebLoadMasterList = idebLoadMasterList;
     window.idebSelectRefForRole = idebSelectRefForRole;
     window.idebDeleteMasterRef = idebDeleteMasterRef;
@@ -2622,12 +2748,13 @@
         if (titleEl) titleEl.textContent = 'Detail Data iDEB';
         if (subtitleEl) subtitleEl.textContent = 'REF: ' + ref;
 
+        window.currentIdebViewRef = ref;
         try {
             const res = await fetch('/api/ideb/query?ref=' + encodeURIComponent(ref));
             const data = await res.json();
             
             if (!data.found || !data.records || data.records.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:20px; color:#dc2626;">Data tidak ditemukan di sistem.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:20px; color:#dc2626;">Data tidak ditemukan di sistem.</td></tr>';
                 return;
             }
 
@@ -2653,6 +2780,7 @@
                 const plafon = parseFloat(r.plafon) || 0;
                 const os = parseFloat(r.os) || 0;
                 const collVal = parseInt(r.coll) || 1;
+                const recordJson = JSON.stringify(r).replace(/'/g, "&apos;");
                 html += `<tr style="border-bottom: 1px solid var(--border);">
                     <td style="text-align:center; padding:8px;">${i + 1}</td>
                     <td style="padding:8px; font-weight:500;">${r.bank || r.nama_lik || '-'}</td>
@@ -2661,12 +2789,15 @@
                     <td style="padding:8px;">${r.tunggakan || '0'} hr</td>
                     <td style="padding:8px;">${r.kondisi || '-'}</td>
                     <td style="text-align:center; padding:8px;"><span class="ideb-coll-badge ideb-coll-${collVal}">${collVal}</span></td>
+                    <td style="text-align:center; padding:8px;">
+                        <button onclick='idebOpenEditModal(${recordJson})' class="btn btn-secondary" style="padding:3px 8px; font-size:11px; font-weight:600; cursor:pointer;" title="Edit Facility">✏️ Edit</button>
+                    </td>
                 </tr>`;
             });
             tbody.innerHTML = html;
         } catch (e) {
             console.error('[iDEB] Error fetching detail for modal:', e);
-            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:20px; color:#dc2626;">Gagal mengambil data dari server.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:20px; color:#dc2626;">Gagal mengambil data dari server.</td></tr>';
         }
     }
 
