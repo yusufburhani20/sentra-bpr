@@ -2309,7 +2309,7 @@
                 coll_buruk: String(maxColl),
                 bank: k.ljkKet || k.ljk || '',
                 plafon: Math.round(parseFloat(k.plafonAwal || k.plafon || 0)),
-                os: Math.round(parseFloat(k.bakiDebet || 0)),
+                os: Math.round(parseFloat(k.bakiDebet || 0) + parseFloat(k.tunggakanPokok || 0)),
                 sb: parseFloat(k.sukuBungaImbalan || 0),
                 jw: jw,
                 jatem: k.tanggalJatuhTempo || '',
