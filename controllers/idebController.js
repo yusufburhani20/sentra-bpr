@@ -82,7 +82,7 @@ exports.queryByRef = async (req, res) => {
              WHERE UPPER(ref) = UPPER(?) 
                 OR UPPER(nik) = UPPER(?) 
                 OR UPPER(ref) LIKE UPPER(?)
-             ORDER BY UPPER(bank) ASC, CAST(coll AS INTEGER) ASC, id ASC`,
+             ORDER BY UPPER(bank) ASC, CAST(NULLIF(coll, '') AS INTEGER) ASC, id ASC`,
             [trimmed, trimmed, searchPattern]
         );
         if (rows.length === 0) {
@@ -594,11 +594,11 @@ exports.getIdebList = async (req, res) => {
         }
 
         if (collFilter === 'npl') {
-            whereClauses.push("CAST(coll AS INTEGER) >= 3");
+            whereClauses.push("CAST(NULLIF(coll, '') AS INTEGER) >= 3");
         } else if (collFilter === 'lancar') {
-            whereClauses.push("CAST(coll AS INTEGER) < 3");
+            whereClauses.push("CAST(NULLIF(coll, '') AS INTEGER) < 3");
         } else if (collFilter && !isNaN(collFilter)) {
-            whereClauses.push("CAST(coll AS INTEGER) = ?");
+            whereClauses.push("CAST(NULLIF(coll, '') AS INTEGER) = ?");
             params.push(parseInt(collFilter));
         }
 
@@ -617,8 +617,8 @@ exports.getIdebList = async (req, res) => {
                 MAX(nik) as nik,
                 MAX(nama) as nama,
                 MAX(alamat) as alamat,
-                MAX(CAST(coll AS INTEGER)) as max_coll,
-                SUM(CASE WHEN CAST(os AS REAL) > 0 THEN CAST(os AS REAL) ELSE 0 END) as total_bd,
+                MAX(CAST(NULLIF(coll, '') AS INTEGER)) as max_coll,
+                SUM(CASE WHEN CAST(NULLIF(os, '') AS REAL) > 0 THEN CAST(NULLIF(os, '') AS REAL) ELSE 0 END) as total_bd,
                 COUNT(*) as total_fasilitas,
                 MAX(tgl_input) as tgl_input,
                 MAX(cabang) as cabang
