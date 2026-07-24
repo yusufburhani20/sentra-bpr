@@ -92,14 +92,20 @@ app.use((err, req, res, next) => {
     res.status(500).json({ error: 'Terjadi kesalahan internal server. Silakan coba lagi.' });
 });
 
-// ─── START SERVER (ONLY IF RUN DIRECTLY) ──────────────────────────────────────
-if (require.main === module) {
-    app.listen(PORT, () => {
-        console.log(`SENTRA v2.0 (Sistem Terpusat Referensi, Arsip & Operasional BPR) running on port ${PORT}`);
-        console.log(`Navigate to http://localhost:${PORT}`);
-        console.log(`Default password for all users: ${DEFAULT_PASSWORD}`);
-    });
-}
+// ─── PROCESS EXCEPTION PROTECTION ───────────────────────────────────────────
+process.on('uncaughtException', (err) => {
+    console.error('[UNCAUGHT EXCEPTION]', err.message, err.stack);
+});
+process.on('unhandledRejection', (reason) => {
+    console.error('[UNHANDLED REJECTION]', reason);
+});
+
+// ─── START SERVER ─────────────────────────────────────────────────────────────
+app.listen(PORT, () => {
+    console.log(`SENTRA v2.0 (Sistem Terpusat Referensi, Arsip & Operasional BPR) running on port ${PORT}`);
+    console.log(`Navigate to http://localhost:${PORT}`);
+    console.log(`Default password for all users: ${DEFAULT_PASSWORD}`);
+});
 
 module.exports = app;
 

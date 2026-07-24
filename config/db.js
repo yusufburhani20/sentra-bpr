@@ -22,6 +22,9 @@ if (DB_TYPE === 'postgres') {
         idleTimeoutMillis: 30000,   // Tutup koneksi idle setelah 30 detik
         connectionTimeoutMillis: 5000 // Gagal cepat jika DB tidak bisa dijangkau
     });
+    pgPool.on('error', (err) => {
+        console.error('[PostgreSQL Pool Error]', err.message);
+    });
 } else {
     console.log("Database Engine: SQLite");
     const DB_PATH = path.join(__dirname, '..', 'database.sqlite');
