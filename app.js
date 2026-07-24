@@ -11,6 +11,8 @@ import { renderApprovalsView, fetchPendingApprovalsCount } from './js/approvals.
 import { fetchSubmissions, setupSlipSubmissionForm, submitSlipSubmission, submitConfirmArrival, addCustomChecklistItem } from './js/slipSubmissions.js';
 import { fetchFileBackupList, setupFileBackup } from './js/fileBackup.js';
 
+window.authFetch = authFetch;
+
 // Check Permissions
 function checkPermission(view, role) {
     const permissions = {

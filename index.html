@@ -2768,13 +2768,15 @@
         }
 
         try {
-            const res = await fetch('/api/ideb/create-manual', {
+            const fetchFn = window.authFetch || fetch;
+            const res = await fetchFn('/api/ideb/create-manual', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
+                credentials: 'same-origin',
                 body: JSON.stringify({ ref, nik, nama, alamat, cabang })
             });
-            const data = await res.json();
-            if (data.success) {
+            const data = await res.json().catch(() => ({ error: 'Respon server tidak valid' }));
+            if (res.ok && data.success) {
                 if (typeof showToast === 'function') showToast(data.message, 'success');
                 idebCloseManualModal();
                 
@@ -2790,7 +2792,9 @@
                 alert(data.error || 'Gagal menyimpan data manual.');
             }
         } catch(e) {
-            alert('Terjadi kesalahan jaringan.');
+            console.error('Save Manual iDEB Error:', e);
+            if (e.message === 'SESSION_EXPIRED') return;
+            alert(e.message || 'Terjadi kesalahan jaringan/server.');
         }
     }
     window.idebSaveManualNihil = idebSaveManualNihil;

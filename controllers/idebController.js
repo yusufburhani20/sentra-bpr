@@ -877,7 +877,7 @@ exports.createManualNihil = async (req, res) => {
         const isPg = process.env.DB_TYPE === 'postgres';
 
         // Delete existing records matching same NIK or REF first
-        await dbRun(isPg ? 'DELETE FROM ideb_records WHERE UPPER(ref) = UPPER($1) OR UPPER(nik) = UPPER($1)' : 'DELETE FROM ideb_records WHERE UPPER(ref) = UPPER(?) OR UPPER(nik) = UPPER(?)', [trimmedRef]).catch(() => {});
+        await dbRun(isPg ? 'DELETE FROM ideb_records WHERE UPPER(ref) = UPPER($1) OR UPPER(nik) = UPPER($2)' : 'DELETE FROM ideb_records WHERE UPPER(ref) = UPPER(?) OR UPPER(nik) = UPPER(?)', [trimmedRef, trimmedRef]).catch(() => {});
         await dbRun(isPg ? 'DELETE FROM ideb_records WHERE UPPER(nik) = UPPER($1)' : 'DELETE FROM ideb_records WHERE UPPER(nik) = UPPER(?)', [trimmedNik]).catch(() => {});
 
         const sql = isPg
