@@ -2359,6 +2359,21 @@
             badge.style.display = 'inline-block';
         }
 
+        if (data && data.records && Array.isArray(data.records)) {
+            data.records.sort((a, b) => {
+                const condA = String(a.kondisi || '').trim().toUpperCase();
+                const condB = String(b.kondisi || '').trim().toUpperCase();
+                const osA = parseFloat(a.os || 0);
+                const osB = parseFloat(b.os || 0);
+
+                const isAktifA = (condA === '00' || condA === '0' || condA === 'AKTIF' || osA > 0) ? 0 : 1;
+                const isAktifB = (condB === '00' || condB === '0' || condB === 'AKTIF' || osB > 0) ? 0 : 1;
+
+                if (isAktifA !== isAktifB) return isAktifA - isAktifB;
+                return String(a.bank || '').trim().toUpperCase().localeCompare(String(b.bank || '').trim().toUpperCase());
+            });
+        }
+
         let html = '';
         let calcAngsSum = 0;
         const ketMapUI = {
@@ -2536,6 +2551,19 @@
             const first = data.records[0];
             if (titleEl) titleEl.textContent = first.nama || 'Tanpa Nama';
             if (subtitleEl) subtitleEl.innerHTML = `NIK: ${first.nik || '-'} &nbsp;|&nbsp; Alamat: ${first.alamat || '-'} &nbsp;|&nbsp; REF: <strong>${first.ref}</strong>`;
+
+            data.records.sort((a, b) => {
+                const condA = String(a.kondisi || '').trim().toUpperCase();
+                const condB = String(b.kondisi || '').trim().toUpperCase();
+                const osA = parseFloat(a.os || 0);
+                const osB = parseFloat(b.os || 0);
+
+                const isAktifA = (condA === '00' || condA === '0' || condA === 'AKTIF' || osA > 0) ? 0 : 1;
+                const isAktifB = (condB === '00' || condB === '0' || condB === 'AKTIF' || osB > 0) ? 0 : 1;
+
+                if (isAktifA !== isAktifB) return isAktifA - isAktifB;
+                return String(a.bank || '').trim().toUpperCase().localeCompare(String(b.bank || '').trim().toUpperCase());
+            });
 
             let html = '';
             data.records.forEach((r, i) => {

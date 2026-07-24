@@ -82,12 +82,33 @@ exports.queryByRef = async (req, res) => {
              WHERE UPPER(ref) = UPPER(?) 
                 OR UPPER(nik) = UPPER(?) 
                 OR UPPER(ref) LIKE UPPER(?)
-             ORDER BY UPPER(bank) ASC, CAST(NULLIF(coll, '') AS INTEGER) ASC, id ASC`,
+             ORDER BY 
+                CASE 
+                    WHEN UPPER(kondisi) IN ('00', '0', 'AKTIF') OR CAST(NULLIF(os, '') AS REAL) > 0 THEN 0 
+                    ELSE 1 
+                END ASC,
+                UPPER(bank) ASC, 
+                CAST(NULLIF(coll, '') AS INTEGER) ASC, 
+                id ASC`,
             [trimmed, trimmed, searchPattern]
         );
         if (rows.length === 0) {
             return res.json({ found: false, records: [], summary: null });
         }
+
+        // Sort otomatis: Keterangan AKTIF di paling atas, kemudian diurutkan berdasarkan nama bank
+        rows.sort((a, b) => {
+            const condA = String(a.kondisi || '').trim().toUpperCase();
+            const condB = String(b.kondisi || '').trim().toUpperCase();
+            const osA = parseFloat(a.os || 0);
+            const osB = parseFloat(b.os || 0);
+
+            const isAktifA = (condA === '00' || condA === '0' || condA === 'AKTIF' || osA > 0) ? 0 : 1;
+            const isAktifB = (condB === '00' || condB === '0' || condB === 'AKTIF' || osB > 0) ? 0 : 1;
+
+            if (isAktifA !== isAktifB) return isAktifA - isAktifB;
+            return String(a.bank || '').trim().toUpperCase().localeCompare(String(b.bank || '').trim().toUpperCase());
+        });
         // Calculate summary matching legacy Desktop app formula
         const first = rows[0];
         const collBuruk = rows.reduce((max, r) => Math.max(max, parseInt(r.coll) || 1), 1);
