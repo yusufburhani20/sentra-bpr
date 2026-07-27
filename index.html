@@ -2543,9 +2543,7 @@
         const totalEl = document.getElementById('ideb-total-'+role);
         const badge   = document.getElementById('ideb-'+role+'-coll-badge');
 
-        const isDummy = data.records && data.records.length === 1 && data.records[0].bank === 'TIDAK ADA FASILITAS';
-
-        if (!data || !data.found || !data.records.length || isDummy) {
+        if (!data || !data.found || !data.records.length) {
             nama.textContent = (data && data.summary && data.summary.nama) ? data.summary.nama : '—';
             nik.textContent = (data && data.summary && data.summary.nik) ? data.summary.nik : '—';
             alamat.textContent = (data && data.summary && data.summary.alamat) ? data.summary.alamat : '—';
@@ -2563,17 +2561,23 @@
         nik.textContent    = s.nik    || '—';
         alamat.textContent = s.alamat || '—';
 
+        const isDummy = data.records && data.records.length === 1 && String(data.records[0].bank || '').toUpperCase().includes('TIDAK ADA FASILITAS');
         const collBuruk = parseInt(s.coll_buruk) || data.records.reduce((max, r) => Math.max(max, parseInt(r.kol_tgk) || 1), 1);
         if (badge) {
-            badge.textContent = collBuruk >= 3 ? ('COLL BURUK: ' + collBuruk) : ('COLL TERBURUK: ' + collBuruk);
-            badge.style.background = collBuruk >= 3 ? 'rgba(220,38,38,0.9)' : 'rgba(34,197,94,0.9)';
-            badge.style.color = '#fff';
-            badge.style.padding = '2px 8px';
-            badge.style.borderRadius = '12px';
-            badge.style.fontSize = '11px';
-            badge.style.fontWeight = '700';
-            badge.style.marginLeft = '8px';
-            badge.style.display = 'inline-block';
+            if (isDummy) {
+                badge.textContent = '';
+                badge.style.display = 'none';
+            } else {
+                badge.textContent = collBuruk >= 3 ? ('COLL BURUK: ' + collBuruk) : ('COLL TERBURUK: ' + collBuruk);
+                badge.style.background = collBuruk >= 3 ? 'rgba(220,38,38,0.9)' : 'rgba(34,197,94,0.9)';
+                badge.style.color = '#fff';
+                badge.style.padding = '2px 8px';
+                badge.style.borderRadius = '12px';
+                badge.style.fontSize = '11px';
+                badge.style.fontWeight = '700';
+                badge.style.marginLeft = '8px';
+                badge.style.display = 'inline-block';
+            }
         }
 
         if (data && data.records && Array.isArray(data.records)) {
@@ -2605,12 +2609,16 @@
             '12': 'Lunas Diskon'
         };
         data.records.forEach((rec, i) => {
+            const isNihil = String(rec.bank || '').toUpperCase().includes('TIDAK ADA FASILITAS');
             const coll = parseInt(rec.coll) || 0;
             const kolTgk = parseInt(rec.kol_tgk) || coll;
             const maxVal = Math.max(coll, kolTgk);
             let rowStyle = '';
             let rowClass = '';
-            if (maxVal >= 3) {
+            
+            if (isNihil) {
+                rowStyle = 'color: #1d4ed8; font-weight: bold;';
+            } else if (maxVal >= 3) {
                 rowStyle = 'color: #cc0000; font-weight: bold;';
                 rowClass = 'coll-buruk';
             } else if (maxVal === 2) {
@@ -2621,7 +2629,16 @@
             calcTotalBD += osVal;
             calcAngsSum += calcAngsuranRow(rec.plafon, rec.os, rec.sb, rec.jw);
             const rawKondisi = String(rec.kondisi || '').trim();
-            const ketText = ketMapUI[rawKondisi] || rawKondisi || '';
+            let ketText = ketMapUI[rawKondisi] || rawKondisi || '';
+            
+            let displayColl = coll;
+            let displayKolTgk = kolTgk;
+            if (isNihil) {
+                displayColl = '';
+                displayKolTgk = '';
+                ketText = '';
+            }
+
             html += `<tr class="${rowClass}" style="${rowStyle}">` +
                 `<td style="text-align:center">${i+1}</td>` +
                 `<td style="text-align:left">${rec.bank||''}</td>` +
@@ -2631,8 +2648,8 @@
                 `<td style="text-align:center">${rec.jw||'0'}</td>` +
                 `<td style="text-align:center">${fmtDate(rec.jatem)}</td>` +
                 `<td style="text-align:center">${rec.tunggakan??0}</td>` +
-                `<td style="text-align:center">${coll}</td>` +
-                `<td style="text-align:center">${kolTgk}</td>` +
+                `<td style="text-align:center">${displayColl}</td>` +
+                `<td style="text-align:center">${displayKolTgk}</td>` +
                 `<td style="text-align:center">${ketText}</td>` +
                 `<td style="text-align:center">${rec.tung_hari??0}</td>` +
                 '</tr>';
@@ -3036,9 +3053,9 @@
             let maxColl = 1;
             let rows = '';
 
-            const isDummy = s.records && s.records.length === 1 && s.records[0].bank === 'TIDAK ADA FASILITAS';
+            const isDummy = s.records && s.records.length === 1 && String(s.records[0].bank || '').toUpperCase().includes('TIDAK ADA FASILITAS');
 
-            if (!s.records || s.records.length === 0 || isDummy) {
+            if (!s.records || s.records.length === 0) {
                 rows = `<tr><td colspan="12" style="text-align:center; padding:10px;">TIDAK ADA FASILITAS</td></tr>`;
             } else {
                 // Sort records: AKTIF di paling atas, kemudian berdasarkan nama bank (A-Z)
@@ -3056,6 +3073,7 @@
                 });
 
                 s.records.forEach((rec, i) => {
+                    const isNihil = String(rec.bank || '').toUpperCase().includes('TIDAK ADA FASILITAS');
                     const coll = parseInt(rec.coll) || 1;
                     const kolTgk = parseInt(rec.kol_tgk) || coll;
                     const maxVal = Math.max(coll, kolTgk);
@@ -3063,7 +3081,9 @@
                     
                     let rowStyle = '';
                     let rowClass = '';
-                    if (maxVal >= 3) {
+                    if (isNihil) {
+                        rowStyle = 'color: #1d4ed8; font-weight: bold;';
+                    } else if (maxVal >= 3) {
                         rowStyle = 'color: #cc0000; font-weight: bold;';
                         rowClass = 'coll-buruk';
                     } else if (maxVal === 2) {
@@ -3071,12 +3091,20 @@
                     }
 
                     const rawKondisi = String(rec.kondisi || '').trim();
-                    const ketText = ketMap[rawKondisi] || rawKondisi || '';
+                    let ketText = ketMap[rawKondisi] || rawKondisi || '';
                     const dateStr = fmtDate(rec.jatem);
 
                     const osNum = parseFloat(rec.os) || 0;
                     totalBD += osNum;
                     totalAngs += calcAngsuranRow(rec.plafon, rec.os, rec.sb, rec.jw);
+                    
+                    let displayColl = coll;
+                    let displayKolTgk = kolTgk;
+                    if (isNihil) {
+                        displayColl = '';
+                        displayKolTgk = '';
+                        ketText = '';
+                    }
 
                     rows += `<tr class="${rowClass}" style="${rowStyle}">` +
                         `<td style="text-align:center; padding:1px 3px;">${i + 1}</td>` +
@@ -3087,8 +3115,8 @@
                         `<td style="text-align:center; padding:1px 3px;">${rec.jw || 0}</td>` +
                         `<td style="text-align:center; padding:1px 3px;">${dateStr}</td>` +
                         `<td style="text-align:center; padding:1px 3px;">${rec.tunggakan ?? 0}</td>` +
-                        `<td style="text-align:center; padding:1px 3px;">${coll}</td>` +
-                        `<td style="text-align:center; padding:1px 3px;">${kolTgk}</td>` +
+                        `<td style="text-align:center; padding:1px 3px;">${displayColl}</td>` +
+                        `<td style="text-align:center; padding:1px 3px;">${displayKolTgk}</td>` +
                         `<td style="text-align:left; padding:1px 3px;">${ketText}</td>` +
                         `<td style="text-align:center; padding:1px 3px;">${rec.tung_hari ?? 0}</td>` +
                         `</tr>`;
