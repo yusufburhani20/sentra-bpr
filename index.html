@@ -2600,20 +2600,22 @@
         data.records.forEach((rec, i) => {
             const coll = parseInt(rec.coll) || 0;
             const kolTgk = parseInt(rec.kol_tgk) || coll;
-            const isBuruk = coll >= 3;
-            
-            const getStyle = (val) => {
-                if (val >= 4) return 'background-color:#ef4444; color:white; padding:2px 6px; border-radius:4px; font-weight:bold;';
-                if (val >= 2) return 'background-color:#3b82f6; color:white; padding:2px 6px; border-radius:4px; font-weight:bold;';
-                return 'background-color:#22c55e; color:white; padding:2px 6px; border-radius:4px; font-weight:bold;';
-            };
+            const maxVal = Math.max(coll, kolTgk);
+            let rowStyle = '';
+            let rowClass = '';
+            if (maxVal >= 3) {
+                rowStyle = 'color: #cc0000; font-weight: bold;';
+                rowClass = 'coll-buruk';
+            } else if (maxVal === 2) {
+                rowStyle = 'color: #1d4ed8; font-weight: bold;';
+            }
 
             const osVal = Math.round(parseFloat(rec.os) || 0);
             calcTotalBD += osVal;
             calcAngsSum += calcAngsuranRow(rec.plafon, rec.os, rec.sb, rec.jw);
             const rawKondisi = String(rec.kondisi || '').trim();
             const ketText = ketMapUI[rawKondisi] || rawKondisi || '';
-            html += `<tr class="${isBuruk?'coll-buruk':''}">` +
+            html += `<tr class="${rowClass}" style="${rowStyle}">` +
                 `<td style="text-align:center">${i+1}</td>` +
                 `<td style="text-align:left">${rec.bank||''}</td>` +
                 `<td>${fmtNum(rec.plafon)}</td>` +
@@ -2622,8 +2624,8 @@
                 `<td style="text-align:center">${rec.jw||'0'}</td>` +
                 `<td style="text-align:center">${fmtDate(rec.jatem)}</td>` +
                 `<td style="text-align:center">${rec.tunggakan??0}</td>` +
-                `<td style="text-align:center"><span style="${getStyle(coll)}">${coll}</span></td>` +
-                `<td style="text-align:center"><span style="${getStyle(kolTgk)}">${kolTgk}</span></td>` +
+                `<td style="text-align:center">${coll}</td>` +
+                `<td style="text-align:center">${kolTgk}</td>` +
                 `<td style="text-align:center">${ketText}</td>` +
                 `<td style="text-align:center">${rec.tung_hari??0}</td>` +
                 '</tr>';
@@ -2928,7 +2930,7 @@
                     <td style="text-align:right; padding:8px;">${fmtNum(os)}</td>
                     <td style="padding:8px;">${r.tunggakan || '0'} hr</td>
                     <td style="padding:8px;">${r.kondisi || '-'}</td>
-                    <td style="text-align:center; padding:8px;"><span class="ideb-coll-badge ideb-coll-${collVal}">${collVal}</span></td>
+                    <td style="text-align:center; padding:8px;">${collVal}</td>
                     <td style="text-align:center; padding:8px;">
                         <button onclick='idebOpenEditModal(${recordJson})' class="btn btn-secondary" style="padding:3px 8px; font-size:11px; font-weight:600; cursor:pointer;" title="Edit Facility">✏️ Edit</button>
                     </td>
@@ -3043,8 +3045,18 @@
             s.records.forEach((rec, i) => {
                 const coll = parseInt(rec.coll) || 1;
                 const kolTgk = parseInt(rec.kol_tgk) || coll;
+                const maxVal = Math.max(coll, kolTgk);
                 if (kolTgk > maxColl) maxColl = kolTgk;
-                const isBuruk = coll >= 3;
+                
+                let rowStyle = '';
+                let rowClass = '';
+                if (maxVal >= 3) {
+                    rowStyle = 'color: #cc0000; font-weight: bold;';
+                    rowClass = 'coll-buruk';
+                } else if (maxVal === 2) {
+                    rowStyle = 'color: #1d4ed8; font-weight: bold;';
+                }
+
                 const rawKondisi = String(rec.kondisi || '').trim();
                 const ketText = ketMap[rawKondisi] || rawKondisi || '';
                 const dateStr = fmtDate(rec.jatem);
@@ -3053,13 +3065,7 @@
                 totalBD += osNum;
                 totalAngs += calcAngsuranRow(rec.plafon, rec.os, rec.sb, rec.jw);
 
-                const getStyle = (val) => {
-                    if (val >= 4) return 'background-color:#ef4444; color:white; padding:1px 4px; border-radius:3px; font-weight:bold;';
-                    if (val >= 2) return 'background-color:#3b82f6; color:white; padding:1px 4px; border-radius:3px; font-weight:bold;';
-                    return 'background-color:#22c55e; color:white; padding:1px 4px; border-radius:3px; font-weight:bold;';
-                };
-
-                rows += `<tr class="${isBuruk ? 'coll-buruk' : ''}" style="${isBuruk ? 'color:#cc0000; font-weight:bold;' : ''}">` +
+                rows += `<tr class="${rowClass}" style="${rowStyle}">` +
                     `<td style="text-align:center; padding:1px 3px;">${i + 1}</td>` +
                     `<td style="text-align:left; padding:1px 3px;">${rec.bank || ''}</td>` +
                     `<td style="text-align:right; padding:1px 3px;">${fmtNumComma(rec.plafon)}</td>` +
