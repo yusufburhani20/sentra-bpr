@@ -186,14 +186,8 @@ body {
     width: 38px;
     height: 38px;
     border-radius: 10px;
-    background: var(--primary);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    font-weight: 800;
-    font-size: 20px;
-    border: 2px solid var(--accent);
+    object-fit: contain;
+    flex-shrink: 0;
 }
 
 .brand-title-wrap {
@@ -1572,17 +1566,14 @@ body.printing-active > .print-wrapper {
 }
 
 .login-logo-icon {
-    width: 72px; height: 72px;
+    width: 76px;
+    height: 76px;
     margin: 0 auto 16px;
-    background: var(--accent);
-    border-radius: 20px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 36px;
-    font-weight: 900;
-    color: #0f172a;
+    display: block;
+    object-fit: contain;
+    border-radius: 16px;
     animation: logoFloat 3s ease-in-out infinite;
+    filter: drop-shadow(0 6px 14px rgba(15, 42, 74, 0.25));
 }
 
 @keyframes logoFloat {
@@ -2096,7 +2087,7 @@ body.printing-active > .print-wrapper {
 }
 
 /* ------------------------------------------------------------------- */
-/* ¦ Custom PK Combobox (No. P/K Debet & Kredit)                     ¦ */
+/* ï¿½ Custom PK Combobox (No. P/K Debet & Kredit)                     ï¿½ */
 /* ------------------------------------------------------------------- */
 .pk-combobox {
     position: relative;
