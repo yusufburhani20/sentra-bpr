@@ -467,11 +467,15 @@ function parseSlikTxtBuffer(buffer) {
         ...(fas.fasilitasLain || [])
     ];
 
+    const ringkasan = ind.ringkasanFasilitas || {};
+    const kualitasTerburukOJK = parseInt(ringkasan.kualitasTerburuk) || 0;
+
     let maxColl = 1;
     kreList.forEach(k => {
         const collVal = parseInt(k.kualitas) || 1;
         if (collVal > maxColl) maxColl = collVal;
     });
+    maxColl = Math.max(maxColl, kualitasTerburukOJK);
 
     kreList.forEach(k => {
         let jw = parseFloat(k.jangkaWaktu || k.jangkaWaktuBulan || 0);
@@ -491,7 +495,7 @@ function parseSlikTxtBuffer(buffer) {
             coll_buruk: String(maxColl),
             bank: k.ljkKet || k.ljk || '',
             plafon: Math.round(parseFloat(k.plafonAwal || k.plafon || 0)),
-            os: Math.round(parseFloat(k.bakiDebet || 0) + parseFloat(k.tunggakanPokok || 0)),
+            os: Math.round(parseFloat(k.bakiDebet || 0)),
             sb: parseFloat(k.sukuBungaImbalan || 0),
             jw: jw,
             jatem: k.tanggalJatuhTempo || '',
