@@ -341,6 +341,7 @@ async function initializeDb(callback) {
         await runAsync(`CREATE INDEX IF NOT EXISTS idx_ideb_ref ON ideb_records (ref)`);
         await runAsync(`CREATE INDEX IF NOT EXISTS idx_ideb_nik ON ideb_records (nik)`);
         await runAsync(`CREATE INDEX IF NOT EXISTS idx_ideb_cabang ON ideb_records (cabang)`);
+        await runAsync(`ALTER TABLE ideb_records ADD COLUMN kol_tgk TEXT`).catch(() => {});
 
         // 11. iDEB Kantor Table
         await runAsync(`CREATE TABLE IF NOT EXISTS ideb_kantor (

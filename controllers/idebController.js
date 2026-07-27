@@ -131,7 +131,7 @@ exports.queryByRef = async (req, res) => {
         });
         // Calculate summary matching legacy Desktop app formula
         const first = rows[0];
-        const collBuruk = rows.reduce((max, r) => Math.max(max, parseInt(r.coll) || 1), 1);
+        const collBuruk = first.coll_buruk || rows.reduce((max, r) => Math.max(max, parseInt(r.coll) || 1), 1);
         const totalBD = rows.reduce((sum, r) => sum + Math.round(parseFloat(r.os) || 0), 0);
         const totalAngsuran = rows.reduce((sum, r) => {
             const osNum = parseFloat(r.os) || 0;
@@ -487,6 +487,15 @@ function parseSlikTxtBuffer(buffer) {
             jw = Math.max(1, (y2 - y1) * 12 + (m2 - m1));
         }
 
+        let kolTgk = parseInt(k.kualitas) || 1;
+        for (let idx = 1; idx <= 24; idx++) {
+            const prop = 'tahunBulan' + String(idx).padStart(2, '0') + 'Kol';
+            if (k[prop]) {
+                const val = parseInt(k[prop]) || 1;
+                if (val > kolTgk) kolTgk = val;
+            }
+        }
+
         records.push({
             ref: ref,
             nik: nik,
@@ -501,6 +510,7 @@ function parseSlikTxtBuffer(buffer) {
             jatem: k.tanggalJatuhTempo || '',
             tunggakan: String(k.frekuensiTunggakan || '0'),
             coll: String(k.kualitas || '1'),
+            kol_tgk: String(kolTgk),
             kondisi: String(k.kondisi || '00'),
             tgl_update: k.tanggalUpdate || k.tanggalKondisi || '',
             tgl_input: tglInput,
@@ -529,6 +539,7 @@ function parseSlikTxtBuffer(buffer) {
             jatem: '',
             tunggakan: '0',
             coll: '1',
+            kol_tgk: '1',
             kondisi: 'Bersih',
             tgl_update: '',
             tgl_input: tglInput,
@@ -594,10 +605,10 @@ exports.syncTxtFolder = async (req, res) => {
                 if (records && records.length > 0) {
                     for (const r of records) {
                         const sql = isPg
-                            ? `INSERT INTO ideb_records (ref, nik, nama, alamat, coll_buruk, bank, plafon, os, sb, jw, jatem, tunggakan, coll, kondisi, tgl_update, tgl_input, cabang, tung_hari, tunggakanpokok, tunggakanbunga, frekuensirestrukturisasi, angsuran)
-                               VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22)`
-                            : `INSERT INTO ideb_records (ref, nik, nama, alamat, coll_buruk, bank, plafon, os, sb, jw, jatem, tunggakan, coll, kondisi, tgl_update, tgl_input, cabang, tung_hari, tunggakanpokok, tunggakanbunga, frekuensirestrukturisasi, angsuran)
-                               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`;
+                            ? `INSERT INTO ideb_records (ref, nik, nama, alamat, coll_buruk, bank, plafon, os, sb, jw, jatem, tunggakan, coll, kondisi, tgl_update, tgl_input, cabang, tung_hari, tunggakanpokok, tunggakanbunga, frekuensirestrukturisasi, angsuran, kol_tgk)
+                               VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23)`
+                            : `INSERT INTO ideb_records (ref, nik, nama, alamat, coll_buruk, bank, plafon, os, sb, jw, jatem, tunggakan, coll, kondisi, tgl_update, tgl_input, cabang, tung_hari, tunggakanpokok, tunggakanbunga, frekuensirestrukturisasi, angsuran, kol_tgk)
+                               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`;
 
                         const params = [
                             r.ref || null, r.nik || null, r.nama || null, r.alamat || null,
@@ -618,7 +629,8 @@ exports.syncTxtFolder = async (req, res) => {
                             r.tunggakanpokok !== undefined ? Math.round(parseFloat(r.tunggakanpokok)) : null,
                             r.tunggakanbunga !== undefined ? Math.round(parseFloat(r.tunggakanbunga)) : null,
                             r.frekuensirestrukturisasi !== undefined ? parseFloat(r.frekuensirestrukturisasi) : null,
-                            r.angsuran !== undefined ? Math.round(parseFloat(r.angsuran)) : null
+                            r.angsuran !== undefined ? Math.round(parseFloat(r.angsuran)) : null,
+                            r.kol_tgk || r.coll || '1'
                         ];
                         await dbRun(sql, params).catch(() => {});
                         totalRecords++;
