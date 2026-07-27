@@ -2543,11 +2543,13 @@
         const totalEl = document.getElementById('ideb-total-'+role);
         const badge   = document.getElementById('ideb-'+role+'-coll-badge');
 
-        if (!data || !data.found || !data.records.length) {
+        const isDummy = data.records && data.records.length === 1 && data.records[0].bank === 'TIDAK ADA FASILITAS';
+
+        if (!data || !data.found || !data.records.length || isDummy) {
             nama.textContent = (data && data.summary && data.summary.nama) ? data.summary.nama : '—';
             nik.textContent = (data && data.summary && data.summary.nik) ? data.summary.nik : '—';
             alamat.textContent = (data && data.summary && data.summary.alamat) ? data.summary.alamat : '—';
-            tbody.innerHTML = '<tr><td colspan="12" class="ideb-empty">TIDAK ADA FASILITAS</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="12" class="ideb-empty" style="text-align:center; padding: 20px; color:#666;">TIDAK ADA FASILITAS</td></tr>';
             totalEl.innerHTML = 'Total BD: <strong>0</strong> &nbsp; Perkiraan Angs./Bulan: <strong>0</strong>';
             if (badge) {
                 badge.textContent = '';
@@ -3034,7 +3036,9 @@
             let maxColl = 1;
             let rows = '';
 
-            if (!s.records || s.records.length === 0) {
+            const isDummy = s.records && s.records.length === 1 && s.records[0].bank === 'TIDAK ADA FASILITAS';
+
+            if (!s.records || s.records.length === 0 || isDummy) {
                 rows = `<tr><td colspan="12" style="text-align:center; padding:10px;">TIDAK ADA FASILITAS</td></tr>`;
             } else {
                 // Sort records: AKTIF di paling atas, kemudian berdasarkan nama bank (A-Z)
@@ -3091,7 +3095,7 @@
                 });
             }
 
-            const collBurukLabel = (!s.records || s.records.length === 0) ? '' : `KOLEKTIBILITAS TERBURUK : ${maxColl}`;
+            const collBurukLabel = (!s.records || s.records.length === 0 || isDummy) ? '' : `KOLEKTIBILITAS TERBURUK : ${maxColl}`;
 
             return `
                 <div class="ideb-print-section" style="margin-bottom: 6px;">
