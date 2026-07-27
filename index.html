@@ -2544,10 +2544,15 @@
         const badge   = document.getElementById('ideb-'+role+'-coll-badge');
 
         if (!data || !data.found || !data.records.length) {
-            nama.textContent = '—'; nik.textContent = '—'; alamat.textContent = '—';
+            nama.textContent = (data && data.summary && data.summary.nama) ? data.summary.nama : '—';
+            nik.textContent = (data && data.summary && data.summary.nik) ? data.summary.nik : '—';
+            alamat.textContent = (data && data.summary && data.summary.alamat) ? data.summary.alamat : '—';
             tbody.innerHTML = '<tr><td colspan="12" class="ideb-empty">TIDAK ADA FASILITAS</td></tr>';
             totalEl.innerHTML = 'Total BD: <strong>0</strong> &nbsp; Perkiraan Angs./Bulan: <strong>0</strong>';
-            if (badge) badge.textContent = '';
+            if (badge) {
+                badge.textContent = '';
+                badge.style.display = 'none';
+            }
             return;
         }
 
@@ -3015,24 +3020,9 @@
         };
 
         function buildSectionHtml(role, label) {
-            const s = idebState[role];
-            if (!s || !s.found || !s.records || s.records.length === 0) {
+            if (!s || !s.found) {
                 return '';
             }
-
-            // Sort records: AKTIF di paling atas, kemudian berdasarkan nama bank (A-Z)
-            s.records.sort((a, b) => {
-                const condA = String(a.kondisi || '').trim().toUpperCase();
-                const condB = String(b.kondisi || '').trim().toUpperCase();
-                const osA = parseFloat(a.os || 0);
-                const osB = parseFloat(b.os || 0);
-
-                const isAktifA = (condA === '00' || condA === '0' || condA === 'AKTIF' || osA > 0) ? 0 : 1;
-                const isAktifB = (condB === '00' || condB === '0' || condB === 'AKTIF' || osB > 0) ? 0 : 1;
-
-                if (isAktifA !== isAktifB) return isAktifA - isAktifB;
-                return String(a.bank || '').trim().toUpperCase().localeCompare(String(b.bank || '').trim().toUpperCase());
-            });
 
             const nama = s.summary.nama || '—';
             const nik = s.summary.nik || '—';
@@ -3042,44 +3032,65 @@
             let totalAngs = 0;
             let maxColl = 1;
             let rows = '';
-            s.records.forEach((rec, i) => {
-                const coll = parseInt(rec.coll) || 1;
-                const kolTgk = parseInt(rec.kol_tgk) || coll;
-                const maxVal = Math.max(coll, kolTgk);
-                if (kolTgk > maxColl) maxColl = kolTgk;
-                
-                let rowStyle = '';
-                let rowClass = '';
-                if (maxVal >= 3) {
-                    rowStyle = 'color: #cc0000; font-weight: bold;';
-                    rowClass = 'coll-buruk';
-                } else if (maxVal === 2) {
-                    rowStyle = 'color: #1d4ed8; font-weight: bold;';
-                }
 
-                const rawKondisi = String(rec.kondisi || '').trim();
-                const ketText = ketMap[rawKondisi] || rawKondisi || '';
-                const dateStr = fmtDate(rec.jatem);
+            if (!s.records || s.records.length === 0) {
+                rows = `<tr><td colspan="12" style="text-align:center; padding:10px;">TIDAK ADA FASILITAS</td></tr>`;
+            } else {
+                // Sort records: AKTIF di paling atas, kemudian berdasarkan nama bank (A-Z)
+                s.records.sort((a, b) => {
+                    const condA = String(a.kondisi || '').trim().toUpperCase();
+                    const condB = String(b.kondisi || '').trim().toUpperCase();
+                    const osA = parseFloat(a.os || 0);
+                    const osB = parseFloat(b.os || 0);
 
-                const osNum = parseFloat(rec.os) || 0;
-                totalBD += osNum;
-                totalAngs += calcAngsuranRow(rec.plafon, rec.os, rec.sb, rec.jw);
+                    const isAktifA = (condA === '00' || condA === '0' || condA === 'AKTIF' || osA > 0) ? 0 : 1;
+                    const isAktifB = (condB === '00' || condB === '0' || condB === 'AKTIF' || osB > 0) ? 0 : 1;
 
-                rows += `<tr class="${rowClass}" style="${rowStyle}">` +
-                    `<td style="text-align:center; padding:1px 3px;">${i + 1}</td>` +
-                    `<td style="text-align:left; padding:1px 3px;">${rec.bank || ''}</td>` +
-                    `<td style="text-align:right; padding:1px 3px;">${fmtNumComma(rec.plafon)}</td>` +
-                    `<td style="text-align:right; padding:1px 3px;">${fmtNumComma(rec.os)}</td>` +
-                    `<td style="text-align:center; padding:1px 3px;">${fmtSB(rec.sb)}</td>` +
-                    `<td style="text-align:center; padding:1px 3px;">${rec.jw || 0}</td>` +
-                    `<td style="text-align:center; padding:1px 3px;">${dateStr}</td>` +
-                    `<td style="text-align:center; padding:1px 3px;">${rec.tunggakan ?? 0}</td>` +
-                    `<td style="text-align:center; padding:1px 3px;">${coll}</td>` +
-                    `<td style="text-align:center; padding:1px 3px;">${kolTgk}</td>` +
-                    `<td style="text-align:left; padding:1px 3px;">${ketText}</td>` +
-                    `<td style="text-align:center; padding:1px 3px;">${rec.tung_hari ?? 0}</td>` +
-                    `</tr>`;
-            });
+                    if (isAktifA !== isAktifB) return isAktifA - isAktifB;
+                    return String(a.bank || '').trim().toUpperCase().localeCompare(String(b.bank || '').trim().toUpperCase());
+                });
+
+                s.records.forEach((rec, i) => {
+                    const coll = parseInt(rec.coll) || 1;
+                    const kolTgk = parseInt(rec.kol_tgk) || coll;
+                    const maxVal = Math.max(coll, kolTgk);
+                    if (kolTgk > maxColl) maxColl = kolTgk;
+                    
+                    let rowStyle = '';
+                    let rowClass = '';
+                    if (maxVal >= 3) {
+                        rowStyle = 'color: #cc0000; font-weight: bold;';
+                        rowClass = 'coll-buruk';
+                    } else if (maxVal === 2) {
+                        rowStyle = 'color: #1d4ed8; font-weight: bold;';
+                    }
+
+                    const rawKondisi = String(rec.kondisi || '').trim();
+                    const ketText = ketMap[rawKondisi] || rawKondisi || '';
+                    const dateStr = fmtDate(rec.jatem);
+
+                    const osNum = parseFloat(rec.os) || 0;
+                    totalBD += osNum;
+                    totalAngs += calcAngsuranRow(rec.plafon, rec.os, rec.sb, rec.jw);
+
+                    rows += `<tr class="${rowClass}" style="${rowStyle}">` +
+                        `<td style="text-align:center; padding:1px 3px;">${i + 1}</td>` +
+                        `<td style="text-align:left; padding:1px 3px;">${rec.bank || ''}</td>` +
+                        `<td style="text-align:right; padding:1px 3px;">${fmtNumComma(rec.plafon)}</td>` +
+                        `<td style="text-align:right; padding:1px 3px;">${fmtNumComma(rec.os)}</td>` +
+                        `<td style="text-align:center; padding:1px 3px;">${fmtSB(rec.sb)}</td>` +
+                        `<td style="text-align:center; padding:1px 3px;">${rec.jw || 0}</td>` +
+                        `<td style="text-align:center; padding:1px 3px;">${dateStr}</td>` +
+                        `<td style="text-align:center; padding:1px 3px;">${rec.tunggakan ?? 0}</td>` +
+                        `<td style="text-align:center; padding:1px 3px;">${coll}</td>` +
+                        `<td style="text-align:center; padding:1px 3px;">${kolTgk}</td>` +
+                        `<td style="text-align:left; padding:1px 3px;">${ketText}</td>` +
+                        `<td style="text-align:center; padding:1px 3px;">${rec.tung_hari ?? 0}</td>` +
+                        `</tr>`;
+                });
+            }
+
+            const collBurukLabel = (!s.records || s.records.length === 0) ? '' : `KOLEKTIBILITAS TERBURUK : ${maxColl}`;
 
             return `
                 <div class="ideb-print-section" style="margin-bottom: 6px;">
@@ -3091,7 +3102,7 @@
                             <div>ALAMAT : ${alamat}</div>
                         </div>
                         <div style="font-weight: bold; align-self: flex-end;">
-                            KOLEKTIBILITAS TERBURUK : ${maxColl}
+                            ${collBurukLabel}
                         </div>
                     </div>
                     <table class="ideb-print-table" style="width:100%; border-collapse:collapse; font-size:7.5pt; line-height:1.15;">
