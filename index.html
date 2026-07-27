@@ -3020,6 +3020,7 @@
         };
 
         function buildSectionHtml(role, label) {
+            const s = idebState[role];
             if (!s || !s.found) {
                 return '';
             }
