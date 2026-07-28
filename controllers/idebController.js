@@ -489,12 +489,26 @@ function parseSlikTxtBuffer(buffer) {
         }
 
         let kolTgk = parseInt(k.kualitas) || 1;
+        let maxHt = 0;
         for (let idx = 1; idx <= 24; idx++) {
             const prop = 'tahunBulan' + String(idx).padStart(2, '0') + 'Kol';
+            const htProp = 'tahunBulan' + String(idx).padStart(2, '0') + 'Ht';
             if (k[prop]) {
                 const val = parseInt(k[prop]) || 1;
                 if (val > kolTgk) kolTgk = val;
             }
+            if (k[htProp]) {
+                const htVal = parseInt(k[htProp]) || 0;
+                if (htVal > maxHt) maxHt = htVal;
+            }
+        }
+
+        let tungHari = parseInt(k.jumlahHariTunggakan) || 0;
+        const rawKondisi = String(k.kondisi || '').trim();
+        const isLunas = rawKondisi === '02' || rawKondisi === '2' || rawKondisi.toLowerCase().includes('lunas');
+        
+        if (isLunas && kolTgk > 1 && maxHt > tungHari) {
+            tungHari = maxHt;
         }
 
         records.push({
@@ -516,7 +530,7 @@ function parseSlikTxtBuffer(buffer) {
             tgl_update: k.tanggalUpdate || k.tanggalKondisi || '',
             tgl_input: tglInput,
             cabang: cabang,
-            tung_hari: String(k.jumlahHariTunggakan || '0'),
+            tung_hari: String(tungHari),
             tunggakanpokok: Math.round(parseFloat(k.tunggakanPokok || 0)),
             tunggakanbunga: Math.round(parseFloat(k.tunggakanBunga || 0)),
             frekuensirestrukturisasi: parseFloat(k.frekuensiRestrukturisasi || 0),
