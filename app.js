@@ -19,7 +19,7 @@ function checkPermission(view, role) {
         "dashboard": ["Admin", "Kepala Bidang", "Teller", "SDMU", "Customer Service", "IT Support"],
         "input": ["Admin", "Kepala Bidang", "Teller", "SDMU", "Customer Service"],
         "riwayat": ["Admin", "Kepala Bidang", "Teller", "SDMU", "Customer Service"],
-        "kodebiaya": ["Admin"],
+        "kodebiaya": ["Admin", "Kepala Bidang", "Teller", "SDMU", "Customer Service"],
         "kirimslip": ["Admin", "Kepala Bidang", "Teller", "SDMU", "Customer Service"],
         "filebackup": ["Admin", "Kepala Bidang", "Teller", "SDMU", "Customer Service"],
         "users": ["Admin", "Kepala Bidang", "Teller", "SDMU", "Customer Service"],

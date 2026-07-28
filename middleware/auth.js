@@ -25,7 +25,17 @@ function requireRole(...roles) {
     };
 }
 
+function excludeRole(...roles) {
+    return (req, res, next) => {
+        if (!req.user || roles.includes(req.user.role)) {
+            return res.status(403).json({ error: `Akses ditolak untuk peran: ${roles.join(', ')}.` });
+        }
+        next();
+    };
+}
+
 module.exports = {
     requireAuth,
-    requireRole
+    requireRole,
+    excludeRole
 };
