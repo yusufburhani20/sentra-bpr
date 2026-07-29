@@ -23,9 +23,26 @@ const storage = multer.diskStorage({
     }
 });
 
+// Ekstensi dan MIME type yang diizinkan (hanya gambar)
+const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
+const ALLOWED_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.webp', '.gif'];
+
+const fileFilter = (req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase();
+    const isValidExt = ALLOWED_EXTENSIONS.includes(ext);
+    const isValidMime = ALLOWED_MIME_TYPES.includes(file.mimetype);
+
+    if (isValidExt && isValidMime) {
+        cb(null, true);
+    } else {
+        cb(new Error('Hanya file gambar (JPG, PNG, WebP, GIF) yang diizinkan.'), false);
+    }
+};
+
 const upload = multer({ 
     storage: storage,
-    limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit (should be smaller after frontend compression)
+    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+    fileFilter: fileFilter
 });
 
 router.use(requireAuth);

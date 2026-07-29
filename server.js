@@ -9,7 +9,7 @@ const { apiLimiter } = require('./middleware/limiter');
 const app = express();
 app.set('trust proxy', 1); // Trust first proxy (Cloudflare)
 const PORT = process.env.PORT || 3000;
-const DEFAULT_PASSWORD = 'slip1234';
+// NOTE: Default password removed from source — see .env.example or README
 
 // ─── STARTUP SECURITY CHECK ────────────────────────────────────────────────────
 const JWT_SECRET_DEFAULT = 'SIM_SLIP_REF_SECRET_2026_GANTI_DI_PRODUKSI';
@@ -39,11 +39,11 @@ const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS
 
 app.use(cors({
     origin: (origin, callback) => {
-        // Izinkan request tanpa origin (curl) atau yang berada dalam domain nusambasingaparna.com
-        if (!origin || ALLOWED_ORIGINS.includes(origin) || origin.includes('nusambasingaparna.com')) {
+        // Izinkan request tanpa origin (server-to-server/curl) atau dari domain yang diizinkan
+        if (!origin || ALLOWED_ORIGINS.includes(origin) || origin.endsWith('.nusambasingaparna.com')) {
             callback(null, true);
         } else {
-            callback(null, true); // Fallback allow to prevent crash
+            callback(new Error(`CORS: Origin '${origin}' tidak diizinkan.`));
         }
     },
     credentials: true,
@@ -54,7 +54,15 @@ app.use(helmet({ contentSecurityPolicy: false }));
 app.use(cookieParser());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
-app.use(express.static(path.join(__dirname)));
+// ─── STATIC FILES: Hanya serve dari folder public/ ──────────────────────────
+// Seluruh file backend (config, controllers, routes, data, db, .env) TIDAK
+// dapat diakses publik karena tidak berada di dalam folder public/.
+app.use(express.static(path.join(__dirname, 'public'), {
+    index: 'index.html',
+    dotfiles: 'deny',    // Blokir akses ke .env, .git, .htaccess, dll
+    etag: true,
+    maxAge: '1d'
+}));
 
 // ─── GLOBAL API RATE LIMITER ──────────────────────────────────────────────────
 // Terapkan ke semua endpoint /api/* untuk mencegah flood request
@@ -75,9 +83,22 @@ app.use('/api/system', require('./routes/systemRoutes'));
 app.use('/api/user-files', require('./routes/fileBackupRoutes'));
 app.use('/api/ideb', require('./routes/idebRoutes'));
 
-// ─── CATCH-ALL SPA ROUTE ──────────────────────────────────────────────────────
+// ─── PROTECTED UPLOADS: File gambar bukti kirim hanya untuk user login ─────────
+// Tanpa ini, file di folder uploads/ bisa diakses publik via URL langsung.
+const { requireAuth } = require('./middleware/auth');
+const fs = require('fs');
+app.get('/uploads/:filename', requireAuth, (req, res) => {
+    const filename = path.basename(req.params.filename); // Cegah path traversal
+    const filePath = path.join(__dirname, 'uploads', filename);
+    if (!fs.existsSync(filePath)) {
+        return res.status(404).json({ error: 'File tidak ditemukan.' });
+    }
+    res.sendFile(filePath);
+});
+
+// ─── CATCH-ALL SPA ROUTE ─────────────────────────────────────────────
 app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, 'index.html'));
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 // ─── GLOBAL ERROR HANDLER ─────────────────────────────────────────────────────
@@ -104,7 +125,7 @@ process.on('unhandledRejection', (reason) => {
 app.listen(PORT, () => {
     console.log(`SENTRA v2.0 (Sistem Terpusat Referensi, Arsip & Operasional BPR) running on port ${PORT}`);
     console.log(`Navigate to http://localhost:${PORT}`);
-    console.log(`Default password for all users: ${DEFAULT_PASSWORD}`);
+    // Password default tidak ditampilkan di log demi keamanan.
 });
 
 module.exports = app;
