@@ -1,15 +1,15 @@
-import { state } from './js/state.js';
-import { showToast, escapeHtml, openModal, closeModal, authFetch } from './js/utils.js';
-import { showLoginScreen, hideLoginScreen, checkAuth, login, logout, changePassword } from './js/auth.js';
-import { fetchNextRef, renderInputView, updateLiveSlipPreview, resetTxForm, saveTransaction, printElement, initLayoutDragAndDrop, saveAndPrintTransaction, setupAutocompleteSearch, setupPKCombobox } from './js/transactions.js';
-import { renderRiwayatView, exportRiwayatToCSV, submitEditRequest } from './js/history.js';
-import { renderKodeBiayaView, resetCostCodeForm, submitCostCode, exportCostCodes, importCostCodes, downloadCostCodeTemplate, bulkDeleteSelectedCodes, clearAllCostCodes } from './js/costCodes.js';
-import { renderUsersView, openAddUserModal, submitUser, submitResetPassword, exportUsers, importUsers, downloadUserTemplate } from './js/users.js';
-import { renderAuditTrailView, clearAuditLogs, updateNotifBadge, renderNotifDropdown, markNotifsRead, startClock, initTheme, toggleTheme, initDeployPanel } from './js/system.js';
-import { renderDashboardView } from './js/dashboard.js';
-import { renderApprovalsView, fetchPendingApprovalsCount } from './js/approvals.js';
-import { fetchSubmissions, setupSlipSubmissionForm, submitSlipSubmission, submitConfirmArrival, addCustomChecklistItem } from './js/slipSubmissions.js';
-import { fetchFileBackupList, setupFileBackup } from './js/fileBackup.js';
+import { state } from './js/state.js?v=1.2';
+import { showToast, escapeHtml, openModal, closeModal, authFetch } from './js/utils.js?v=1.2';
+import { showLoginScreen, hideLoginScreen, checkAuth, login, logout, changePassword } from './js/auth.js?v=1.2';
+import { fetchNextRef, renderInputView, updateLiveSlipPreview, resetTxForm, saveTransaction, printElement, initLayoutDragAndDrop, saveAndPrintTransaction, setupAutocompleteSearch, setupPKCombobox } from './js/transactions.js?v=1.2';
+import { renderRiwayatView, exportRiwayatToCSV, submitEditRequest } from './js/history.js?v=1.2';
+import { renderKodeBiayaView, resetCostCodeForm, submitCostCode, exportCostCodes, importCostCodes, downloadCostCodeTemplate, bulkDeleteSelectedCodes, clearAllCostCodes } from './js/costCodes.js?v=1.2';
+import { renderUsersView, openAddUserModal, submitUser, submitResetPassword, exportUsers, importUsers, downloadUserTemplate } from './js/users.js?v=1.2';
+import { renderAuditTrailView, clearAuditLogs, updateNotifBadge, renderNotifDropdown, markNotifsRead, startClock, initTheme, toggleTheme, initDeployPanel } from './js/system.js?v=1.2';
+import { renderDashboardView } from './js/dashboard.js?v=1.2';
+import { renderApprovalsView, fetchPendingApprovalsCount } from './js/approvals.js?v=1.2';
+import { fetchSubmissions, setupSlipSubmissionForm, submitSlipSubmission, submitConfirmArrival, addCustomChecklistItem } from './js/slipSubmissions.js?v=1.2';
+import { fetchFileBackupList, setupFileBackup } from './js/fileBackup.js?v=1.2';
 
 window.authFetch = authFetch;
 
