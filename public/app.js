@@ -603,16 +603,8 @@ window.addEventListener("DOMContentLoaded", async () => {
     document.getElementById("btn-print-slip").addEventListener("click", saveAndPrintTransaction);
     document.getElementById("btn-modal-print").addEventListener("click", () => { const s = document.querySelector("#modal-print-container .voucher-slip"); if (s) printElement(s); });
     
-    document.getElementById("manual-slip-date").addEventListener("change", (e) => {
-        if (!e.target.value) return;
-        const dateObj = new Date(e.target.value);
-        if (!isNaN(dateObj.getTime())) {
-            const dayStr = String(dateObj.getDate()).padStart(2, '0');
-            const monthStr = String(dateObj.getMonth() + 1).padStart(2, '0');
-            const year = dateObj.getFullYear();
-            const slipValDate = document.getElementById("slip-val-date");
-            if (slipValDate) slipValDate.innerText = `${dayStr}/${monthStr}/${year}`;
-        }
+    document.getElementById("manual-slip-date").addEventListener("change", () => {
+        updateLiveSlipPreview();
     });
 
     const refreshAndRenderRiwayat = async () => {

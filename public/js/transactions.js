@@ -160,6 +160,18 @@ export function updateLiveSlipPreview() {
     document.getElementById("slip-val-details").innerText = keterangan || "-";
     
     document.getElementById("slip-val-validation").innerText = state.activeNextRef || (state.currentUser ? state.currentUser.operator_code : "");
+
+    const manualDateEl = document.getElementById("manual-slip-date");
+    let slipDate = new Date();
+    if (manualDateEl && manualDateEl.value) {
+        const parsed = new Date(manualDateEl.value);
+        if (!isNaN(parsed.getTime())) slipDate = parsed;
+    }
+    const dayStr = String(slipDate.getDate()).padStart(2, '0');
+    const monthStr = String(slipDate.getMonth() + 1).padStart(2, '0');
+    const year = slipDate.getFullYear();
+    const slipValDateEl = document.getElementById("slip-val-date");
+    if (slipValDateEl) slipValDateEl.innerText = `${dayStr}/${monthStr}/${year}`;
 }
 
 export function resetTxForm(e) {
