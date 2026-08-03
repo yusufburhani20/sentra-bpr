@@ -115,7 +115,13 @@ export function viewSlipDetails(id) {
     const tx = state.transactionsDB.find(t => t.id === id);
     if (!tx) return;
 
-    const [year, month, dayT] = tx.tanggal.split('T')[0].split('-');
+    const dateSource = tx.tanggal_slip || tx.tanggal;
+    let year, month, dayT;
+    if (dateSource.includes('T')) {
+        [year, month, dayT] = dateSource.split('T')[0].split('-');
+    } else {
+        [year, month, dayT] = dateSource.split('-');
+    }
     const formattedDate = `${dayT}/${month}/${year}`;
 
     const slipType = (tx.jenis_transaksi || "debet").toLowerCase();

@@ -68,6 +68,7 @@ async function initializeDb(callback) {
         await runAsync("ALTER TABLE transactions ADD COLUMN kredit_nama TEXT");
         await runAsync("ALTER TABLE transactions ADD COLUMN kredit_rekening TEXT");
         await runAsync("ALTER TABLE transactions ADD COLUMN username TEXT");
+        await runAsync("ALTER TABLE transactions ADD COLUMN tanggal_slip TEXT");
         await runAsync("CREATE INDEX IF NOT EXISTS idx_transactions_tanggal ON transactions (tanggal)");
         await runAsync("CREATE INDEX IF NOT EXISTS idx_transactions_operator ON transactions (operator_code)");
         await runAsync("CREATE INDEX IF NOT EXISTS idx_transactions_username ON transactions (username)");

@@ -139,16 +139,18 @@ exports.createTransaction = (req, res) => {
 
     const id = crypto.randomUUID();
     
-    let now = new Date();
+    const realNowStr = new Date().toISOString();
+    let slipDateStr = null;
     if (req.body.tanggal_manual) {
         const parts = req.body.tanggal_manual.split('-');
         if (parts.length === 3) {
-            now.setFullYear(parseInt(parts[0], 10));
-            now.setMonth(parseInt(parts[1], 10) - 1);
-            now.setDate(parseInt(parts[2], 10));
+            let slipDate = new Date();
+            slipDate.setFullYear(parseInt(parts[0], 10));
+            slipDate.setMonth(parseInt(parts[1], 10) - 1);
+            slipDate.setDate(parseInt(parts[2], 10));
+            slipDateStr = slipDate.toISOString();
         }
     }
-    const finalDateStr = now.toISOString();
 
     // Pastikan operator_code dibaca yang paling baru dari database
     db.get("SELECT username, operator_code FROM users WHERE id = ? AND deleted_at IS NULL", [req.user.id], (err, user) => {
@@ -173,10 +175,10 @@ exports.createTransaction = (req, res) => {
                 }
 
                 db.run(`INSERT INTO transactions
-                    (id, ref_no, tanggal, operator_code, username, debet_nama, debet_rekening, kredit_nama, kredit_rekening,
+                    (id, ref_no, tanggal, tanggal_slip, operator_code, username, debet_nama, debet_rekening, kredit_nama, kredit_rekening,
                      jenis_transaksi, nominal_utama, nominal_desimal, keterangan, terbilang)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-                    [id, ref_no, finalDateStr, operator_code, user.username, dNama, dRek, kNama, kRek,
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                    [id, ref_no, realNowStr, slipDateStr, operator_code, user.username, dNama, dRek, kNama, kRek,
                      jenis_transaksi, nominal_utama, nominal_desimal, keterangan, terbilang],
                     function(err) {
                         if (err) {
