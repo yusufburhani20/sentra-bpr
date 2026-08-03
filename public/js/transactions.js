@@ -238,7 +238,8 @@ export async function saveTransaction() {
         keterangan: keterangan,
         terbilang: terbilang(nominalUtama, nominalDesimal),
         username: state.currentUser.nama,
-        userRole: state.currentUser.role
+        userRole: state.currentUser.role,
+        tanggal_manual: document.getElementById("manual-slip-date") ? document.getElementById("manual-slip-date").value : ""
     };
 
     try {
@@ -458,7 +459,8 @@ export async function saveAndPrintTransaction() {
         keterangan: keterangan,
         terbilang: terbilang(nominalUtama, nominalDesimal),
         username: state.currentUser.nama,
-        userRole: state.currentUser.role
+        userRole: state.currentUser.role,
+        tanggal_manual: document.getElementById("manual-slip-date") ? document.getElementById("manual-slip-date").value : ""
     };
 
     try {
