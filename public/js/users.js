@@ -1,7 +1,7 @@
 import { state } from './state.js';
 import { showToast, escapeHtml, openModal, closeModal, authFetch } from './utils.js';
 import { showSection } from '../app.js';
-import { fetchNextRef } from './transactions.js';
+import { fetchNextRef } from './transactions.js?v=2';
 
 export function renderUsersView() {
     const listCard = document.getElementById("user-list-card");
