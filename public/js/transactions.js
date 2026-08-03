@@ -164,8 +164,13 @@ export function updateLiveSlipPreview() {
     const manualDateEl = document.getElementById("manual-slip-date");
     let slipDate = new Date();
     if (manualDateEl && manualDateEl.value) {
-        const parsed = new Date(manualDateEl.value);
-        if (!isNaN(parsed.getTime())) slipDate = parsed;
+        const parts = manualDateEl.value.split('-');
+        if (parts.length === 3) {
+            const y = parseInt(parts[0], 10);
+            const m = parseInt(parts[1], 10) - 1;
+            const d = parseInt(parts[2], 10);
+            slipDate = new Date(y, m, d);
+        }
     }
     const dayStr = String(slipDate.getDate()).padStart(2, '0');
     const monthStr = String(slipDate.getMonth() + 1).padStart(2, '0');

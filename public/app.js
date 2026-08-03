@@ -603,7 +603,7 @@ window.addEventListener("DOMContentLoaded", async () => {
     document.getElementById("btn-print-slip").addEventListener("click", saveAndPrintTransaction);
     document.getElementById("btn-modal-print").addEventListener("click", () => { const s = document.querySelector("#modal-print-container .voucher-slip"); if (s) printElement(s); });
     
-    document.getElementById("manual-slip-date").addEventListener("change", () => {
+    document.getElementById("manual-slip-date").addEventListener("input", () => {
         updateLiveSlipPreview();
     });
 
