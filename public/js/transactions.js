@@ -33,6 +33,11 @@ export async function renderInputView() {
     const dayStr = String(today.getDate()).padStart(2, '0');
     const monthStr = String(today.getMonth() + 1).padStart(2, '0');
     const year = today.getFullYear();
+    
+    const manualSlipDateEl = document.getElementById("manual-slip-date");
+    if (manualSlipDateEl) {
+        manualSlipDateEl.value = `${year}-${monthStr}-${dayStr}`;
+    }
     document.getElementById("slip-val-date").innerText = `${dayStr}/${monthStr}/${year}`;
     
     let settings = {};
