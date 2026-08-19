@@ -482,12 +482,12 @@ export function printElement(el, onCleanup) {
     // { once: true } memastikan cleanup hanya berjalan satu kali
     window.addEventListener("afterprint", cleanupAfterPrint, { once: true });
 
-    // Memberi sedikit jeda agar CSS 'printing-active' selesai dirender browser
-    // menggunakan setTimeout tunggal lebih handal daripada requestAnimationFrame ganda
-    // yang seringkali diblokir oleh strict popup blocker.
-    setTimeout(() => {
-        window.print();
-    }, 50);
+    // Panggil window.print() secara langsung (sinkron).
+    // Dalam browser modern (Chrome/Edge), window.print() akan secara otomatis
+    // memaksa browser melakukan render/paint ulang (termasuk kelas printing-active)
+    // tepat sebelum memunculkan dialog. Memanggil secara sinkron juga mencegah
+    // browser membuang izin (user gesture token) yang sering hilang jika menggunakan setTimeout.
+    window.print();
 }
 
 export async function saveAndPrintTransaction() {
@@ -536,24 +536,29 @@ export async function saveAndPrintTransaction() {
     };
 
     try {
-        const res = await authFetch('/api/transactions', {
+        // 1. Jalankan proses simpan di latar belakang TANPA melakukan await dulu
+        const savePromise = authFetch('/api/transactions', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
         }).then(r => r.json());
 
-        if (res.success) {
-            showToast("Transaksi berhasil disimpan! Membuka dialog cetak...", "success");
-            
-            // Panggil printElement secara langsung (1-klik)
-            const slipEl = document.getElementById("printable-voucher-slip");
-            if (slipEl) {
-                printElement(slipEl, () => {
-                    resetTxForm();
-                });
-            } else {
+        // 2. Tampilkan dialog cetak SECARA SINKRON (langsung saat ini juga).
+        // Karena ini tereksekusi instan setelah user mengklik tombol (tanpa terhalang await jaringan),
+        // browser dijamin 100% tidak akan memblokir dialog cetak.
+        const slipEl = document.getElementById("printable-voucher-slip");
+        if (slipEl) {
+            printElement(slipEl, () => {
                 resetTxForm();
-            }
+            });
+        } else {
+            resetTxForm();
+        }
+
+        // 3. Sekarang baru kita tunggu hasil simpan dari database untuk notifikasi
+        const res = await savePromise;
+        if (res.success) {
+            showToast("Transaksi berhasil disimpan ke database!", "success");
         } else {
             showToast(res.error || "Gagal menyimpan transaksi.", "danger");
         }
