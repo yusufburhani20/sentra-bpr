@@ -233,16 +233,26 @@ exports.createTransaction = (req, res) => {
                             db.run("INSERT INTO audit_logs VALUES (?, ?, ?, ?, ?, ?)",
                                 [logId, now, req.user.nama, req.user.role,
                                  `Menyimpan slip: ${ref_no} senilai Rp ${nominal_utama},${nominal_desimal}`,
-                                 req.ip || "127.0.0.1"]);
+                                 req.ip || "127.0.0.1"], (auditErr) => {
+                                    if (auditErr) console.error("Gagal insert audit_log:", auditErr);
 
-                            db.run("UPDATE ref_counters SET counter = counter + 1 WHERE username = ? AND slip_type = ?", [user.username, slipType], (updateErr) => {
-                                if (updateErr) console.error("Gagal update counter:", updateErr);
-                                
-                                const notifId = crypto.randomUUID();
-                                db.run("INSERT INTO notifications VALUES (?, ?, 'Kepala Bidang', ?, 0)",
-                                    [notifId, now, `Slip baru: ${ref_no} (Operator: ${req.user.nama})`]);
-
-                                res.json({ success: true, id, ref_no });
+                                    // Gunakan upsert agar aman jika baris belum ada
+                                    const updateSql = isPg
+                                        ? `INSERT INTO ref_counters (username, slip_type, counter, prefix) 
+                                           VALUES ($1, $2, 1, '') 
+                                           ON CONFLICT (username, slip_type) 
+                                           DO UPDATE SET counter = ref_counters.counter + 1`
+                                        : `UPDATE ref_counters SET counter = counter + 1 WHERE username = ? AND slip_type = ?`;
+                                    
+                                    db.run(updateSql, [user.username, slipType], (updateErr) => {
+                                        if (updateErr) console.error("Gagal update counter (CRITICAL):", updateErr);
+                                        
+                                        const notifId = crypto.randomUUID();
+                                        db.run("INSERT INTO notifications VALUES (?, ?, 'Kepala Bidang', ?, 0)",
+                                            [notifId, now, `Slip baru: ${ref_no} (Operator: ${req.user.nama})`], () => {
+                                                res.json({ success: true, id, ref_no });
+                                            });
+                                    });
                             });
                         };
 
