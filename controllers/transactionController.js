@@ -202,13 +202,15 @@ exports.createTransaction = (req, res) => {
                                  `Menyimpan slip: ${ref_no} senilai Rp ${nominal_utama},${nominal_desimal}`,
                                  req.ip || "127.0.0.1"]);
 
-                            db.run("UPDATE ref_counters SET counter = counter + 1 WHERE username = ? AND slip_type = ?", [user.username, slipType]);
+                            db.run("UPDATE ref_counters SET counter = counter + 1 WHERE username = ? AND slip_type = ?", [user.username, slipType], (updateErr) => {
+                                if (updateErr) console.error("Gagal update counter:", updateErr);
+                                
+                                const notifId = crypto.randomUUID();
+                                db.run("INSERT INTO notifications VALUES (?, ?, 'Kepala Bidang', ?, 0)",
+                                    [notifId, now, `Slip baru: ${ref_no} (Operator: ${req.user.nama})`]);
 
-                            const notifId = crypto.randomUUID();
-                            db.run("INSERT INTO notifications VALUES (?, ?, 'Kepala Bidang', ?, 0)",
-                                [notifId, now, `Slip baru: ${ref_no} (Operator: ${req.user.nama})`]);
-
-                            res.json({ success: true, id, ref_no });
+                                res.json({ success: true, id, ref_no });
+                            });
                         };
 
                         if (!isPg) {
