@@ -479,7 +479,9 @@ export function printElement(el, onCleanup) {
         }
 
         if (typeof onCleanup === "function") {
-            onCleanup();
+            setTimeout(() => {
+                onCleanup();
+            }, 500);
         }
     }
 
