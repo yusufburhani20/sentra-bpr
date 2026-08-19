@@ -353,9 +353,6 @@ export function printElement(el, onCleanup) {
     const slipRotation = parseInt(document.getElementById("cal-slip-rotation").value) || 0;
     const pageSize = document.getElementById("cal-page-size").value || "slip";
 
-    const parent = el.parentNode;
-    const nextSibling = el.nextSibling;
-
     const wrapper = document.createElement("div");
     wrapper.className = "print-wrapper";
 
@@ -378,10 +375,13 @@ export function printElement(el, onCleanup) {
     wrapper.style.setProperty("--page-width", `${pageW}cm`);
     wrapper.style.setProperty("--page-height", `${pageH}cm`);
 
-    el.style.setProperty("--print-offset-x", `${offsetX}mm`);
-    el.style.setProperty("--print-offset-y", `${offsetY}mm`);
-    el.style.setProperty("--print-slip-width", `${slipWidth}cm`);
-    el.style.setProperty("--print-slip-height", `${printHeight}cm`);
+    // CLONING:
+    const clone = el.cloneNode(true);
+
+    clone.style.setProperty("--print-offset-x", `${offsetX}mm`);
+    clone.style.setProperty("--print-offset-y", `${offsetY}mm`);
+    clone.style.setProperty("--print-slip-width", `${slipWidth}cm`);
+    clone.style.setProperty("--print-slip-height", `${printHeight}cm`);
 
     let transformStr = "";
     if (pageSize === "a4") {
@@ -389,29 +389,15 @@ export function printElement(el, onCleanup) {
     } else {
         if (slipRotation === 0) {
             transformStr = `scale(${slipScale})`;
-    if (el.id === "printable-voucher-slip") {
-        const width = parseFloat(document.getElementById("cal-slip-width").value) || 15.5;
-        const height = parseFloat(document.getElementById("cal-slip-height").value) || 10.5;
-        const scale = parseFloat(document.getElementById("cal-scale").value) || 100;
-        const rot = parseInt(document.getElementById("cal-rotate").value) || 0;
-        const dx = parseFloat(document.getElementById("cal-offset-x").value) || 0;
-        const dy = parseFloat(document.getElementById("cal-offset-y").value) || 0;
-
-        clone.style.setProperty("--print-slip-width", width + "cm");
-        clone.style.setProperty("--print-slip-height", height + "cm");
-        clone.style.setProperty("--print-offset-x", dx + "mm");
-        clone.style.setProperty("--print-offset-y", dy + "mm");
-
-        let transformParts = [];
-        if (dx !== 0 || dy !== 0) transformParts.push(`translate(${dx}mm, ${dy}mm)`);
-        if (rot !== 0) transformParts.push(`rotate(${rot}deg)`);
-        if (scale !== 100) transformParts.push(`scale(${scale / 100})`);
-        
-        if (transformParts.length > 0) {
-            transformStr = transformParts.join(" ");
-            clone.style.setProperty("--print-transform", transformStr);
+        } else if (slipRotation === 90) {
+            transformStr = `translate(${printHeight * slipScale}cm, 0) rotate(90deg) scale(${slipScale})`;
+        } else if (slipRotation === 180) {
+            transformStr = `translate(${slipWidth * slipScale}cm, ${printHeight * slipScale}cm) rotate(180deg) scale(${slipScale})`;
+        } else if (slipRotation === 270) {
+            transformStr = `translate(0, ${slipWidth * slipScale}cm) rotate(270deg) scale(${slipScale})`;
         }
     }
+    clone.style.setProperty("--print-transform", transformStr);
 
     if (printDataOnly) {
         clone.classList.add("print-data-only-active");
@@ -446,7 +432,7 @@ export function printElement(el, onCleanup) {
         const x = parseFloat(document.getElementById(`cal-el-${id}-x`).value) || 0;
         const y = parseFloat(document.getElementById(`cal-el-${id}-y`).value) || 0;
         const child = clone.querySelector(detailSelectors[id]);
-        if (child && clone.id === "printable-voucher-slip") {
+        if (child) {
             const printY = y;
             child.style.setProperty("transform", `translate(${x}mm, ${printY}mm)`, "important");
         }
@@ -456,19 +442,23 @@ export function printElement(el, onCleanup) {
     document.body.appendChild(wrapper);
     document.body.classList.add("printing-active");
 
+    // { once: true } memastikan cleanup hanya berjalan satu kali
     window.addEventListener("afterprint", () => {
         setTimeout(() => {
             document.body.classList.remove("printing-active");
+
             if (document.body.contains(wrapper)) {
                 document.body.removeChild(wrapper);
             }
             const styleEl = document.getElementById("print-page-style");
             if (styleEl) styleEl.parentNode.removeChild(styleEl);
 
+            // Karena kita menggunakan cloneNode, tidak perlu memindahkan elemen kembali.
+            
             if (typeof onCleanup === "function") {
                 onCleanup();
             }
-        }, 300);
+        }, 300); // Tunda seluruh cleanup untuk menghindari bug browser ghost print
     }, { once: true });
 
     // Panggil window.print() secara langsung (sinkron).
