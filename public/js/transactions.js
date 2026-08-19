@@ -201,6 +201,7 @@ let isSavingTx = false;
 
 export async function saveTransaction() {
     if (isSavingTx) return;
+    
     const debetNama = document.getElementById("tx-debet-nama").value;
     const debetRek = document.getElementById("tx-debet-rekening").value;
     const kreditNama = document.getElementById("tx-kredit-nama").value;
@@ -254,91 +255,21 @@ export async function saveTransaction() {
         }).then(r => r.json());
 
         if (res.success) {
-            showToast("Transaksi berhasil disimpan! Dialog cetak sedang dibuka...", "success");
-
-            if (printWin) {
-                const styleLinks = Array.from(document.querySelectorAll('link[rel="stylesheet"]'))
-                    .map(l => `<link rel="stylesheet" href="${l.href}">`)
-                    .join('\n');
-                const inlineStyles = Array.from(document.querySelectorAll('style'))
-                    .map(s => `<style>${s.innerHTML}</style>`)
-                    .join('\n');
-
-                const slipEl = document.getElementById("printable-voucher-slip");
-                const slipHtml = slipEl ? slipEl.outerHTML : '<p>Slip tidak ditemukan.</p>';
-
-                const printDataOnly = document.getElementById("print-data-only").checked;
-                const offsetX = document.getElementById("cal-offset-x").value || "0";
-                const offsetY = document.getElementById("cal-offset-y").value || "0";
-                const slipWidth = document.getElementById("cal-slip-width").value || "15.5";
-                const slipHeight = document.getElementById("cal-slip-height").value || "10.5";
-                const slipScale = document.getElementById("cal-slip-scale").value || "100";
-                const slipRotation = document.getElementById("cal-slip-rotation").value || "0";
-                const pageSize = document.getElementById("cal-page-size").value || "slip";
-
-                let pageW, pageH, sizeRule;
-                const rot = parseInt(slipRotation);
-                if (pageSize === "a4") {
-                    pageW = 21; pageH = 29.7; sizeRule = "A4 portrait";
-                } else {
-                    pageW = (rot === 90 || rot === 270) ? parseFloat(slipHeight) : parseFloat(slipWidth);
-                    pageH = (rot === 90 || rot === 270) ? parseFloat(slipWidth) : parseFloat(slipHeight);
-                    sizeRule = `${pageW}cm ${pageH}cm`;
-                }
-
-                const scale = (parseFloat(slipScale) || 100) / 100;
-                let transformStr = `scale(${scale})`;
-                if (rot === 90)  transformStr = `translate(${pageH * scale}cm, 0) rotate(90deg) scale(${scale})`;
-                if (rot === 180) transformStr = `translate(${pageW * scale}cm, ${pageH * scale}cm) rotate(180deg) scale(${scale})`;
-                if (rot === 270) transformStr = `translate(0, ${pageW * scale}cm) rotate(270deg) scale(${scale})`;
-
-                const dataOnlyClass = printDataOnly ? 'print-data-only-active' : '';
-
-                printWin.document.write(`<!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <title>Cetak Slip - ${payload.ref_no}</title>
-    ${styleLinks}
-    ${inlineStyles}
-    <style>
-        @media print {
-            @page { size: ${sizeRule}; margin: 0; }
-            body { margin: 0; padding: 0; background: #fff; }
-        }
-        body { margin: 0; padding: 0; background: #fff; }
-        .voucher-slip {
-            transform-origin: top left;
-            transform: translate(${offsetX}mm, ${offsetY}mm) ${transformStr};
-        }
-    </style>
-</head>
-<body>
-    <div class="${dataOnlyClass}">${slipHtml}</div>
-    <script>
-        window.onload = function() {
-            setTimeout(function() { if (!window.__isPrintingLocked) { window.__isPrintingLocked = true; window.print(); setTimeout(() => { window.__isPrintingLocked = false; }, 3000); } }, 300);
-        };
-        window.onafterprint = function() { window.close(); };
-    <\/script>
-</body>
-</html>`);
-                printWin.document.close();
-            }
-
+            showToast("Transaksi berhasil disimpan!", "success");
             resetTxForm();
         } else {
-            if (printWin) printWin.close();
             showToast(res.error || "Gagal menyimpan transaksi.", "danger");
         }
     } catch (e) {
-        if (printWin) printWin.close();
         if (e.message !== 'SESSION_EXPIRED') {
             console.error(e);
             showToast("Gagal menghubungi server backend.", "danger");
         }
+    } finally {
+        isSavingTx = false;
     }
 }
+
 
 export function printElement(el, onCleanup) {
     const printDataOnly = document.getElementById("print-data-only").checked;
