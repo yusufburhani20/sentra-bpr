@@ -471,11 +471,35 @@ export async function saveAndPrintTransaction() {
         }).then(r => r.json());
 
         if (res.success) {
-            showToast("Transaksi berhasil disimpan ke database!", "success");
-            // Cetak slip dengan melemparkan callback untuk membersihkan form SETELAH cetak selesai
-            printElement(document.getElementById("printable-voucher-slip"), () => {
-                resetTxForm();
-            });
+            showToast("Transaksi berhasil disimpan! Klik tombol Cetak Slip untuk mencetak.", "success");
+
+            // PERBAIKAN BUG CETAK:
+            // window.print() TIDAK BISA dipanggil langsung setelah await (async context)
+            // karena browser memutus "user gesture context" dan akan memblokir pop-up cetak
+            // secara diam-diam (tanpa error). Solusinya adalah menampilkan modal preview
+            // slip kepada user, lalu biarkan user klik tombol "Cetak Slip" di modal itu
+            // — klik tersebut terjadi dalam user gesture yang sah, sehingga window.print()
+            // tidak diblokir oleh browser.
+            const sourceSlip = document.getElementById("printable-voucher-slip");
+            const modalContainer = document.getElementById("modal-print-container");
+            const modalOverlay = document.getElementById("modal-detail-slip");
+
+            if (sourceSlip && modalContainer && modalOverlay) {
+                // Kloning elemen slip (deep clone) ke dalam modal agar user bisa preview
+                modalContainer.innerHTML = "";
+                const cloned = sourceSlip.cloneNode(true);
+                cloned.id = "modal-slip-clone";
+                cloned.style.transform = "";
+                cloned.style.margin = "0 auto";
+                modalContainer.appendChild(cloned);
+
+                // Tampilkan modal
+                modalOverlay.classList.add("active");
+                if (window.lucide) window.lucide.createIcons();
+            }
+
+            // Reset form segera setelah simpan agar nomor ref berikutnya siap
+            resetTxForm();
         } else {
             showToast(res.error || "Gagal menyimpan transaksi.", "danger");
         }
