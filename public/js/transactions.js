@@ -348,13 +348,9 @@ export function printElement(el, onCleanup) {
     const slipHeight = parseFloat(document.getElementById("cal-slip-height").value) || 10.5;
     
     const printHeight = slipHeight;
-    
     const slipScale = (parseFloat(document.getElementById("cal-slip-scale").value) || 100) / 100;
     const slipRotation = parseInt(document.getElementById("cal-slip-rotation").value) || 0;
     const pageSize = document.getElementById("cal-page-size").value || "slip";
-
-    const wrapper = document.createElement("div");
-    wrapper.className = "print-wrapper";
 
     let pageW, pageH, sizeRule;
     if (pageSize === "a4") {
@@ -372,12 +368,7 @@ export function printElement(el, onCleanup) {
         sizeRule = `${pageW}cm ${pageH}cm`;
     }
 
-    wrapper.style.setProperty("--page-width", `${pageW}cm`);
-    wrapper.style.setProperty("--page-height", `${pageH}cm`);
-
-    // CLONING:
     const clone = el.cloneNode(true);
-
     clone.style.setProperty("--print-offset-x", `${offsetX}mm`);
     clone.style.setProperty("--print-offset-y", `${offsetY}mm`);
     clone.style.setProperty("--print-slip-width", `${slipWidth}cm`);
@@ -401,31 +392,12 @@ export function printElement(el, onCleanup) {
 
     if (printDataOnly) {
         clone.classList.add("print-data-only-active");
-    } else {
-        clone.classList.remove("print-data-only-active");
     }
-
-    const styleBlock = document.createElement("style");
-    styleBlock.id = "print-page-style";
-    styleBlock.innerHTML = `
-        @media print {
-            @page {
-                size: ${sizeRule};
-                margin: 0;
-            }
-        }
-    `;
-    document.head.appendChild(styleBlock);
 
     const detailElements = ["date", "val", "debet", "kredit", "amount", "terbilang", "details"];
     const detailSelectors = {
-        date: ".meta-item-tanggal",
-        val: ".meta-item-validasi",
-        debet: ".debet-box",
-        kredit: ".kredit-box",
-        amount: ".row-rp",
-        terbilang: ".row-terbilang",
-        details: ".row-keterangan"
+        date: ".meta-item-tanggal", val: ".meta-item-validasi", debet: ".debet-box",
+        kredit: ".kredit-box", amount: ".row-rp", terbilang: ".row-terbilang", details: ".row-keterangan"
     };
 
     detailElements.forEach(id => {
@@ -433,42 +405,80 @@ export function printElement(el, onCleanup) {
         const y = parseFloat(document.getElementById(`cal-el-${id}-y`).value) || 0;
         const child = clone.querySelector(detailSelectors[id]);
         if (child) {
-            const printY = y;
-            child.style.setProperty("transform", `translate(${x}mm, ${printY}mm)`, "important");
+            child.style.setProperty("transform", `translate(${x}mm, ${y}mm)`, "important");
         }
     });
 
-    wrapper.appendChild(clone);
-    document.body.appendChild(wrapper);
-    document.body.classList.add("printing-active");
+    // ISOLATED IFRAME PRINTING APPROACH
+    // Ini memastikan tidak ada satupun perubahan tata letak (layout shift) di DOM utama
+    // sehingga menonaktifkan sepenuhnya bug "Ghost Print" bawaan Chromium.
+    const iframe = document.createElement("iframe");
+    iframe.style.position = "absolute";
+    iframe.style.width = "0px";
+    iframe.style.height = "0px";
+    iframe.style.border = "none";
+    document.body.appendChild(iframe);
 
-    // { once: true } memastikan cleanup hanya berjalan satu kali
-    window.addEventListener("afterprint", () => {
+    let stylesHtml = "";
+    document.querySelectorAll("style, link[rel='stylesheet']").forEach(node => {
+        stylesHtml += node.outerHTML;
+    });
+
+    const doc = iframe.contentWindow.document;
+    doc.open();
+    doc.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+            ${stylesHtml}
+            <style>
+                @media print {
+                    @page { size: ${sizeRule}; margin: 0; }
+                    body { margin: 0; padding: 0; background: #fff; }
+                }
+                body { margin: 0; padding: 0; background: #fff; }
+                .print-wrapper {
+                    position: absolute;
+                    left: 0;
+                    top: 0;
+                    width: ${pageW}cm;
+                    height: ${pageH}cm;
+                }
+            </style>
+        </head>
+        <body>
+            <div class="print-wrapper">
+                ${clone.outerHTML}
+            </div>
+        </body>
+        </html>
+    `);
+    doc.close();
+
+    // Tunggu iframe selesai memuat HTML dan CSS
+    iframe.onload = () => {
         setTimeout(() => {
-            document.body.classList.remove("printing-active");
-
-            if (document.body.contains(wrapper)) {
-                document.body.removeChild(wrapper);
+            if (!window.__isPrintingLocked) {
+                window.__isPrintingLocked = true;
+                
+                iframe.contentWindow.focus();
+                iframe.contentWindow.print();
+                
+                // Karena HTML sudah dikloning statis ke dalam iframe, kita bisa
+                // langsung mereset form utama di luar iframe tanpa merusak data slip yang sedang dicetak.
+                setTimeout(() => {
+                    if (document.body.contains(iframe)) {
+                        document.body.removeChild(iframe);
+                    }
+                    window.__isPrintingLocked = false;
+                    
+                    if (typeof onCleanup === "function") {
+                        onCleanup();
+                    }
+                }, 2000);
             }
-            const styleEl = document.getElementById("print-page-style");
-            if (styleEl) styleEl.parentNode.removeChild(styleEl);
-
-            // Karena kita menggunakan cloneNode, tidak perlu memindahkan elemen kembali.
-            
-            if (typeof onCleanup === "function") {
-                onCleanup();
-            }
-        }, 300); // Tunda seluruh cleanup untuk menghindari bug browser ghost print
-    }, { once: true });
-
-    // Panggil window.print() secara langsung (sinkron).
-    if (!window.__isPrintingLocked) {
-        window.__isPrintingLocked = true;
-        window.print();
-        setTimeout(() => {
-            window.__isPrintingLocked = false;
-        }, 3000);
-    }
+        }, 500); // Beri waktu rendering untuk iframe
+    };
 }
 
 export async function saveAndPrintTransaction() {
