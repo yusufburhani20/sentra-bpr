@@ -442,51 +442,48 @@ export function printElement(el, onCleanup) {
     document.body.appendChild(wrapper);
     document.body.classList.add("printing-active");
 
-    // Cleanup dijalankan setelah dialog print ditutup (afterprint),
-    function cleanupAfterPrint() {
-        document.body.classList.remove("printing-active");
-
-        if (document.body.contains(wrapper)) {
-            document.body.removeChild(wrapper);
-        }
-        const styleEl = document.getElementById("print-page-style");
-        if (styleEl) styleEl.parentNode.removeChild(styleEl);
-
-        el.classList.remove("print-data-only-active");
-        el.style.removeProperty("--print-offset-x");
-        el.style.removeProperty("--print-offset-y");
-        el.style.removeProperty("--print-slip-width");
-        el.style.removeProperty("--print-slip-height");
-        el.style.removeProperty("--print-transform");
-
-        detailElements.forEach(id => {
-            const child = el.querySelector(detailSelectors[id]);
-            if (child) {
-                if (el.id === "printable-voucher-slip") {
-                    const x = parseFloat(document.getElementById(`cal-el-${id}-x`).value) || 0;
-                    const y = parseFloat(document.getElementById(`cal-el-${id}-y`).value) || 0;
-                    child.style.setProperty("transform", `translate(${x}mm, ${y}mm)`);
-                } else {
-                    child.style.removeProperty("transform");
-                }
-            }
-        });
-
-        if (nextSibling) {
-            parent.insertBefore(el, nextSibling);
-        } else {
-            parent.appendChild(el);
-        }
-
-        if (typeof onCleanup === "function") {
-            setTimeout(() => {
-                onCleanup();
-            }, 500);
-        }
-    }
-
     // { once: true } memastikan cleanup hanya berjalan satu kali
-    window.addEventListener("afterprint", cleanupAfterPrint, { once: true });
+    window.addEventListener("afterprint", () => {
+        setTimeout(() => {
+            document.body.classList.remove("printing-active");
+
+            if (document.body.contains(wrapper)) {
+                document.body.removeChild(wrapper);
+            }
+            const styleEl = document.getElementById("print-page-style");
+            if (styleEl) styleEl.parentNode.removeChild(styleEl);
+
+            el.classList.remove("print-data-only-active");
+            el.style.removeProperty("--print-offset-x");
+            el.style.removeProperty("--print-offset-y");
+            el.style.removeProperty("--print-slip-width");
+            el.style.removeProperty("--print-slip-height");
+            el.style.removeProperty("--print-transform");
+
+            detailElements.forEach(id => {
+                const child = el.querySelector(detailSelectors[id]);
+                if (child) {
+                    if (el.id === "printable-voucher-slip") {
+                        const x = parseFloat(document.getElementById(`cal-el-${id}-x`).value) || 0;
+                        const y = parseFloat(document.getElementById(`cal-el-${id}-y`).value) || 0;
+                        child.style.setProperty("transform", `translate(${x}mm, ${y}mm)`);
+                    } else {
+                        child.style.removeProperty("transform");
+                    }
+                }
+            });
+
+            if (nextSibling) {
+                parent.insertBefore(el, nextSibling);
+            } else {
+                parent.appendChild(el);
+            }
+
+            if (typeof onCleanup === "function") {
+                onCleanup();
+            }
+        }, 300); // Tunda seluruh cleanup untuk menghindari bug browser ghost print
+    }, { once: true });
 
     // Panggil window.print() secara langsung (sinkron).
     if (!window.__isPrintingLocked) {
