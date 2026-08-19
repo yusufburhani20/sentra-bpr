@@ -543,24 +543,35 @@ export async function saveAndPrintTransaction() {
             body: JSON.stringify(payload)
         }).then(r => r.json());
 
-        // 2. Tampilkan dialog cetak SECARA SINKRON (langsung saat ini juga).
-        // Karena ini tereksekusi instan setelah user mengklik tombol (tanpa terhalang await jaringan),
-        // browser dijamin 100% tidak akan memblokir dialog cetak.
+        // Variabel sinkronisasi agar reset form (dan penambahan nomor referensi) 
+        // hanya terjadi jika CETAK SELESAI dan SIMPAN SUKSES.
+        let isPrintClosed = false;
+        let saveResult = null;
+
+        const checkAndReset = () => {
+            if (isPrintClosed && saveResult && saveResult.success) {
+                resetTxForm();
+            }
+        };
+
+        // 2. Tampilkan dialog cetak SECARA SINKRON
         const slipEl = document.getElementById("printable-voucher-slip");
         if (slipEl) {
             printElement(slipEl, () => {
-                resetTxForm();
+                isPrintClosed = true;
+                checkAndReset();
             });
         } else {
-            resetTxForm();
+            isPrintClosed = true;
         }
 
-        // 3. Sekarang baru kita tunggu hasil simpan dari database untuk notifikasi
-        const res = await savePromise;
-        if (res.success) {
+        // 3. Tunggu hasil simpan dari database untuk notifikasi
+        saveResult = await savePromise;
+        if (saveResult.success) {
             showToast("Transaksi berhasil disimpan ke database!", "success");
+            checkAndReset(); // Coba reset jika print sudah ditutup duluan
         } else {
-            showToast(res.error || "Gagal menyimpan transaksi.", "danger");
+            showToast(saveResult.error || "Gagal menyimpan transaksi.", "danger");
         }
     } catch (e) {
         if (e.message !== 'SESSION_EXPIRED') {
