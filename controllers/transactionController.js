@@ -168,9 +168,25 @@ exports.createTransaction = (req, res) => {
         db.serialize(() => {
             if (!isPg) db.run("BEGIN EXCLUSIVE TRANSACTION;");
 
-            db.get("SELECT id FROM transactions WHERE ref_no = ? AND deleted_at IS NULL", [ref_no], (err, row) => {
+            db.get("SELECT id, username, jenis_transaksi, nominal_utama, nominal_desimal, tanggal FROM transactions WHERE ref_no = ? AND deleted_at IS NULL", [ref_no], (err, row) => {
                 if (row) {
                     if (!isPg) db.run("ROLLBACK;");
+
+                    // Cek idempotensi: jika transaksi ganda tapi datanya sama persis dan dari user yang sama
+                    // dalam waktu 60 detik terakhir, anggap sukses agar form klien bisa di-reset.
+                    // (Ini mengatasi masalah proxy Nginx yang me-retry request saat lambat, atau double-click)
+                    const txTime = new Date(row.tanggal).getTime();
+                    const nowTime = new Date(realNowStr).getTime();
+                    const timeDiffSecs = Math.abs(nowTime - txTime) / 1000;
+
+                    if (row.username === user.username && 
+                        row.jenis_transaksi === jenis_transaksi && 
+                        row.nominal_utama === nominal_utama && 
+                        row.nominal_desimal === nominal_desimal &&
+                        timeDiffSecs < 60) {
+                        return res.json({ success: true, id: row.id, ref_no: ref_no, duplicate_handled: true });
+                    }
+
                     return res.status(400).json({ error: "Nomor referensi ganda terdeteksi!" });
                 }
 
@@ -190,7 +206,24 @@ exports.createTransaction = (req, res) => {
                                 (err.message && err.message.includes('UNIQUE constraint failed'));
 
                             if (isUniqueViolation) {
-                                return res.status(400).json({ error: "Nomor referensi ganda terdeteksi!" });
+                                // Jika terjadi pelanggaran unik (race condition murni), periksa apakah data ini milik request yang sama
+                                db.get("SELECT id, username, jenis_transaksi, nominal_utama, nominal_desimal, tanggal FROM transactions WHERE ref_no = ? AND deleted_at IS NULL", [ref_no], (errCheck, rowCheck) => {
+                                    if (rowCheck) {
+                                        const txTime = new Date(rowCheck.tanggal).getTime();
+                                        const nowTime = new Date(realNowStr).getTime();
+                                        const timeDiffSecs = Math.abs(nowTime - txTime) / 1000;
+                                        
+                                        if (rowCheck.username === user.username && 
+                                            rowCheck.jenis_transaksi === jenis_transaksi && 
+                                            rowCheck.nominal_utama === nominal_utama && 
+                                            rowCheck.nominal_desimal === nominal_desimal &&
+                                            timeDiffSecs < 60) {
+                                            return res.json({ success: true, id: rowCheck.id, ref_no: ref_no, duplicate_handled: true });
+                                        }
+                                    }
+                                    return res.status(400).json({ error: "Nomor referensi ganda terdeteksi!" });
+                                });
+                                return;
                             }
                             return res.status(500).json({ error: "Gagal menyimpan transaksi: " + err.message });
                         }
