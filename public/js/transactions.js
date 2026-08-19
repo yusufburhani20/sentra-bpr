@@ -250,12 +250,85 @@ export async function saveTransaction() {
         }).then(r => r.json());
 
         if (res.success) {
-            showToast("Transaksi berhasil disimpan ke database!", "success");
+            showToast("Transaksi berhasil disimpan! Dialog cetak sedang dibuka...", "success");
+
+            if (printWin) {
+                const styleLinks = Array.from(document.querySelectorAll('link[rel="stylesheet"]'))
+                    .map(l => `<link rel="stylesheet" href="${l.href}">`)
+                    .join('\n');
+                const inlineStyles = Array.from(document.querySelectorAll('style'))
+                    .map(s => `<style>${s.innerHTML}</style>`)
+                    .join('\n');
+
+                const slipEl = document.getElementById("printable-voucher-slip");
+                const slipHtml = slipEl ? slipEl.outerHTML : '<p>Slip tidak ditemukan.</p>';
+
+                const printDataOnly = document.getElementById("print-data-only").checked;
+                const offsetX = document.getElementById("cal-offset-x").value || "0";
+                const offsetY = document.getElementById("cal-offset-y").value || "0";
+                const slipWidth = document.getElementById("cal-slip-width").value || "15.5";
+                const slipHeight = document.getElementById("cal-slip-height").value || "10.5";
+                const slipScale = document.getElementById("cal-slip-scale").value || "100";
+                const slipRotation = document.getElementById("cal-slip-rotation").value || "0";
+                const pageSize = document.getElementById("cal-page-size").value || "slip";
+
+                let pageW, pageH, sizeRule;
+                const rot = parseInt(slipRotation);
+                if (pageSize === "a4") {
+                    pageW = 21; pageH = 29.7; sizeRule = "A4 portrait";
+                } else {
+                    pageW = (rot === 90 || rot === 270) ? parseFloat(slipHeight) : parseFloat(slipWidth);
+                    pageH = (rot === 90 || rot === 270) ? parseFloat(slipWidth) : parseFloat(slipHeight);
+                    sizeRule = `${pageW}cm ${pageH}cm`;
+                }
+
+                const scale = (parseFloat(slipScale) || 100) / 100;
+                let transformStr = `scale(${scale})`;
+                if (rot === 90)  transformStr = `translate(${pageH * scale}cm, 0) rotate(90deg) scale(${scale})`;
+                if (rot === 180) transformStr = `translate(${pageW * scale}cm, ${pageH * scale}cm) rotate(180deg) scale(${scale})`;
+                if (rot === 270) transformStr = `translate(0, ${pageW * scale}cm) rotate(270deg) scale(${scale})`;
+
+                const dataOnlyClass = printDataOnly ? 'print-data-only-active' : '';
+
+                printWin.document.write(`<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <title>Cetak Slip - ${payload.ref_no}</title>
+    ${styleLinks}
+    ${inlineStyles}
+    <style>
+        @media print {
+            @page { size: ${sizeRule}; margin: 0; }
+            body { margin: 0; padding: 0; background: #fff; }
+        }
+        body { margin: 0; padding: 0; background: #fff; }
+        .voucher-slip {
+            transform-origin: top left;
+            transform: translate(${offsetX}mm, ${offsetY}mm) ${transformStr};
+        }
+    </style>
+</head>
+<body>
+    <div class="${dataOnlyClass}">${slipHtml}</div>
+    <script>
+        window.onload = function() {
+            setTimeout(function() { window.print(); }, 300);
+        };
+        window.onafterprint = function() { window.close(); };
+    <\/script>
+</body>
+</html>`);
+                printWin.document.close();
+            }
+
             resetTxForm();
         } else {
+            if (printWin) printWin.close();
             showToast(res.error || "Gagal menyimpan transaksi.", "danger");
         }
     } catch (e) {
+        if (printWin) printWin.close();
         if (e.message !== 'SESSION_EXPIRED') {
             console.error(e);
             showToast("Gagal menghubungi server backend.", "danger");
@@ -463,6 +536,18 @@ export async function saveAndPrintTransaction() {
         tanggal_manual: document.getElementById("manual-slip-date") ? document.getElementById("manual-slip-date").value : ""
     };
 
+    // ─── PERBAIKAN BUG CETAK ────────────────────────────────────────────────────
+    // window.print() HARUS dipanggil sinkron dalam user gesture. Setelah 'await',
+    // browser memutus konteks gesture dan memblokir dialog cetak secara diam-diam.
+    // Solusi: buka jendela baru SEKARANG (sinkron, sebelum await) — jendela yang
+    // dibuka dari klik user langsung diizinkan. Setelah save berhasil, tulis
+    // konten slip ke jendela tersebut dan panggil print() di sana.
+    // ────────────────────────────────────────────────────────────────────────────
+    const printWin = window.open('', '_blank', 'width=900,height=650,scrollbars=yes');
+    if (!printWin) {
+        showToast("Pop-up cetak diblokir browser. Izinkan pop-up untuk situs ini lalu coba lagi.", "warning");
+    }
+
     try {
         const res = await authFetch('/api/transactions', {
             method: 'POST',
@@ -471,45 +556,95 @@ export async function saveAndPrintTransaction() {
         }).then(r => r.json());
 
         if (res.success) {
-            showToast("Transaksi berhasil disimpan! Klik tombol Cetak Slip untuk mencetak.", "success");
+            showToast("Transaksi berhasil disimpan! Dialog cetak sedang dibuka...", "success");
 
-            // PERBAIKAN BUG CETAK:
-            // window.print() TIDAK BISA dipanggil langsung setelah await (async context)
-            // karena browser memutus "user gesture context" dan akan memblokir pop-up cetak
-            // secara diam-diam (tanpa error). Solusinya adalah menampilkan modal preview
-            // slip kepada user, lalu biarkan user klik tombol "Cetak Slip" di modal itu
-            // — klik tersebut terjadi dalam user gesture yang sah, sehingga window.print()
-            // tidak diblokir oleh browser.
-            const sourceSlip = document.getElementById("printable-voucher-slip");
-            const modalContainer = document.getElementById("modal-print-container");
-            const modalOverlay = document.getElementById("modal-detail-slip");
+            if (printWin) {
+                // Salin stylesheet dari halaman utama agar tampilan slip tetap konsisten
+                const styleLinks = Array.from(document.querySelectorAll('link[rel="stylesheet"]'))
+                    .map(l => `<link rel="stylesheet" href="${l.href}">`)
+                    .join('\n');
+                const inlineStyles = Array.from(document.querySelectorAll('style'))
+                    .map(s => `<style>${s.innerHTML}</style>`)
+                    .join('\n');
 
-            if (sourceSlip && modalContainer && modalOverlay) {
-                // Kloning elemen slip (deep clone) ke dalam modal agar user bisa preview
-                modalContainer.innerHTML = "";
-                const cloned = sourceSlip.cloneNode(true);
-                cloned.id = "modal-slip-clone";
-                cloned.style.transform = "";
-                cloned.style.margin = "0 auto";
-                modalContainer.appendChild(cloned);
+                // Ambil HTML slip yang sudah terisi data dari live preview
+                const slipEl = document.getElementById("printable-voucher-slip");
+                const slipHtml = slipEl ? slipEl.outerHTML : '<p>Slip tidak ditemukan.</p>';
 
-                // Tampilkan modal
-                modalOverlay.classList.add("active");
-                if (window.lucide) window.lucide.createIcons();
+                // Baca konfigurasi kalibrasi cetak aktif
+                const printDataOnly = document.getElementById("print-data-only").checked;
+                const offsetX = document.getElementById("cal-offset-x").value || "0";
+                const offsetY = document.getElementById("cal-offset-y").value || "0";
+                const slipWidth = document.getElementById("cal-slip-width").value || "15.5";
+                const slipHeight = document.getElementById("cal-slip-height").value || "10.5";
+                const slipScale = document.getElementById("cal-slip-scale").value || "100";
+                const slipRotation = document.getElementById("cal-slip-rotation").value || "0";
+                const pageSize = document.getElementById("cal-page-size").value || "slip";
+
+                const rot = parseInt(slipRotation);
+                let pageW, pageH, sizeRule;
+                if (pageSize === "a4") {
+                    pageW = 21; pageH = 29.7; sizeRule = "A4 portrait";
+                } else {
+                    pageW = (rot === 90 || rot === 270) ? parseFloat(slipHeight) : parseFloat(slipWidth);
+                    pageH = (rot === 90 || rot === 270) ? parseFloat(slipWidth) : parseFloat(slipHeight);
+                    sizeRule = `${pageW}cm ${pageH}cm`;
+                }
+
+                const scale = (parseFloat(slipScale) || 100) / 100;
+                let transformStr = `scale(${scale})`;
+                if (rot === 90)  transformStr = `translate(${pageH * scale}cm, 0) rotate(90deg) scale(${scale})`;
+                if (rot === 180) transformStr = `translate(${pageW * scale}cm, ${pageH * scale}cm) rotate(180deg) scale(${scale})`;
+                if (rot === 270) transformStr = `translate(0, ${pageW * scale}cm) rotate(270deg) scale(${scale})`;
+
+                const dataOnlyClass = printDataOnly ? 'print-data-only-active' : '';
+
+                printWin.document.write(`<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <title>Cetak Slip - ${payload.ref_no}</title>
+    ${styleLinks}
+    ${inlineStyles}
+    <style>
+        @media print {
+            @page { size: ${sizeRule}; margin: 0; }
+            body { margin: 0; padding: 0; background: #fff; }
+        }
+        body { margin: 0; padding: 16px; background: #fff; }
+        .voucher-slip {
+            transform-origin: top left;
+            transform: translate(${offsetX}mm, ${offsetY}mm) ${transformStr};
+        }
+    </style>
+</head>
+<body>
+    <div class="${dataOnlyClass}">${slipHtml}</div>
+    <script>
+        window.onload = function() {
+            setTimeout(function() { window.print(); }, 300);
+        };
+        window.onafterprint = function() { window.close(); };
+    <\/script>
+</body>
+</html>`);
+                printWin.document.close();
             }
 
-            // Reset form segera setelah simpan agar nomor ref berikutnya siap
             resetTxForm();
         } else {
+            if (printWin) printWin.close();
             showToast(res.error || "Gagal menyimpan transaksi.", "danger");
         }
     } catch (e) {
+        if (printWin) printWin.close();
         if (e.message !== 'SESSION_EXPIRED') {
             console.error(e);
             showToast("Gagal menghubungi server backend.", "danger");
         }
     }
 }
+
 
 export function initLayoutDragAndDrop() {
     const elements = ["date", "val", "debet", "kredit", "amount", "terbilang", "details"];
