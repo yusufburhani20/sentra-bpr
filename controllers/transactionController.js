@@ -249,7 +249,7 @@ exports.createTransaction = (req, res) => {
                         // 3. Insert Audit Log
                         const logId = crypto.randomUUID();
                         runQ("INSERT INTO audit_logs VALUES (?, ?, ?, ?, ?, ?)",
-                            [logId, now, req.user.nama, req.user.role,
+                            [logId, realNowStr, req.user.nama, req.user.role,
                              `Menyimpan slip: ${ref_no} senilai Rp ${nominal_utama},${nominal_desimal}`,
                              req.ip || "127.0.0.1"], (auditErr) => {
                                 if (auditErr) console.error("Gagal insert audit_log:", auditErr);
@@ -268,7 +268,7 @@ exports.createTransaction = (req, res) => {
                                     // 5. Insert Notif
                                     const notifId = crypto.randomUUID();
                                     runQ("INSERT INTO notifications VALUES (?, ?, 'Kepala Bidang', ?, 0)",
-                                        [notifId, now, `Slip baru: ${ref_no} (Operator: ${req.user.nama})`], () => {
+                                        [notifId, realNowStr, `Slip baru: ${ref_no} (Operator: ${req.user.nama})`], () => {
                                             
                                             // Semua Berhasil, COMMIT!
                                             commitCallback(() => {
