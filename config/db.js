@@ -212,6 +212,20 @@ const db = {
                 );
             });
         }
+    },
+
+    /**
+     * Mengambil satu koneksi dari pool khusus untuk transaksi atomic di PostgreSQL.
+     * Mengembalikan null jika menggunakan SQLite.
+     */
+    getClient(callback) {
+        if (DB_TYPE === 'postgres') {
+            pgPool.connect((err, client, release) => {
+                callback(err, client, release);
+            });
+        } else {
+            callback(null, null, () => {});
+        }
     }
 };
 
