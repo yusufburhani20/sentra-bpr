@@ -482,13 +482,12 @@ export function printElement(el, onCleanup) {
     // { once: true } memastikan cleanup hanya berjalan satu kali
     window.addEventListener("afterprint", cleanupAfterPrint, { once: true });
 
-    // requestAnimationFrame memberi browser satu frame untuk merender
-    // DOM dengan class printing-active sebelum dialog dibuka
-    requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-            window.print();
-        });
-    });
+    // Memberi sedikit jeda agar CSS 'printing-active' selesai dirender browser
+    // menggunakan setTimeout tunggal lebih handal daripada requestAnimationFrame ganda
+    // yang seringkali diblokir oleh strict popup blocker.
+    setTimeout(() => {
+        window.print();
+    }, 50);
 }
 
 export async function saveAndPrintTransaction() {
@@ -544,34 +543,17 @@ export async function saveAndPrintTransaction() {
         }).then(r => r.json());
 
         if (res.success) {
-            showToast("Transaksi tersimpan! Menyiapkan pratinjau cetak...", "success");
-
-            // Kloning elemen slip ke dalam modal
-            const sourceSlip = document.getElementById("printable-voucher-slip");
-            const modalContainer = document.getElementById("modal-print-container");
-            const modalOverlay = document.getElementById("modal-detail-slip");
-
-            if (sourceSlip && modalContainer && modalOverlay) {
-                modalContainer.innerHTML = "";
-                const cloned = sourceSlip.cloneNode(true);
-                cloned.id = "modal-slip-clone";
-                // Hilangkan transform dari preview utama agar pas di modal
-                cloned.style.transform = "";
-                cloned.style.margin = "0 auto";
-                modalContainer.appendChild(cloned);
-
-                // Tampilkan modal
-                modalOverlay.classList.add("active");
-                
-                // Ubah teks tombol cetak di modal agar lebih jelas
-                const btnModalPrint = document.getElementById("btn-modal-print");
-                if (btnModalPrint) {
-                    btnModalPrint.innerHTML = '<i data-lucide="printer"></i> Lanjutkan Cetak (Enter)';
-                }
-                if (window.lucide) window.lucide.createIcons();
+            showToast("Transaksi berhasil disimpan! Membuka dialog cetak...", "success");
+            
+            // Panggil printElement secara langsung (1-klik)
+            const slipEl = document.getElementById("printable-voucher-slip");
+            if (slipEl) {
+                printElement(slipEl, () => {
+                    resetTxForm();
+                });
+            } else {
+                resetTxForm();
             }
-
-            resetTxForm();
         } else {
             showToast(res.error || "Gagal menyimpan transaksi.", "danger");
         }
