@@ -317,7 +317,7 @@ export async function saveTransaction() {
     <div class="${dataOnlyClass}">${slipHtml}</div>
     <script>
         window.onload = function() {
-            setTimeout(function() { window.print(); }, 300);
+            setTimeout(function() { if (!window.__isPrintingLocked) { window.__isPrintingLocked = true; window.print(); setTimeout(() => { window.__isPrintingLocked = false; }, 3000); } }, 300);
         };
         window.onafterprint = function() { window.close(); };
     <\/script>
