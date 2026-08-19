@@ -1,7 +1,7 @@
 import { state } from './js/state.js';
 import { showToast, escapeHtml, openModal, closeModal, authFetch } from './js/utils.js';
 import { showLoginScreen, hideLoginScreen, checkAuth, login, logout, changePassword } from './js/auth.js';
-import { fetchNextRef, renderInputView, updateLiveSlipPreview, resetTxForm, saveTransaction, printElement, initLayoutDragAndDrop, saveAndPrintTransaction, setupAutocompleteSearch, setupPKCombobox } from './js/transactions.js?v=13';
+import { fetchNextRef, renderInputView, updateLiveSlipPreview, resetTxForm, saveTransaction, printElement, initLayoutDragAndDrop, saveAndPrintTransaction, setupAutocompleteSearch, setupPKCombobox } from './js/transactions.js?v=14';
 import { renderRiwayatView, exportRiwayatToCSV, submitEditRequest } from './js/history.js?v=2';
 import { renderKodeBiayaView, resetCostCodeForm, submitCostCode, exportCostCodes, importCostCodes, downloadCostCodeTemplate, bulkDeleteSelectedCodes, clearAllCostCodes } from './js/costCodes.js';
 import { renderUsersView, openAddUserModal, submitUser, submitResetPassword, exportUsers, importUsers, downloadUserTemplate } from './js/users.js';
@@ -600,7 +600,16 @@ window.addEventListener("DOMContentLoaded", async () => {
 
     document.getElementById("btn-reset-tx").addEventListener("click", resetTxForm);
     document.getElementById("btn-save-tx").addEventListener("click", saveTransaction);
-    document.getElementById("btn-print-slip").addEventListener("click", saveAndPrintTransaction);
+    
+    // MENCEGAH LISTENER GANDA SECARA ABSOLUT:
+    // Clone tombol Cetak Slip untuk menghapus semua event listener lama (jika ada)
+    const oldPrintBtn = document.getElementById("btn-print-slip");
+    if (oldPrintBtn) {
+        const newPrintBtn = oldPrintBtn.cloneNode(true);
+        oldPrintBtn.parentNode.replaceChild(newPrintBtn, oldPrintBtn);
+        newPrintBtn.addEventListener("click", saveAndPrintTransaction);
+    }
+    
     document.getElementById("btn-modal-print").addEventListener("click", () => { const s = document.querySelector("#modal-print-container .voucher-slip"); if (s) printElement(s); });
     
     document.getElementById("manual-slip-date").addEventListener("input", () => {

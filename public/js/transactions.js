@@ -413,7 +413,14 @@ export function printElement(el, onCleanup) {
 }
 
 export async function saveAndPrintTransaction() {
-    if (isSavingTx) return;
+    console.log("==========================================");
+    console.log("saveAndPrintTransaction DIPANGGIL! Waktu:", new Date().toISOString());
+    console.log("==========================================");
+    
+    if (isSavingTx) {
+        console.warn("saveAndPrintTransaction DIBATALKAN: isSavingTx sedang aktif (mencegah klik ganda).");
+        return;
+    }
     
     const debetNama = document.getElementById("tx-debet-nama").value;
     const debetRek = document.getElementById("tx-debet-rekening").value;
