@@ -564,7 +564,12 @@ export async function saveAndPrintTransaction() {
                 printElement(slipEl, () => {
                     // 3. Reset form BARU SETELAH proses print selesai/ditutup
                     resetTxForm();
+                    // Buka kunci isSavingTx SETELAH form selesai di-reset (mencegah klik ganda)
+                    setTimeout(() => {
+                        isSavingTx = false;
+                    }, 600);
                 });
+                return; // Langsung return, isSavingTx akan di-false-kan oleh callback onCleanup
             } else {
                 resetTxForm();
             }
@@ -576,9 +581,10 @@ export async function saveAndPrintTransaction() {
             console.error(e);
             showToast("Gagal menghubungi server backend.", "danger");
         }
-    } finally {
-        isSavingTx = false;
-    }
+    } 
+    
+    // Fallback jika proses gagal atau tidak masuk ke printElement
+    isSavingTx = false;
 }
 
 
