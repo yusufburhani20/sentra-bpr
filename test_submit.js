@@ -1,16 +1,16 @@
 const jwt = require('jsonwebtoken');
 const token = jwt.sign({
-    id: 1,
-    username: 'admin',
+    id: 'USR-006',
+    username: 'itsupport',
     nama: 'Yusuf Burhani',
     role: 'Admin',
     bagian: 'Pusat',
-    operator_code: 'admin'
+    operator_code: 'itsupport'
 }, process.env.JWT_SECRET || 'SIM_SLIP_REF_SECRET_2026_GANTI_DI_PRODUKSI', { expiresIn: '8h' });
 
 const payload = {
-    ref_no: 'TEST001',
-    operator_code: 'admin',
+    ref_no: 'TEST003',
+    operator_code: 'itsupport',
     debet_nama: 'TEST',
     debet_rekening: '123',
     kredit_nama: 'TEST2',
