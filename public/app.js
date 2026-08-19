@@ -1,7 +1,7 @@
 import { state } from './js/state.js';
 import { showToast, escapeHtml, openModal, closeModal, authFetch } from './js/utils.js';
 import { showLoginScreen, hideLoginScreen, checkAuth, login, logout, changePassword } from './js/auth.js';
-import { fetchNextRef, renderInputView, updateLiveSlipPreview, resetTxForm, saveTransaction, printElement, initLayoutDragAndDrop, saveAndPrintTransaction, setupAutocompleteSearch, setupPKCombobox } from './js/transactions.js?v=11';
+import { fetchNextRef, renderInputView, updateLiveSlipPreview, resetTxForm, saveTransaction, printElement, initLayoutDragAndDrop, saveAndPrintTransaction, setupAutocompleteSearch, setupPKCombobox } from './js/transactions.js?v=12';
 import { renderRiwayatView, exportRiwayatToCSV, submitEditRequest } from './js/history.js?v=2';
 import { renderKodeBiayaView, resetCostCodeForm, submitCostCode, exportCostCodes, importCostCodes, downloadCostCodeTemplate, bulkDeleteSelectedCodes, clearAllCostCodes } from './js/costCodes.js';
 import { renderUsersView, openAddUserModal, submitUser, submitResetPassword, exportUsers, importUsers, downloadUserTemplate } from './js/users.js';
