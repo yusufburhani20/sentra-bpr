@@ -6,7 +6,7 @@ export async function fetchNextRef() {
     try {
         const slipTypeEl = document.getElementById("tx-jenis-slip");
         const slipType = slipTypeEl ? slipTypeEl.value : "debet";
-        const res = await fetch(`/api/transactions/next-ref?slip_type=${slipType}`).then(r => r.json());
+        const res = await authFetch(`/api/transactions/next-ref?slip_type=${slipType}&_t=${Date.now()}`).then(r => r.json());
         state.activeNextRef = res.nextRef;
         const validationEl = document.getElementById("slip-val-validation");
         if (validationEl) validationEl.innerText = state.activeNextRef;
