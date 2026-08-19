@@ -543,40 +543,27 @@ export async function saveAndPrintTransaction() {
 
     try {
         isSavingTx = true;
-        // 1. Jalankan proses simpan di latar belakang TANPA melakukan await dulu
-        const savePromise = authFetch('/api/transactions', {
+        
+        // 1. Simpan transaksi ke database (await)
+        const saveResult = await authFetch('/api/transactions', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
         }).then(r => r.json());
 
-        // Variabel sinkronisasi agar reset form (dan penambahan nomor referensi) 
-        // hanya terjadi jika CETAK SELESAI dan SIMPAN SUKSES.
-        let isPrintClosed = false;
-        let saveResult = null;
+        if (saveResult.success) {
+            showToast("Transaksi berhasil disimpan! Membuka dialog cetak...", "success");
 
-        const checkAndReset = () => {
-            if (isPrintClosed && saveResult && saveResult.success) {
+            // 2. Tampilkan dialog cetak SATU KALI dengan data transaksi saat ini
+            const slipEl = document.getElementById("printable-voucher-slip");
+            if (slipEl) {
+                printElement(slipEl, () => {
+                    // 3. Reset form BARU SETELAH proses print selesai/ditutup
+                    resetTxForm();
+                });
+            } else {
                 resetTxForm();
             }
-        };
-
-        // 2. Tampilkan dialog cetak SECARA SINKRON
-        const slipEl = document.getElementById("printable-voucher-slip");
-        if (slipEl) {
-            printElement(slipEl, () => {
-                isPrintClosed = true;
-                checkAndReset();
-            });
-        } else {
-            isPrintClosed = true;
-        }
-
-        // 3. Tunggu hasil simpan dari database untuk notifikasi
-        saveResult = await savePromise;
-        if (saveResult.success) {
-            showToast("Transaksi berhasil disimpan ke database!", "success");
-            checkAndReset(); // Coba reset jika print sudah ditutup duluan
         } else {
             showToast(saveResult.error || "Gagal menyimpan transaksi.", "danger");
         }
