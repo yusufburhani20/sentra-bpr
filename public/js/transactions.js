@@ -489,11 +489,13 @@ export function printElement(el, onCleanup) {
     window.addEventListener("afterprint", cleanupAfterPrint, { once: true });
 
     // Panggil window.print() secara langsung (sinkron).
-    // Dalam browser modern (Chrome/Edge), window.print() akan secara otomatis
-    // memaksa browser melakukan render/paint ulang (termasuk kelas printing-active)
-    // tepat sebelum memunculkan dialog. Memanggil secara sinkron juga mencegah
-    // browser membuang izin (user gesture token) yang sering hilang jika menggunakan setTimeout.
-    window.print();
+    if (!window.__isPrintingLocked) {
+        window.__isPrintingLocked = true;
+        window.print();
+        setTimeout(() => {
+            window.__isPrintingLocked = false;
+        }, 3000);
+    }
 }
 
 export async function saveAndPrintTransaction() {
