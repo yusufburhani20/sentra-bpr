@@ -197,7 +197,10 @@ export function resetTxForm(e) {
     showToast("Formulir isian dikosongkan.", "info");
 }
 
+let isSavingTx = false;
+
 export async function saveTransaction() {
+    if (isSavingTx) return;
     const debetNama = document.getElementById("tx-debet-nama").value;
     const debetRek = document.getElementById("tx-debet-rekening").value;
     const kreditNama = document.getElementById("tx-kredit-nama").value;
@@ -243,6 +246,7 @@ export async function saveTransaction() {
     };
 
     try {
+        isSavingTx = true;
         const res = await authFetch('/api/transactions', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -491,6 +495,8 @@ export function printElement(el, onCleanup) {
 }
 
 export async function saveAndPrintTransaction() {
+    if (isSavingTx) return;
+    
     const debetNama = document.getElementById("tx-debet-nama").value;
     const debetRek = document.getElementById("tx-debet-rekening").value;
     const kreditNama = document.getElementById("tx-kredit-nama").value;
@@ -536,6 +542,7 @@ export async function saveAndPrintTransaction() {
     };
 
     try {
+        isSavingTx = true;
         // 1. Jalankan proses simpan di latar belakang TANPA melakukan await dulu
         const savePromise = authFetch('/api/transactions', {
             method: 'POST',
@@ -578,6 +585,8 @@ export async function saveAndPrintTransaction() {
             console.error(e);
             showToast("Gagal menghubungi server backend.", "danger");
         }
+    } finally {
+        isSavingTx = false;
     }
 }
 
