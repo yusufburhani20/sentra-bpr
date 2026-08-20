@@ -475,7 +475,6 @@ if (!window.appJSInit) {
         }
     };
     document.addEventListener("click", window.globalNotifClickHandler);
-    });
 
     document.getElementById("menu-toggle")?.addEventListener("click", () => {
         document.getElementById("app-sidebar")?.classList.toggle("mobile-open");
