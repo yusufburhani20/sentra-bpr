@@ -392,7 +392,9 @@ export async function initApp() {
 window.onLoginSuccess = initApp;
 
 // ─── DOMContentLoaded: Auth check + wire events ───────────────────────────────
-window.addEventListener("DOMContentLoaded", async () => {
+if (!window.appJSInit) {
+    window.appJSInit = true;
+    window.addEventListener("DOMContentLoaded", async () => {
     startClock();
     initTheme();
     initLayoutDragAndDrop();
@@ -788,3 +790,4 @@ window.addEventListener("DOMContentLoaded", async () => {
         await initApp();
     }
 });
+}
