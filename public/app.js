@@ -389,6 +389,7 @@ export async function initApp() {
         } catch (e) { /* session may have expired */ }
     }, 8000);
 }
+window.onLoginSuccess = initApp;
 
 // ─── DOMContentLoaded: Auth check + wire events ───────────────────────────────
 window.addEventListener("DOMContentLoaded", async () => {

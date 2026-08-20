@@ -1,6 +1,5 @@
 import { state } from './state.js';
 import { showToast, closeModal, authFetch } from './utils.js';
-import { initApp } from '../app.js';
 
 export function showLoginScreen() {
     document.getElementById('login-screen').style.display = 'flex';
@@ -59,7 +58,7 @@ export async function login() {
             state.currentUser = data.user;
             state.currentRole = data.user.role;
             hideLoginScreen();
-            await initApp();
+            if (window.onLoginSuccess) await window.onLoginSuccess();
         } else {
             errEl.textContent = data.error || 'Login gagal. Periksa username dan password.';
             errEl.style.display = 'block';
