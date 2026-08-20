@@ -1,6 +1,6 @@
 import { state } from './state.js';
 import { showToast, escapeHtml, authFetch } from './utils.js';
-import { showSection, refreshData } from '../app.js';
+import { showSection, refreshData } from '../app.js?v=3.0';
 
 export async function renderKodeBiayaView() {
     const tbody = document.getElementById("codes-table-body");

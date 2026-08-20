@@ -1,6 +1,6 @@
 import { state } from './state.js';
 import { showToast, escapeHtml, openModal, closeModal, authFetch } from './utils.js';
-import { showSection } from '../app.js';
+import { showSection } from '../app.js?v=3.0';
 import { fetchNextRef } from './transactions.js?v=3';
 
 export function renderUsersView() {

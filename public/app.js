@@ -435,29 +435,46 @@ if (!window.appJSInit) {
     document.getElementById("btn-submit-change-password")?.addEventListener("click", changePassword);
     document.getElementById("btn-submit-reset-password")?.addEventListener("click", submitResetPassword);
 
-    const notifBtn = document.getElementById("notif-btn");
-    const notifDropdown = document.getElementById("notification-dropdown");
-    notifBtn?.addEventListener("click", (e) => {
-        e.stopPropagation();
-        renderNotifDropdown();
-        if (notifDropdown) {
-            notifDropdown.classList.toggle("active");
-            if (notifDropdown.classList.contains("active")) {
-                notifDropdown.style.display = "block";
-                notifDropdown.style.opacity = "1";
-                notifDropdown.style.visibility = "visible";
-            } else {
-                notifDropdown.style.display = "none";
+    // Unbreakable Global Click Handler for Notifications
+    document.removeEventListener("click", window.globalNotifClickHandler);
+    window.globalNotifClickHandler = (e) => {
+        const notifBtn = e.target.closest("#notif-btn");
+        const notifDropdown = document.getElementById("notification-dropdown");
+        
+        if (notifBtn) {
+            // Jika tombol notif diklik
+            e.stopPropagation();
+            if (typeof showToast === 'function') showToast("Memuat notifikasi...", "info"); // Diagnostic toast
+            
+            if (typeof renderNotifDropdown === 'function') renderNotifDropdown();
+            
+            if (notifDropdown) {
+                notifDropdown.classList.toggle("active");
+                if (notifDropdown.classList.contains("active")) {
+                    notifDropdown.style.display = "block";
+                    notifDropdown.style.opacity = "1";
+                    notifDropdown.style.visibility = "visible";
+                    notifDropdown.style.zIndex = "99999"; // Paksa selalu di atas
+                } else {
+                    notifDropdown.style.display = "none";
+                }
             }
+            return;
         }
-    });
 
-    document.getElementById("clear-notif-btn")?.addEventListener("click", markNotifsRead);
-    document.addEventListener("click", () => {
-        if (notifDropdown) {
+        const clearBtn = e.target.closest("#clear-notif-btn");
+        if (clearBtn) {
+            if (typeof markNotifsRead === 'function') markNotifsRead();
+            return;
+        }
+
+        // Jika klik di luar dropdown, tutup dropdown
+        if (notifDropdown && !e.target.closest("#notification-dropdown")) {
             notifDropdown.classList.remove("active");
             notifDropdown.style.display = "none";
         }
+    };
+    document.addEventListener("click", window.globalNotifClickHandler);
     });
 
     document.getElementById("menu-toggle")?.addEventListener("click", () => {

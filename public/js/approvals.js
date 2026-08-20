@@ -1,6 +1,6 @@
 import { state } from './state.js';
 import { formatDate, formatRupiah, escapeHtml, showToast } from './utils.js';
-import { showSection } from '../app.js';
+import { showSection } from '../app.js?v=3.0';
 
 export async function fetchPendingApprovalsCount() {
     if (!state.currentUser || (state.currentUser.role !== 'Admin' && state.currentUser.role !== 'Kepala Bidang')) {

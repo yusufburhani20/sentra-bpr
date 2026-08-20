@@ -1,6 +1,6 @@
 import { state } from './state.js';
 import { formatDate, formatRupiah, escapeHtml, showToast, openModal, closeModal, authFetch, terbilang } from './utils.js';
-import { showSection } from '../app.js';
+import { showSection } from '../app.js?v=3.0';
 
 let lastRiwayatDataStr = null;
 

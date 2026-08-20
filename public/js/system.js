@@ -1,6 +1,6 @@
 import { state } from './state.js';
 import { formatDate, escapeHtml, showToast } from './utils.js';
-import { showSection } from '../app.js';
+import { showSection } from '../app.js?v=3.0';
 
 let lastAuditDataStr = null;
 
