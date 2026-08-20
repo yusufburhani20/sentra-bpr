@@ -302,12 +302,12 @@ body {
     background-color: var(--bg-card);
     border-bottom: 1px solid var(--border-color);
     backdrop-filter: blur(var(--glass-blur));
+    z-index: 1000;
     height: var(--header-height);
     display: flex;
     align-items: center;
     justify-content: space-between;
     padding: 0 32px;
-    z-index: 80;
     transition: var(--transition-normal);
 }
 

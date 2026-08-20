@@ -440,11 +440,25 @@ if (!window.appJSInit) {
     notifBtn?.addEventListener("click", (e) => {
         e.stopPropagation();
         renderNotifDropdown();
-        notifDropdown?.classList.toggle("active");
+        if (notifDropdown) {
+            notifDropdown.classList.toggle("active");
+            if (notifDropdown.classList.contains("active")) {
+                notifDropdown.style.display = "block";
+                notifDropdown.style.opacity = "1";
+                notifDropdown.style.visibility = "visible";
+            } else {
+                notifDropdown.style.display = "none";
+            }
+        }
     });
 
     document.getElementById("clear-notif-btn")?.addEventListener("click", markNotifsRead);
-    document.addEventListener("click", () => { notifDropdown?.classList.remove("active"); });
+    document.addEventListener("click", () => {
+        if (notifDropdown) {
+            notifDropdown.classList.remove("active");
+            notifDropdown.style.display = "none";
+        }
+    });
 
     document.getElementById("menu-toggle")?.addEventListener("click", () => {
         document.getElementById("app-sidebar")?.classList.toggle("mobile-open");

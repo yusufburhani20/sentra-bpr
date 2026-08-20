@@ -89,23 +89,30 @@ export function updateNotifBadge() {
 }
 
 export function renderNotifDropdown() {
-    const container = document.getElementById("notif-list-container");
-    container.innerHTML = "";
+    try {
+        const container = document.getElementById("notif-list-container");
+        if (!container) return;
+        container.innerHTML = "";
 
-    if (!Array.isArray(state.notifDB) || state.notifDB.length === 0) {
-        container.innerHTML = '<div class="notif-item"><span class="notif-title">Tidak ada notifikasi baru</span></div>';
-        return;
+        if (!Array.isArray(state.notifDB) || state.notifDB.length === 0) {
+            container.innerHTML = '<div class="notif-item"><span class="notif-title">Tidak ada notifikasi baru</span></div>';
+            return;
+        }
+
+        state.notifDB.slice(0, 10).forEach(notif => {
+            const item = document.createElement("div");
+            item.className = `notif-item ${notif.dibaca === 0 ? 'unread' : ''}`;
+            item.innerHTML = `
+                <span class="notif-title">${escapeHtml(notif.pesan)}</span>
+                <span class="notif-time">${formatDate(notif.tanggal)}</span>
+            `;
+            container.appendChild(item);
+        });
+    } catch (e) {
+        console.error("Notif Error:", e);
+        const container = document.getElementById("notif-list-container");
+        if (container) container.innerHTML = '<div class="notif-item"><span class="notif-title" style="color:var(--danger)">Error memuat notifikasi</span></div>';
     }
-
-    state.notifDB.slice(0, 10).forEach(notif => {
-        const item = document.createElement("div");
-        item.className = `notif-item ${notif.dibaca === 0 ? 'unread' : ''}`;
-        item.innerHTML = `
-            <span class="notif-title">${escapeHtml(notif.pesan)}</span>
-            <span class="notif-time">${formatDate(notif.tanggal)}</span>
-        `;
-        container.appendChild(item);
-    });
 }
 
 export async function markNotifsRead() {
