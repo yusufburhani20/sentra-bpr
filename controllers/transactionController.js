@@ -384,7 +384,16 @@ exports.deleteAuditLogs = (req, res) => {
 };
 
 exports.getNotifications = (req, res) => {
-    db.all("SELECT * FROM notifications ORDER BY tanggal DESC", [], (err, rows) => {
+    const userRole = req.user.role;
+    let query = "SELECT * FROM notifications WHERE user_role = 'all' OR user_role = ? ORDER BY tanggal DESC LIMIT 50";
+    let params = [userRole];
+
+    if (userRole === "Admin") {
+        query = "SELECT * FROM notifications WHERE user_role = 'all' OR user_role = 'Kepala Bidang' OR user_role = 'Admin' ORDER BY tanggal DESC LIMIT 50";
+        params = [];
+    }
+
+    db.all(query, params, (err, rows) => {
         if (err) return res.status(500).json({ error: err.message });
         res.json(rows);
     });
