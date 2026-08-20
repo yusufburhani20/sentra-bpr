@@ -401,15 +401,15 @@ window.addEventListener("DOMContentLoaded", async () => {
 
     setupFileBackup();
 
-    document.getElementById("btn-login").addEventListener("click", login);
-    document.getElementById("login-password").addEventListener("keydown", (e) => {
+    document.getElementById("btn-login")?.addEventListener("click", login);
+    document.getElementById("login-password")?.addEventListener("keydown", (e) => {
         if (e.key === "Enter") login();
     });
-    document.getElementById("login-username").addEventListener("keydown", (e) => {
-        if (e.key === "Enter") document.getElementById("login-password").focus();
+    document.getElementById("login-username")?.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") document.getElementById("login-password")?.focus();
     });
 
-    document.getElementById("btn-toggle-password").addEventListener("click", () => {
+    document.getElementById("btn-toggle-password")?.addEventListener("click", () => {
         const pwEl = document.getElementById("login-password");
         const eyeEl = document.getElementById("eye-icon");
         const isHidden = pwEl.type === "password";
@@ -418,9 +418,9 @@ window.addEventListener("DOMContentLoaded", async () => {
         if (window.lucide) window.lucide.createIcons();
     });
 
-    document.getElementById("btn-logout").addEventListener("click", logout);
+    document.getElementById("btn-logout")?.addEventListener("click", logout);
 
-    document.getElementById("btn-change-password").addEventListener("click", () => {
+    document.getElementById("btn-change-password")?.addEventListener("click", () => {
         document.getElementById("cp-current").value = "";
         document.getElementById("cp-new").value = "";
         document.getElementById("cp-confirm").value = "";
@@ -429,22 +429,22 @@ window.addEventListener("DOMContentLoaded", async () => {
         if (window.lucide) window.lucide.createIcons();
     });
 
-    document.getElementById("btn-submit-change-password").addEventListener("click", changePassword);
-    document.getElementById("btn-submit-reset-password").addEventListener("click", submitResetPassword);
+    document.getElementById("btn-submit-change-password")?.addEventListener("click", changePassword);
+    document.getElementById("btn-submit-reset-password")?.addEventListener("click", submitResetPassword);
 
     const notifBtn = document.getElementById("notif-btn");
     const notifDropdown = document.getElementById("notification-dropdown");
-    notifBtn.addEventListener("click", (e) => {
+    notifBtn?.addEventListener("click", (e) => {
         e.stopPropagation();
         renderNotifDropdown();
-        notifDropdown.classList.toggle("active");
+        notifDropdown?.classList.toggle("active");
     });
 
-    document.getElementById("clear-notif-btn").addEventListener("click", markNotifsRead);
-    document.addEventListener("click", () => { notifDropdown.classList.remove("active"); });
+    document.getElementById("clear-notif-btn")?.addEventListener("click", markNotifsRead);
+    document.addEventListener("click", () => { notifDropdown?.classList.remove("active"); });
 
-    document.getElementById("menu-toggle").addEventListener("click", () => {
-        document.getElementById("app-sidebar").classList.toggle("mobile-open");
+    document.getElementById("menu-toggle")?.addEventListener("click", () => {
+        document.getElementById("app-sidebar")?.classList.toggle("mobile-open");
     });
 
     const sidebarOverlay = document.getElementById("sidebar-overlay");

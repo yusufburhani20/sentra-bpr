@@ -75,7 +75,8 @@ export async function clearAuditLogs() {
 }
 
 export function updateNotifBadge() {
-    const unread = state.notifDB.filter(n => n.dibaca === 0).length;
+    const db = Array.isArray(state.notifDB) ? state.notifDB : [];
+    const unread = db.filter(n => n.dibaca === 0).length;
     const badge = document.getElementById("notif-badge");
     if (badge) {
         if (unread > 0) {
@@ -91,7 +92,7 @@ export function renderNotifDropdown() {
     const container = document.getElementById("notif-list-container");
     container.innerHTML = "";
 
-    if (state.notifDB.length === 0) {
+    if (!Array.isArray(state.notifDB) || state.notifDB.length === 0) {
         container.innerHTML = '<div class="notif-item"><span class="notif-title">Tidak ada notifikasi baru</span></div>';
         return;
     }
