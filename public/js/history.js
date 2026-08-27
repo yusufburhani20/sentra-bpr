@@ -211,71 +211,65 @@ export function viewSlipDetails(id) {
         </div>
     `;
 
-    // Dynamic addition of Governance edit/delete buttons based on user role (Teller/SDM/Kas)
-    const requestActionsWrap = document.createElement("div");
-    requestActionsWrap.style.display = "flex";
-    requestActionsWrap.style.gap = "8px";
-    requestActionsWrap.style.marginTop = "14px";
-    requestActionsWrap.style.justifyContent = "flex-start";
-
+    // --- Kontrol tombol aksi berdasarkan role ---
+    // Tombol sudah ada di HTML (index.html), cukup show/hide dan pasang event listener
     const currentRole = ((state.currentUser && state.currentUser.role) || state.currentRole || '').toLowerCase().trim();
     const canDirectEdit = ['admin', 'kepala bidang', 'customer service', 'teller', 'sdmu'].includes(currentRole);
-    console.log('[history.js] currentRole:', currentRole, '| canDirectEdit:', canDirectEdit);
-    
-    if (canDirectEdit) {
-        // Direct edit/delete for allowed roles
-        requestActionsWrap.innerHTML = `
-            <button class="btn btn-primary" id="btn-modal-direct-edit" style="padding:6px 14px; font-size:12px;">
-                <i data-lucide="edit-3" style="width:13px; height:13px; margin-right:4px;"></i> Edit Transaksi
-            </button>
-            <button class="btn btn-secondary" id="btn-modal-direct-delete" style="padding:6px 14px; font-size:12px; color:var(--danger); border-color:var(--danger-light);">
-                <i data-lucide="trash-2" style="width:13px; height:13px; margin-right:4px;"></i> Hapus Transaksi
-            </button>
-        `;
-        modalContainer.appendChild(requestActionsWrap);
+    console.log('[SENTRA] viewSlipDetails - role:', currentRole, '| canDirectEdit:', canDirectEdit);
 
-        document.getElementById("btn-modal-direct-edit").addEventListener('click', () => {
-            closeModal("modal-detail-slip");
-            
-            // Adjust modal title and submit button label for direct edit
-            const titleEl = document.querySelector("#modal-request-edit .modal-title");
-            if (titleEl) titleEl.innerHTML = `<i data-lucide="edit-3"></i> Edit Transaksi Langsung`;
-            const submitBtn = document.getElementById("btn-submit-request-edit");
-            if (submitBtn) submitBtn.innerText = "Simpan Perubahan";
-            
+    const btnDirectEdit   = document.getElementById('btn-modal-direct-edit');
+    const btnDirectDelete = document.getElementById('btn-modal-direct-delete');
+    const btnReqEdit      = document.getElementById('btn-modal-req-edit');
+    const btnReqDelete    = document.getElementById('btn-modal-req-delete');
+
+    // Reset semua tombol dulu
+    [btnDirectEdit, btnDirectDelete, btnReqEdit, btnReqDelete].forEach(btn => {
+        if (btn) {
+            btn.style.display = 'none';
+            // Hapus event listener lama agar tidak menumpuk
+            const freshBtn = btn.cloneNode(true);
+            btn.parentNode.replaceChild(freshBtn, btn);
+        }
+    });
+
+    // Re-query setelah clone
+    const freshDirectEdit   = document.getElementById('btn-modal-direct-edit');
+    const freshDirectDelete = document.getElementById('btn-modal-direct-delete');
+    const freshReqEdit      = document.getElementById('btn-modal-req-edit');
+    const freshReqDelete    = document.getElementById('btn-modal-req-delete');
+
+    if (canDirectEdit) {
+        if (freshDirectEdit)   freshDirectEdit.style.display   = 'inline-flex';
+        if (freshDirectDelete) freshDirectDelete.style.display = 'inline-flex';
+
+        if (freshDirectEdit) freshDirectEdit.addEventListener('click', () => {
+            closeModal('modal-detail-slip');
+            const titleEl = document.querySelector('#modal-request-edit .modal-title');
+            if (titleEl) titleEl.innerHTML = '<i data-lucide="edit-3"></i> Edit Transaksi Langsung';
+            const submitBtn = document.getElementById('btn-submit-request-edit');
+            if (submitBtn) submitBtn.innerText = 'Simpan Perubahan';
             openRequestEditModal(tx);
         });
 
-        document.getElementById("btn-modal-direct-delete").addEventListener('click', () => {
+        if (freshDirectDelete) freshDirectDelete.addEventListener('click', () => {
             if (confirm(`Apakah Anda yakin ingin menghapus langsung slip ${tx.ref_no}? Tindakan ini tidak dapat dibatalkan.`)) {
                 deleteTransactionDirectly(tx.id, tx.ref_no);
             }
         });
     } else {
-        // Operators and Supervisors can request edit/delete
-        requestActionsWrap.innerHTML = `
-            <button class="btn btn-primary" id="btn-modal-req-edit" style="padding:6px 14px; font-size:12px;">
-                <i data-lucide="edit-3" style="width:13px; height:13px; margin-right:4px;"></i> Ajukan Koreksi (Edit)
-            </button>
-            <button class="btn btn-secondary" id="btn-modal-req-delete" style="padding:6px 14px; font-size:12px; color:var(--danger); border-color:var(--danger-light);">
-                <i data-lucide="trash-2" style="width:13px; height:13px; margin-right:4px;"></i> Ajukan Hapus
-            </button>
-        `;
-        modalContainer.appendChild(requestActionsWrap);
+        if (freshReqEdit)   freshReqEdit.style.display   = 'inline-flex';
+        if (freshReqDelete) freshReqDelete.style.display = 'inline-flex';
 
-        document.getElementById("btn-modal-req-edit").addEventListener('click', () => {
-            closeModal("modal-detail-slip");
-            
-            // Restore modal title and submit button label for regular request
-            const titleEl = document.querySelector("#modal-request-edit .modal-title");
-            if (titleEl) titleEl.innerHTML = `<i data-lucide="edit-3"></i> Ajukan Koreksi Transaksi`;
-            const submitBtn = document.getElementById("btn-submit-request-edit");
-            if (submitBtn) submitBtn.innerText = "Ajukan Perubahan";
-            
+        if (freshReqEdit) freshReqEdit.addEventListener('click', () => {
+            closeModal('modal-detail-slip');
+            const titleEl = document.querySelector('#modal-request-edit .modal-title');
+            if (titleEl) titleEl.innerHTML = '<i data-lucide="edit-3"></i> Ajukan Koreksi Transaksi';
+            const submitBtn = document.getElementById('btn-submit-request-edit');
+            if (submitBtn) submitBtn.innerText = 'Ajukan Perubahan';
             openRequestEditModal(tx);
         });
 
-        document.getElementById("btn-modal-req-delete").addEventListener('click', () => {
+        if (freshReqDelete) freshReqDelete.addEventListener('click', () => {
             if (confirm(`Apakah Anda yakin ingin mengajukan penghapusan untuk slip ${tx.ref_no} ke Kepala Bidang/Admin?`)) {
                 submitDeleteRequest(tx.id, tx.ref_no);
             }
