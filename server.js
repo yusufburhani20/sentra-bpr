@@ -60,8 +60,13 @@ app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use(express.static(path.join(__dirname, 'public'), {
     index: 'index.html',
     dotfiles: 'deny',    // Blokir akses ke .env, .git, .htaccess, dll
-    etag: true,
-    maxAge: '1d'
+    etag: false,
+    maxAge: 0,
+    setHeaders: (res, filePath) => {
+        if (filePath.endsWith('.js') || filePath.endsWith('.html')) {
+            res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+        }
+    }
 }));
 
 // ─── GLOBAL API RATE LIMITER ──────────────────────────────────────────────────
