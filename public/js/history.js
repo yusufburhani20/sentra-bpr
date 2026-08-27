@@ -111,7 +111,7 @@ export async function exportRiwayatToCSV() {
     }
 }
 
-export function viewSlipDetails(id) {
+export async function viewSlipDetails(id) {
     const tx = state.transactionsDB.find(t => t.id === id);
     if (!tx) return;
 
@@ -211,28 +211,30 @@ export function viewSlipDetails(id) {
         </div>
     `;
 
-    // --- Kontrol tombol aksi berdasarkan role ---
-    // Tombol sudah ada di HTML (index.html), cukup show/hide dan pasang event listener
-    const currentRole = ((state.currentUser && state.currentUser.role) || state.currentRole || '').toLowerCase().trim();
-    const canDirectEdit = ['admin', 'kepala bidang', 'customer service', 'teller', 'sdmu'].includes(currentRole);
-    console.log('[SENTRA] viewSlipDetails - role:', currentRole, '| canDirectEdit:', canDirectEdit);
+    // --- Fetch role langsung dari server (bypass semua cache JS) ---
+    let liveRole = '';
+    try {
+        const meRes = await fetch('/api/auth/me', { credentials: 'include' });
+        const meData = await meRes.json();
+        liveRole = ((meData.user && meData.user.role) || '').toLowerCase().trim();
+    } catch (e) {
+        // fallback ke state jika fetch gagal
+        liveRole = ((state.currentUser && state.currentUser.role) || state.currentRole || '').toLowerCase().trim();
+    }
+    const canDirectEdit = ['admin', 'kepala bidang', 'customer service', 'teller', 'sdmu'].includes(liveRole);
+    console.log('[SENTRA] liveRole dari server:', liveRole, '| canDirectEdit:', canDirectEdit);
 
-    const btnDirectEdit   = document.getElementById('btn-modal-direct-edit');
-    const btnDirectDelete = document.getElementById('btn-modal-direct-delete');
-    const btnReqEdit      = document.getElementById('btn-modal-req-edit');
-    const btnReqDelete    = document.getElementById('btn-modal-req-delete');
-
-    // Reset semua tombol dulu
-    [btnDirectEdit, btnDirectDelete, btnReqEdit, btnReqDelete].forEach(btn => {
+    // Reset dan show/hide tombol statis dari index.html
+    const allBtns = ['btn-modal-direct-edit', 'btn-modal-direct-delete', 'btn-modal-req-edit', 'btn-modal-req-delete'];
+    allBtns.forEach(btnId => {
+        const btn = document.getElementById(btnId);
         if (btn) {
             btn.style.display = 'none';
-            // Hapus event listener lama agar tidak menumpuk
-            const freshBtn = btn.cloneNode(true);
-            btn.parentNode.replaceChild(freshBtn, btn);
+            const fresh = btn.cloneNode(true);
+            btn.parentNode.replaceChild(fresh, btn);
         }
     });
 
-    // Re-query setelah clone
     const freshDirectEdit   = document.getElementById('btn-modal-direct-edit');
     const freshDirectDelete = document.getElementById('btn-modal-direct-delete');
     const freshReqEdit      = document.getElementById('btn-modal-req-edit');
@@ -281,6 +283,7 @@ export function viewSlipDetails(id) {
 }
 
 function openRequestEditModal(tx) {
+
     document.getElementById("req-edit-tx-id").value = tx.id;
     document.getElementById("req-edit-debet-nama").value = tx.debet_nama;
     document.getElementById("req-edit-debet-rekening").value = tx.debet_rekening;
