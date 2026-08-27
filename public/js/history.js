@@ -218,10 +218,10 @@ export function viewSlipDetails(id) {
     requestActionsWrap.style.marginTop = "14px";
     requestActionsWrap.style.justifyContent = "flex-start";
 
-    const isAdmin = state.currentRole === 'Admin';
+    const canDirectEdit = ['Admin', 'Kepala Bidang', 'Customer Service', 'Teller', 'SDMU'].includes(state.currentRole);
     
-    if (isAdmin) {
-        // Direct edit/delete for Admin
+    if (canDirectEdit) {
+        // Direct edit/delete for allowed roles
         requestActionsWrap.innerHTML = `
             <button class="btn btn-primary" id="btn-modal-direct-edit" style="padding:6px 14px; font-size:12px;">
                 <i data-lucide="edit-3" style="width:13px; height:13px; margin-right:4px;"></i> Edit Transaksi
@@ -235,7 +235,7 @@ export function viewSlipDetails(id) {
         document.getElementById("btn-modal-direct-edit").addEventListener('click', () => {
             closeModal("modal-detail-slip");
             
-            // Adjust modal title and submit button label for Admin direct edit
+            // Adjust modal title and submit button label for direct edit
             const titleEl = document.querySelector("#modal-request-edit .modal-title");
             if (titleEl) titleEl.innerHTML = `<i data-lucide="edit-3"></i> Edit Transaksi Langsung`;
             const submitBtn = document.getElementById("btn-submit-request-edit");
@@ -362,11 +362,11 @@ export async function submitEditRequest() {
         terbilang: terbilang(nominalUtama, nominalDesimal)
     };
 
-    const isAdmin = state.currentRole === 'Admin';
+    const canDirectEdit = ['Admin', 'Kepala Bidang', 'Customer Service', 'Teller', 'SDMU'].includes(state.currentRole);
 
     try {
         let res;
-        if (isAdmin) {
+        if (canDirectEdit) {
             res = await authFetch(`/api/transactions/${id}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
@@ -385,7 +385,7 @@ export async function submitEditRequest() {
         }
 
         if (res.success) {
-            showToast(isAdmin ? "Transaksi berhasil diubah langsung!" : "Permintaan koreksi slip berhasil dikirim ke Kepala Bidang!", "success");
+            showToast(canDirectEdit ? "Transaksi berhasil diubah langsung!" : "Permintaan koreksi slip berhasil dikirim ke Kepala Bidang!", "success");
             closeModal("modal-request-edit");
             await showSection("riwayat");
         } else {

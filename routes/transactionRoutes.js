@@ -8,7 +8,7 @@ router.use(requireAuth);
 router.get('/', transactionController.getTransactions);
 router.get('/next-ref', transactionController.getNextRef);
 router.post('/', transactionController.createTransaction);
-router.put('/:id', requireRole('Admin'), transactionController.updateTransactionDirectly);
-router.delete('/:id', requireRole('Admin'), transactionController.deleteTransactionDirectly);
+router.put('/:id', requireRole('Admin', 'Kepala Bidang', 'Customer Service', 'Teller', 'SDMU'), transactionController.updateTransactionDirectly);
+router.delete('/:id', requireRole('Admin', 'Kepala Bidang', 'Customer Service', 'Teller', 'SDMU'), transactionController.deleteTransactionDirectly);
 
 module.exports = router;

@@ -25,8 +25,8 @@ function checkPermission(view, role) {
         "users": ["Admin", "Kepala Bidang", "Teller", "SDMU", "Customer Service"],
         "audit": ["Admin", "Kepala Bidang"],
         "approvals": ["Admin", "Kepala Bidang", "Teller", "SDMU", "Customer Service"],
-        "ideb": ["Admin", "Kepala Bidang", "IT Support"],
-        "ideb-master": ["Admin", "Kepala Bidang", "IT Support"]
+        "ideb": ["Admin"],
+        "ideb-master": ["Admin"]
     };
     return permissions[view] ? permissions[view].includes(role) : false;
 }
