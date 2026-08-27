@@ -218,7 +218,8 @@ export function viewSlipDetails(id) {
     requestActionsWrap.style.marginTop = "14px";
     requestActionsWrap.style.justifyContent = "flex-start";
 
-    const canDirectEdit = ['Admin', 'Kepala Bidang', 'Customer Service', 'Teller', 'SDMU'].includes(state.currentRole);
+    const currentRole = (state.currentRole || '').toLowerCase().trim();
+    const canDirectEdit = ['admin', 'kepala bidang', 'customer service', 'teller', 'sdmu'].includes(currentRole);
     
     if (canDirectEdit) {
         // Direct edit/delete for allowed roles
@@ -362,7 +363,8 @@ export async function submitEditRequest() {
         terbilang: terbilang(nominalUtama, nominalDesimal)
     };
 
-    const canDirectEdit = ['Admin', 'Kepala Bidang', 'Customer Service', 'Teller', 'SDMU'].includes(state.currentRole);
+    const currentRole = (state.currentRole || '').toLowerCase().trim();
+    const canDirectEdit = ['admin', 'kepala bidang', 'customer service', 'teller', 'sdmu'].includes(currentRole);
 
     try {
         let res;
