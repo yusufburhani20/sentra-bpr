@@ -223,6 +223,7 @@ export async function viewSlipDetails(id) {
     }
     const canDirectEdit = ['admin', 'kepala bidang', 'customer service', 'teller', 'sdmu'].includes(liveRole);
     console.log('[SENTRA] liveRole dari server:', liveRole, '| canDirectEdit:', canDirectEdit);
+    alert(`DEBUG INFO:\nRole Anda: "${liveRole}"\nBisa Edit Sendiri: ${canDirectEdit}\nJika Anda tidak melihat alert ini setelah refresh, artinya cache masih nyangkut!`);
 
     // Reset dan show/hide tombol statis dari index.html
     const allBtns = ['btn-modal-direct-edit', 'btn-modal-direct-delete', 'btn-modal-req-edit', 'btn-modal-req-delete'];
