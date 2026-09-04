@@ -34,9 +34,9 @@ exports.getUsers = (req, res) => {
 };
 
 exports.getAkuntingUsers = (req, res) => {
-    // Only return users with role "Akunting" in the current branch
-    const query = "SELECT username, nama FROM users WHERE deleted_at IS NULL AND role = 'Akunting' AND branch_id = ?";
-    db.all(query, [req.user.branch_id], (err, rows) => {
+    // Return all active users with role "Akunting" across all branches
+    const query = "SELECT username, nama FROM users WHERE deleted_at IS NULL AND role = 'Akunting'";
+    db.all(query, [], (err, rows) => {
         if (err) return res.status(500).json({ error: err.message });
         res.json(rows);
     });
