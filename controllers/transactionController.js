@@ -30,10 +30,10 @@ exports.getTransactions = (req, res) => {
         countQuery += filterBranch;
         params.push(req.user.branch_id);
     } else {
-        const filterRole = " AND branch_id = ? AND username = ?";
+        const filterRole = " AND username = ?";
         query += filterRole;
         countQuery += filterRole;
-        params.push(req.user.branch_id, req.user.username);
+        params.push(req.user.username);
     }
 
     if (search) {
