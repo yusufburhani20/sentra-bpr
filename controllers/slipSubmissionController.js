@@ -8,9 +8,8 @@ exports.getSubmissions = (req, res) => {
 
     const canSeeAll = req.user.role === 'Admin';
     if (!canSeeAll) {
-        // Filter berdasarkan username (lebih reliabel), fallback ke operator_code/nama lama
-        query = "SELECT * FROM slip_submissions WHERE (username = ? OR operator_code = ? OR operator_name = ?) ORDER BY tanggal_kirim DESC";
-        params = [req.user.username || '', req.user.operator_code || '', req.user.nama || ''];
+        query = "SELECT * FROM slip_submissions WHERE username = ? ORDER BY tanggal_kirim DESC";
+        params = [req.user.username];
     }
     
     db.all(query, params, (err, rows) => {
