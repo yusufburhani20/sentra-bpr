@@ -190,9 +190,9 @@ export function initDeployPanel() {
 
     if (!btnOpen || !modal) return;
 
-    // Hanya tampilkan untuk Admin
+    // Hanya tampilkan untuk Admin & Super Admin
     const role = state.currentRole || state.currentUser?.role;
-    if (role !== 'Admin') {
+    if (role !== 'Admin' && role !== 'Super Admin') {
         const deployCard = document.getElementById('deploy-card');
         if (deployCard) deployCard.style.display = 'none';
         return;
