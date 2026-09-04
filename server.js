@@ -63,9 +63,10 @@ app.use(express.static(path.join(__dirname, 'public'), {
     etag: false,
     maxAge: 0,
     setHeaders: (res, filePath) => {
-        if (filePath.endsWith('.js') || filePath.endsWith('.html')) {
-            res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
-        }
+        // Mencegah caching untuk semua aset statis (.css, .js, .html, .svg, dll)
+        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+        res.setHeader('Pragma', 'no-cache');
+        res.setHeader('Expires', '0');
     }
 }));
 
