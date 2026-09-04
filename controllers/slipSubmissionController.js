@@ -6,7 +6,7 @@ exports.getSubmissions = (req, res) => {
     let query = "SELECT * FROM slip_submissions ORDER BY tanggal_kirim DESC";
     let params = [];
 
-    const canSeeAll = req.user.role === 'Admin' || req.user.role === 'Kepala Bidang';
+    const canSeeAll = req.user.role === 'Admin';
     if (!canSeeAll) {
         // Filter berdasarkan username (lebih reliabel), fallback ke operator_code/nama lama
         query = "SELECT * FROM slip_submissions WHERE (username = ? OR operator_code = ? OR operator_name = ?) ORDER BY tanggal_kirim DESC";

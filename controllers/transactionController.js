@@ -14,8 +14,8 @@ exports.getTransactions = (req, res) => {
     let countQuery = "SELECT COUNT(*) as count FROM transactions WHERE deleted_at IS NULL";
     let params = [];
 
-    // Admin dan Kepala Bidang bisa melihat semua transaksi
-    const canSeeAll = req.user.role === 'Admin' || req.user.role === 'Kepala Bidang';
+    // Admin bisa melihat semua transaksi
+    const canSeeAll = req.user.role === 'Admin';
     if (!canSeeAll) {
         // Filter berdasarkan username (lebih reliabel dari operator_code yang bisa kosong)
         const filterRole = " AND username = ?";
