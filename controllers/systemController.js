@@ -43,11 +43,24 @@ exports.deployUpdate = (req, res) => {
         send('✅ Kode berhasil diperbarui dari GitHub!', 'success');
         send('📦 Memeriksa dependensi...', 'info');
 
-        // npm install --omit=dev
-        const npmInstall = exec('npm install --omit=dev', { cwd: APP_DIR });
-        npmInstall.stdout.on('data', (d) => d.split('\n').filter(Boolean).forEach(l => send(l)));
+        // npm install --omit=dev hanya jika package.json lebih baru dari node_modules
+        const npmInstall = exec(
+            'if [ ! -d "node_modules" ] || [ package.json -nt node_modules ]; then npm install --omit=dev --no-audit --no-fund; else echo "SKIP_NPM"; fi',
+            { cwd: APP_DIR }
+        );
+
+        npmInstall.stdout.on('data', (d) => {
+            const lines = d.split('\n').filter(Boolean);
+            lines.forEach(l => {
+                if (l.trim() === 'SKIP_NPM') {
+                    send('✅ Melewati npm install (tidak ada perubahan package.json).', 'success');
+                } else {
+                    send(l);
+                }
+            });
+        });
+
         npmInstall.stderr.on('data', (d) => {
-            // npm warn messages are normal — treat as info, not error
             d.split('\n').filter(Boolean).forEach(l => {
                 const isWarn = l.toLowerCase().includes('warn');
                 send(l, isWarn ? 'warn' : 'log');
@@ -55,7 +68,10 @@ exports.deployUpdate = (req, res) => {
         });
 
         npmInstall.on('close', (npmCode) => {
-            send('✅ Dependensi sudah terkini.', 'success');
+            if (npmCode !== 0) {
+                send(`⚠️ npm install selesai dengan exit code: ${npmCode}`, 'warn');
+            }
+            send('✅ Pengecekan dependensi selesai.', 'success');
             send('🔁 Merestart server SENTRA...', 'info');
             send('⏳ Server akan direstart dalam 1 detik. Silakan tunggu...', 'info');
 

@@ -24,27 +24,27 @@ echo "      OK - Kode berhasil diperbarui."
 # 2. Update dependensi jika package.json berubah
 echo ""
 echo "[2/3] Memeriksa dependensi (npm install)..."
-npm install --omit=dev --silent
-echo "      OK - Dependensi sudah terkini."
+if [ ! -d "node_modules" ] || [ package.json -nt node_modules ]; then
+    echo "      Menjalankan npm install (karena ada perubahan di package.json)..."
+    npm install --omit=dev --no-audit --no-fund
+    echo "      OK - Dependensi berhasil diupdate."
+else
+    echo "      OK - Melewati npm install (tidak ada perubahan package.json)."
+fi
 
 # 3. Restart server
 echo ""
 echo "[3/3] Merestart server SENTRA..."
 
-# Deteksi apakah aplikasi dikelola oleh Systemd (slip.service)
-USING_SYSTEMD=false
-if systemctl status slip.service >/dev/null 2>&1; then
-    USING_SYSTEMD=true
-fi
-
-if [ "$USING_SYSTEMD" = true ]; then
+if command -v pm2 >/dev/null 2>&1 && pm2 describe slip >/dev/null 2>&1; then
+    echo "      Sistem mendeteksi pengelolaan via PM2."
+    pm2 restart slip
+    echo "      OK - Server berhasil direstart via PM2."
+elif systemctl status slip.service >/dev/null 2>&1; then
     echo "      Sistem mendeteksi slip.service (Systemd)."
-    # Coba restart resmi via systemctl
     if sudo systemctl restart slip 2>/dev/null; then
         echo "      OK - Server berhasil direstart via Systemd."
     else
-        # Jika butuh password sudo/gagal, bunuh PID dan biarkan Systemd melakukan auto-restart (Restart=on-failure)
-        echo "      Peringatan: Gagal merestart via systemctl (akses ditolak). Mencoba membunuh PID..."
         OLD_PID=$(lsof -t -i :$PORT 2>/dev/null || true)
         if [ -n "$OLD_PID" ]; then
             kill "$OLD_PID" 2>/dev/null || true
@@ -53,7 +53,6 @@ if [ "$USING_SYSTEMD" = true ]; then
         fi
     fi
 else
-    # Jalankan manual jika tidak memakai systemd
     OLD_PID=$(lsof -t -i :$PORT 2>/dev/null || true)
     if [ -n "$OLD_PID" ]; then
         kill "$OLD_PID" 2>/dev/null || true
