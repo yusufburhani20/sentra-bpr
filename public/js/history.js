@@ -222,7 +222,7 @@ export async function viewSlipDetails(id) {
         // fallback ke state jika fetch gagal
         liveRole = ((state.currentUser && state.currentUser.role) || state.currentRole || '').toLowerCase().trim();
     }
-    const canDirectEdit = ['admin', 'kepala bidang', 'customer service', 'teller', 'sdmu'].includes(liveRole);
+    const canDirectEdit = ['super admin', 'admin', 'kepala bidang', 'customer service', 'teller', 'sdmu'].includes(liveRole);
     console.log('[SENTRA] liveRole dari server:', liveRole, '| canDirectEdit:', canDirectEdit);
 
     // Reset dan show/hide tombol statis dari index.html
@@ -363,7 +363,7 @@ export async function submitEditRequest() {
     };
 
     const currentRole = ((state.currentUser && state.currentUser.role) || state.currentRole || '').toLowerCase().trim();
-    const canDirectEdit = ['admin', 'kepala bidang', 'customer service', 'teller', 'sdmu'].includes(currentRole);
+    const canDirectEdit = ['super admin', 'admin', 'kepala bidang', 'customer service', 'teller', 'sdmu'].includes(currentRole);
 
     try {
         let res;
