@@ -66,7 +66,6 @@ function lanjutkanMigrasi(singaparnaId) {
                 });
             });
         });
-    });
 }
 
 migrate();
