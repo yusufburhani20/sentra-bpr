@@ -29,10 +29,13 @@ export async function renderDashboardView() {
                         if (Array.isArray(branches)) {
                             branches.forEach(b => {
                                 if (isSuperAdmin || handledBranches.includes(b.id)) {
-                                    const opt = document.createElement("option");
-                                    opt.value = b.id;
-                                    opt.textContent = b.name;
-                                    filterEl.appendChild(opt);
+                                    // Cegah duplikasi jika dipanggil 2x bersamaan
+                                    if (!Array.from(filterEl.options).some(opt => opt.value === b.id)) {
+                                        const opt = document.createElement("option");
+                                        opt.value = b.id;
+                                        opt.textContent = b.name;
+                                        filterEl.appendChild(opt);
+                                    }
                                 }
                             });
                         }
