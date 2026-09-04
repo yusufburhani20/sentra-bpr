@@ -32,23 +32,39 @@ exports.login = async (req, res) => {
             nama: user.nama,
             role: user.role,
             bagian: user.bagian,
-            operator_code: user.operator_code
+            operator_code: user.operator_code,
+            branch_id: user.branch_id
         };
 
-        const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '8h' });
+        const finishLogin = () => {
+            const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '8h' });
 
-        res.cookie('authToken', token, {
-            httpOnly: true,
-            sameSite: 'lax',
-            secure: process.env.NODE_ENV === 'production',
-            maxAge: 8 * 60 * 60 * 1000 // 8 hours
-        });
+            res.cookie('authToken', token, {
+                httpOnly: true,
+                sameSite: 'lax',
+                secure: process.env.NODE_ENV === 'production',
+                maxAge: 8 * 60 * 60 * 1000 // 8 hours
+            });
 
-        const logId = "LOG-" + Date.now();
-        db.run("INSERT INTO audit_logs VALUES (?, ?, ?, ?, ?, ?)",
-            [logId, new Date().toISOString(), user.nama, user.role, `Login berhasil`, req.ip || '127.0.0.1']);
+            const logId = "LOG-" + Date.now();
+            db.run("INSERT INTO audit_logs VALUES (?, ?, ?, ?, ?, ?)",
+                [logId, new Date().toISOString(), user.nama, user.role, `Login berhasil`, req.ip || '127.0.0.1']);
 
-        res.json({ success: true, user: payload });
+            res.json({ success: true, user: payload });
+        };
+
+        if (user.role === 'Admin') {
+            db.all("SELECT branch_id FROM admin_branches WHERE admin_id = ?", [user.id], (err2, branches) => {
+                if (!err2 && branches && branches.length > 0) {
+                    payload.handled_branches = branches.map(b => b.branch_id);
+                } else {
+                    payload.handled_branches = [user.branch_id]; // Fallback to primary branch
+                }
+                finishLogin();
+            });
+        } else {
+            finishLogin();
+        }
     });
 };
 
@@ -67,7 +83,7 @@ exports.logout = (req, res) => {
 };
 
 exports.me = (req, res) => {
-    db.get("SELECT id, username, nama, bagian, role, status, operator_code FROM users WHERE id = ? AND deleted_at IS NULL", [req.user.id], (err, user) => {
+    db.get("SELECT id, username, nama, bagian, role, status, operator_code, branch_id FROM users WHERE id = ? AND deleted_at IS NULL", [req.user.id], (err, user) => {
         if (!user || user.status !== 'Aktif') {
             res.clearCookie('authToken');
             return res.status(401).json({ error: 'Akun tidak aktif atau tidak ditemukan.' });
@@ -75,7 +91,19 @@ exports.me = (req, res) => {
         if (req.user.impersonator) {
             user.impersonator = req.user.impersonator;
         }
-        res.json({ user });
+        // Sertakan handled_branches untuk Admin, agar sesi yang di-refresh tetap punya data ini
+        if (user.role === 'Admin') {
+            db.all("SELECT branch_id FROM admin_branches WHERE admin_id = ?", [user.id], (err2, branches) => {
+                if (!err2 && branches && branches.length > 0) {
+                    user.handled_branches = branches.map(b => b.branch_id);
+                } else {
+                    user.handled_branches = [user.branch_id];
+                }
+                res.json({ user });
+            });
+        } else {
+            res.json({ user });
+        }
     });
 };
 
@@ -115,8 +143,8 @@ exports.impersonate = async (req, res) => {
         return res.status(400).json({ error: 'Username target diperlukan.' });
     }
 
-    if (req.user.role !== 'Admin' && req.user.role !== 'Kepala Bidang') {
-        return res.status(403).json({ error: 'Akses ditolak. Hanya untuk Admin dan Kepala Bidang.' });
+    if (req.user.role !== 'Super Admin' && req.user.role !== 'Admin' && req.user.role !== 'Kepala Bidang') {
+        return res.status(403).json({ error: 'Akses ditolak. Hanya untuk Super Admin, Admin dan Kepala Bidang.' });
     }
 
     db.get("SELECT * FROM users WHERE username = ? AND status = 'Aktif' AND deleted_at IS NULL", [username.trim()], (err, targetUser) => {
@@ -134,13 +162,15 @@ exports.impersonate = async (req, res) => {
             role: targetUser.role,
             bagian: targetUser.bagian,
             operator_code: targetUser.operator_code,
+            branch_id: targetUser.branch_id,
             impersonator: {
                 id: req.user.id,
                 username: req.user.username,
                 nama: req.user.nama,
                 role: req.user.role,
                 bagian: req.user.bagian,
-                operator_code: req.user.operator_code
+                operator_code: req.user.operator_code,
+                branch_id: req.user.branch_id
             }
         };
 
@@ -178,7 +208,8 @@ exports.stopImpersonating = (req, res) => {
         nama: original.nama,
         role: original.role,
         bagian: original.bagian,
-        operator_code: original.operator_code
+        operator_code: original.operator_code,
+        branch_id: original.branch_id
     };
 
     if (original.impersonator) {

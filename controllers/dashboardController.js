@@ -6,23 +6,49 @@ exports.getStats = (req, res) => {
     yesterday.setDate(yesterday.getDate() - 1);
     const yesterdayStr = yesterday.toISOString().split('T')[0];
 
-    const isFiltered = req.user.role !== 'Admin' && req.user.role !== 'Kepala Bidang';
-    const opCode = (req.user.operator_code || "").trim();
+    const isSuperAdmin = req.user.role === 'Super Admin';
+    const isPusat = req.user.branch_id === 'B-PUSAT';
+    const isAdmin = req.user.role === 'Admin';
+    const isCabangAdmin = isAdmin;
+    const isManajemen = req.user.role === 'Kepala Bidang' || req.user.role === 'Akunting';
 
     let filterClause = "";
     let filterParams = [];
+    let operatorClause = "";
+    let operatorParams = [];
 
-    if (isFiltered) {
-        if (opCode) {
-            filterClause = "AND (username = ? OR (username IS NULL AND operator_code = ?))";
-            filterParams = [req.user.username, opCode];
-        } else {
-            filterClause = "AND username = ?";
-            filterParams = [req.user.username];
+    if (isSuperAdmin) {
+        const reqBranch = req.query.branch ? req.query.branch.trim() : "";
+        if (reqBranch) {
+            filterClause = " AND branch_id = ?";
+            filterParams = [reqBranch];
+            operatorClause = " AND u.branch_id = ?";
+            operatorParams = [reqBranch];
         }
+    } else if (isCabangAdmin) {
+        const branches = req.user.handled_branches || [req.user.branch_id];
+        const placeholders = branches.map(() => '?').join(',');
+        filterClause = ` AND branch_id IN (${placeholders})`;
+        filterParams = branches;
+        operatorClause = ` AND u.branch_id IN (${placeholders})`;
+        operatorParams = branches;
+    } else if (isManajemen) {
+        filterClause = " AND branch_id = ?";
+        filterParams = [req.user.branch_id];
+        operatorClause = " AND u.branch_id = ?";
+        operatorParams = [req.user.branch_id];
+    } else {
+        const opCode = (req.user.operator_code || "").trim();
+        if (opCode) {
+            filterClause = " AND branch_id = ? AND (username = ? OR (username IS NULL AND operator_code = ?))";
+            filterParams = [req.user.branch_id, req.user.username, opCode];
+        } else {
+            filterClause = " AND branch_id = ? AND username = ?";
+            filterParams = [req.user.branch_id, req.user.username];
+        }
+        operatorClause = " AND u.branch_id = ? AND u.username = ?";
+        operatorParams = [req.user.branch_id, req.user.username];
     }
-
-    const operatorParams = isFiltered ? [req.user.username] : [];
 
     // Queries
     const kpiQuery = `
@@ -72,7 +98,7 @@ exports.getStats = (req, res) => {
                 (t.username IS NOT NULL AND t.username = u.username) OR 
                 (t.username IS NULL AND t.operator_code = u.operator_code AND t.operator_code IS NOT NULL AND LENGTH(TRIM(t.operator_code)) > 0)
             )
-        WHERE u.deleted_at IS NULL ${isFiltered ? "AND u.username = ?" : ""}
+        WHERE u.deleted_at IS NULL ${operatorClause}
         GROUP BY u.username, u.nama, u.operator_code
         ORDER BY count DESC
     `;

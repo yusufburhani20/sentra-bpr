@@ -6,10 +6,24 @@ exports.getSubmissions = (req, res) => {
     let query = "SELECT * FROM slip_submissions ORDER BY tanggal_kirim DESC";
     let params = [];
 
-    const canSeeAll = req.user.role === 'Admin';
-    if (!canSeeAll) {
-        query = "SELECT * FROM slip_submissions WHERE username = ? ORDER BY tanggal_kirim DESC";
-        params = [req.user.username];
+    const isSuperAdmin = req.user.role === 'Super Admin';
+    const isPusat = req.user.branch_id === 'B-PUSAT';
+    const isAdmin = req.user.role === 'Admin';
+
+    if (isSuperAdmin) {
+        // Super Admin sees everything
+    } else if (isAdmin || req.user.role === 'Kepala Bidang') {
+        // Admin / Kepala Bidang Cabang sees all within their branch
+        query = "SELECT * FROM slip_submissions WHERE branch_id = ? ORDER BY tanggal_kirim DESC";
+        params = [req.user.branch_id];
+    } else if (req.user.role === 'Akunting') {
+        // Akunting sees all in branch, but especially theirs
+        query = "SELECT * FROM slip_submissions WHERE branch_id = ? ORDER BY tanggal_kirim DESC";
+        params = [req.user.branch_id];
+    } else {
+        // Standard user sees only their own
+        query = "SELECT * FROM slip_submissions WHERE branch_id = ? AND username = ? ORDER BY tanggal_kirim DESC";
+        params = [req.user.branch_id, req.user.username];
     }
     
     db.all(query, params, (err, rows) => {
@@ -37,7 +51,8 @@ exports.createSubmission = (req, res) => {
         checklist_pb, 
         checklist_fo, 
         checklist_lainnya, 
-        kantor_kas 
+        kantor_kas,
+        tujuan_akunting
     } = req.body;
 
     if (!req.file) {
@@ -49,14 +64,15 @@ exports.createSubmission = (req, res) => {
     const operator_name = req.user.nama;
     const operator_code = req.user.operator_code;
     const username = req.user.username;
+    const branch_id = req.user.branch_id;
     const bukti_kirim_path = "/uploads/" + req.file.filename;
 
     const query = `
         INSERT INTO slip_submissions (
             id, tanggal_kirim, operator_name, operator_code, username, kantor_kas,
             checklist_slips, checklist_mutasi, checklist_pb, checklist_fo,
-            checklist_lainnya, bukti_kirim_path, status
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Dikirim')
+            checklist_lainnya, bukti_kirim_path, status, branch_id, tujuan_akunting
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Dikirim', ?, ?)
     `;
 
     const params = [
@@ -65,8 +81,10 @@ exports.createSubmission = (req, res) => {
         parseInt(checklist_mutasi) || 0,
         parseInt(checklist_pb) || 0,
         parseInt(checklist_fo) || 0,
-        checklist_lainnya || '[]', // Should be JSON string
-        bukti_kirim_path
+        checklist_lainnya || '[]',
+        bukti_kirim_path,
+        branch_id,
+        tujuan_akunting || null
     ];
 
     db.run(query, params, function(err) {
@@ -95,12 +113,14 @@ exports.confirmArrival = (req, res) => {
         return res.status(400).json({ error: "Nama penerima wajib diisi!" });
     }
 
-    // Check if submission exists and is in 'Dikirim' status
-    db.get("SELECT status FROM slip_submissions WHERE id = ?", [id], (err, row) => {
+    db.get("SELECT tujuan_akunting FROM slip_submissions WHERE id = ?", [id], (err, row) => {
         if (err) return res.status(500).json({ error: err.message });
-        if (!row) return res.status(404).json({ error: "Data pengiriman tidak ditemukan!" });
-        if (row.status === 'Sampai') {
-            return res.status(400).json({ error: "Pengiriman ini sudah dikonfirmasi sampai sebelumnya." });
+        if (!row) return res.status(404).json({ error: "Slip tidak ditemukan" });
+
+        if (req.user.role !== 'Admin') {
+            if (row.tujuan_akunting && row.tujuan_akunting !== req.user.username) {
+                return res.status(403).json({ error: "Hanya Akunting yang dituju yang berhak mengonfirmasi berkas ini." });
+            }
         }
 
         const tanggal_sampai = new Date().toISOString();
@@ -108,21 +128,18 @@ exports.confirmArrival = (req, res) => {
 
         const query = `
             UPDATE slip_submissions 
-            SET status = 'Sampai', 
-                tanggal_sampai = ?, 
-                bukti_sampai_path = ?, 
-                penerima_name = ?
+            SET status = 'Diterima', tanggal_sampai = ?, penerima_name = ?, bukti_sampai_path = ?
             WHERE id = ?
         `;
 
-        db.run(query, [tanggal_sampai, bukti_sampai_path, penerima_name.trim(), id], function(err) {
+        db.run(query, [tanggal_sampai, penerima_name || req.user.nama, bukti_sampai_path, id], function(err) {
             if (err) return res.status(500).json({ error: err.message });
 
             // Add to audit logs
             const logId = crypto.randomUUID();
             db.run("INSERT INTO audit_logs VALUES (?, ?, ?, ?, ?, ?)",
                 [logId, tanggal_sampai, req.user.nama, req.user.role,
-                 `Mengonfirmasi Penerimaan Slip: ID ${id}, Penerima: ${penerima_name}`, req.ip || "127.0.0.1"]);
+                 `Mengonfirmasi Slip Diterima: ID ${id}`, req.ip || "127.0.0.1"]);
 
             res.json({ success: true });
         });
@@ -137,9 +154,15 @@ exports.deleteSubmission = (req, res) => {
         return res.status(403).json({ error: "Akses ditolak. Hanya Admin dan Kepala Bidang yang dapat menghapus pengiriman." });
     }
 
-    db.get("SELECT id, kantor_kas, bukti_kirim_path, bukti_sampai_path FROM slip_submissions WHERE id = ?", [id], (err, row) => {
+    db.get("SELECT id, kantor_kas, bukti_kirim_path, bukti_sampai_path, branch_id FROM slip_submissions WHERE id = ?", [id], (err, row) => {
         if (err) return res.status(500).json({ error: err.message });
         if (!row) return res.status(404).json({ error: "Data pengiriman tidak ditemukan!" });
+
+        const isSuperAdmin = req.user.role === 'Super Admin';
+        
+        if (!isSuperAdmin && row.branch_id !== req.user.branch_id) {
+            return res.status(403).json({ error: "Akses ditolak. Transaksi ini bukan dari cabang Anda." });
+        }
 
         db.run("DELETE FROM slip_submissions WHERE id = ?", [id], function(errDel) {
             if (errDel) return res.status(500).json({ error: errDel.message });

@@ -14,14 +14,26 @@ exports.getTransactions = (req, res) => {
     let countQuery = "SELECT COUNT(*) as count FROM transactions WHERE deleted_at IS NULL";
     let params = [];
 
-    // Admin bisa melihat semua transaksi
-    const canSeeAll = req.user.role === 'Admin';
-    if (!canSeeAll) {
-        // Filter berdasarkan username (lebih reliabel dari operator_code yang bisa kosong)
-        const filterRole = " AND username = ?";
+    const isSuperAdmin = req.user.role === 'Super Admin';
+    const isAdmin = req.user.role === 'Admin';
+    const requestedBranch = req.query.branch ? req.query.branch.trim() : "";
+
+    if (isSuperAdmin) {
+        if (requestedBranch) {
+            query += " AND branch_id = ?";
+            countQuery += " AND branch_id = ?";
+            params.push(requestedBranch);
+        }
+    } else if (isAdmin || req.user.role === 'Kepala Bidang' || req.user.role === 'Akunting') {
+        const filterBranch = " AND branch_id = ?";
+        query += filterBranch;
+        countQuery += filterBranch;
+        params.push(req.user.branch_id);
+    } else {
+        const filterRole = " AND branch_id = ? AND username = ?";
         query += filterRole;
         countQuery += filterRole;
-        params.push(req.user.username);
+        params.push(req.user.branch_id, req.user.username);
     }
 
     if (search) {
@@ -212,10 +224,10 @@ exports.createTransaction = (req, res) => {
                 // 2. Insert Transaksi
                 runQ(`INSERT INTO transactions
                     (id, ref_no, tanggal, tanggal_slip, operator_code, username, debet_nama, debet_rekening, kredit_nama, kredit_rekening,
-                     jenis_transaksi, nominal_utama, nominal_desimal, keterangan, terbilang)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                     jenis_transaksi, nominal_utama, nominal_desimal, keterangan, terbilang, branch_id)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
                     [id, ref_no, realNowStr, slipDateStr, operator_code, user.username, dNama, dRek, kNama, kRek,
-                     jenis_transaksi, nominal_utama, nominal_desimal, keterangan, terbilang],
+                     jenis_transaksi, nominal_utama, nominal_desimal, keterangan, terbilang, req.user.branch_id],
                     function(insertErr) {
                         if (insertErr) {
                             rollbackCallback();
@@ -248,10 +260,10 @@ exports.createTransaction = (req, res) => {
 
                         // 3. Insert Audit Log
                         const logId = crypto.randomUUID();
-                        runQ("INSERT INTO audit_logs VALUES (?, ?, ?, ?, ?, ?)",
+                        runQ("INSERT INTO audit_logs VALUES (?, ?, ?, ?, ?, ?, ?)",
                             [logId, realNowStr, req.user.nama, req.user.role,
                              `Menyimpan slip: ${ref_no} senilai Rp ${nominal_utama},${nominal_desimal}`,
-                             req.ip || "127.0.0.1"], (auditErr) => {
+                             req.ip || "127.0.0.1", req.user.branch_id], (auditErr) => {
                                 if (auditErr) console.error("Gagal insert audit_log:", auditErr);
 
                                 // 4. Update Counter
@@ -333,6 +345,21 @@ exports.getAuditLogs = (req, res) => {
     let countQuery = "SELECT COUNT(*) as count FROM audit_logs WHERE 1=1";
     let params = [];
 
+    const isSuperAdmin = req.user.role === 'Super Admin';
+    const isAdmin = req.user.role === 'Admin';
+    if (!isSuperAdmin) {
+        if (isAdmin && req.user.handled_branches) {
+            const placeholders = req.user.handled_branches.map(() => '?').join(',');
+            query += ` AND branch_id IN (${placeholders})`;
+            countQuery += ` AND branch_id IN (${placeholders})`;
+            params.push(...req.user.handled_branches);
+        } else {
+            query += " AND branch_id = ?";
+            countQuery += " AND branch_id = ?";
+            params.push(req.user.branch_id);
+        }
+    }
+
     if (search) {
         const s = `%${search}%`;
         const filterStr = ' AND ("user" LIKE ? OR aksi LIKE ?)';
@@ -375,9 +402,9 @@ exports.deleteAuditLogs = (req, res) => {
         if (err) return res.status(500).json({ error: err.message });
 
         const logId = "LOG-" + Date.now();
-        db.run("INSERT INTO audit_logs VALUES (?, ?, ?, ?, ?, ?)",
+        db.run("INSERT INTO audit_logs VALUES (?, ?, ?, ?, ?, ?, ?)",
             [logId, now, req.user.nama, req.user.role,
-             "Melakukan pembersihan seluruh log audit", req.ip || "127.0.0.1"]);
+             "Melakukan pembersihan seluruh log audit", req.ip || "127.0.0.1", req.user.branch_id]);
 
         res.json({ success: true });
     });
@@ -447,12 +474,11 @@ exports.updateTransactionDirectly = (req, res) => {
         function(err) {
             if (err) return res.status(500).json({ error: err.message });
 
-            // Log direct update to audit trail
             const logId = crypto.randomUUID();
-            db.run("INSERT INTO audit_logs VALUES (?, ?, ?, ?, ?, ?)",
+            db.run("INSERT INTO audit_logs VALUES (?, ?, ?, ?, ?, ?, ?)",
                 [logId, now, updaterName, req.user.role,
                  `Mengubah transaksi langsung (ID: ${id}) senilai Rp ${nominal_utama},${nominal_desimal}`,
-                 req.ip || "127.0.0.1"]);
+                 req.ip || "127.0.0.1", req.user.branch_id]);
 
             res.json({ success: true });
         }
@@ -472,12 +498,11 @@ exports.deleteTransactionDirectly = (req, res) => {
         db.run("UPDATE transactions SET deleted_at = ?, ref_no = ref_no || ? WHERE id = ?", [now, delSuffix, id], function(err) {
             if (err) return res.status(500).json({ error: err.message });
 
-            // Log direct delete to audit trail
             const logId = crypto.randomUUID();
-            db.run("INSERT INTO audit_logs VALUES (?, ?, ?, ?, ?, ?)",
+            db.run("INSERT INTO audit_logs VALUES (?, ?, ?, ?, ?, ?, ?)",
                 [logId, now, updaterName, req.user.role,
                  `Menghapus transaksi langsung: ${tx.ref_no} senilai Rp ${tx.nominal_utama},${tx.nominal_desimal}`,
-                 req.ip || "127.0.0.1"]);
+                 req.ip || "127.0.0.1", req.user.branch_id]);
 
             res.json({ success: true });
         });

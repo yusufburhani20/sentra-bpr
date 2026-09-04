@@ -6,19 +6,58 @@ const SALT_ROUNDS = 10;
 const DEFAULT_PASSWORD = 'slip1234';
 
 exports.getUsers = (req, res) => {
-    db.all("SELECT id, username, nama, bagian, role, status, operator_code FROM users WHERE deleted_at IS NULL", [], (err, rows) => {
+    let query = `
+        SELECT u.id, u.username, u.nama, u.bagian, u.role, u.status, u.operator_code, u.branch_id, b.name as branch_name 
+        FROM users u 
+        LEFT JOIN branches b ON u.branch_id = b.id 
+        WHERE u.deleted_at IS NULL
+    `;
+    let params = [];
+
+    const isSuperAdmin = req.user.role === 'Super Admin';
+    const isAdmin = req.user.role === 'Admin';
+    if (!isSuperAdmin) {
+        if (isAdmin && req.user.handled_branches) {
+            const placeholders = req.user.handled_branches.map(() => '?').join(',');
+            query += ` AND u.branch_id IN (${placeholders})`;
+            params.push(...req.user.handled_branches);
+        } else {
+            query += " AND u.branch_id = ?";
+            params.push(req.user.branch_id);
+        }
+    }
+
+    db.all(query, params, (err, rows) => {
         if (err) return res.status(500).json({ error: err.message });
         res.json(rows);
     });
 };
 
+exports.getAkuntingUsers = (req, res) => {
+    // Only return users with role "Akunting" in the current branch
+    const query = "SELECT username, nama FROM users WHERE deleted_at IS NULL AND role = 'Akunting' AND branch_id = ?";
+    db.all(query, [req.user.branch_id], (err, rows) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json(rows);
+    });
+};
 exports.createUser = async (req, res) => {
     const { username, nama, bagian, role, status, operator_code } = req.body;
     const id = crypto.randomUUID();
     const defaultHash = await bcrypt.hash(DEFAULT_PASSWORD, SALT_ROUNDS);
+    
+    // Hanya ada 1 Super Admin di sistem, tidak bisa ditambahkan
+    if (role === 'Super Admin') {
+        return res.status(403).json({ error: "Tidak dapat membuat akun Super Admin. Hanya ada 1 Super Admin di sistem." });
+    }
 
-    db.run("INSERT INTO users (id, username, nama, bagian, role, status, operator_code, password_hash) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-        [id, username, nama, bagian, role, status, operator_code, defaultHash], function(err) {
+    // Security: Only Super Admin can specify a different branch_id. Others default to their own branch.
+    const branch_id = (req.user.role === 'Super Admin') 
+        ? (req.body.branch_id || 'B-PUSAT') 
+        : req.user.branch_id;
+
+    db.run("INSERT INTO users (id, username, nama, bagian, role, status, operator_code, password_hash, branch_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        [id, username, nama, bagian, role, status, operator_code, defaultHash, branch_id], function(err) {
             if (err) return res.status(400).json({ error: "Username sudah dipakai pengguna lain!" });
 
             const op = operator_code || "";
@@ -50,19 +89,50 @@ exports.createUser = async (req, res) => {
 exports.updateUser = (req, res) => {
     const { id } = req.params;
     const { username, nama, bagian, role, status, operator_code } = req.body;
+    
+    db.get("SELECT role, branch_id FROM users WHERE id = ? AND deleted_at IS NULL", [id], (err, user) => {
+        if (err || !user) return res.status(404).json({ error: "Pengguna tidak ditemukan." });
 
-    db.run("UPDATE users SET username = ?, nama = ?, bagian = ?, role = ?, status = ?, operator_code = ? WHERE id = ?",
-        [username, nama, bagian, role, status, operator_code, id], function(err) {
-            if (err) return res.status(400).json({ error: err.message });
+        const isSuperAdmin = req.user.role === 'Super Admin';
+        const isAdmin = req.user.role === 'Admin';
+        const isSelf = req.user.id === id;
 
-            const logId = "LOG-" + Date.now();
-            db.run("INSERT INTO audit_logs VALUES (?, ?, ?, ?, ?, ?)",
-                [logId, new Date().toISOString(), req.user.nama, req.user.role,
-                 `Mengubah data pengguna: ${username}`, req.ip || "127.0.0.1"]);
-
-            res.json({ success: true });
+        // Super Admin memiliki akses penuh untuk mengedit semua user
+        if (!isSuperAdmin) {
+            // Cegah edit user yang role-nya Super Admin
+            if (user.role === 'Super Admin') {
+                return res.status(403).json({ error: "Akses ditolak. Tidak dapat mengubah akun Super Admin." });
+            }
+            if (isAdmin && req.user.handled_branches) {
+                if (!req.user.handled_branches.includes(user.branch_id)) {
+                    return res.status(403).json({ error: "Akses ditolak. Pengguna ini bukan dari cabang Anda." });
+                }
+            } else if (!isSelf && user.branch_id !== req.user.branch_id) {
+                return res.status(403).json({ error: "Akses ditolak. Pengguna ini bukan dari cabang Anda." });
+            }
         }
-    );
+
+        // Cegah mengubah role menjadi Super Admin (hanya ada 1 Super Admin)
+        const finalRole = (role === 'Super Admin' && !isSelf) ? user.role : role;
+
+        // Super Admin bisa mengubah branch_id secara bebas, Admin reguler tidak bisa
+        const branch_id = isSuperAdmin
+            ? (req.body.branch_id || user.branch_id)
+            : req.user.branch_id;
+
+        db.run("UPDATE users SET username = ?, nama = ?, bagian = ?, role = ?, status = ?, operator_code = ?, branch_id = ? WHERE id = ?",
+            [username, nama, bagian, finalRole, status, operator_code, branch_id, id], function(errUpdate) {
+                if (errUpdate) return res.status(400).json({ error: errUpdate.message });
+
+                const logId = "LOG-" + Date.now();
+                db.run("INSERT INTO audit_logs VALUES (?, ?, ?, ?, ?, ?)",
+                    [logId, new Date().toISOString(), req.user.nama, req.user.role,
+                     `Mengubah data pengguna: ${username}`, req.ip || "127.0.0.1"]);
+
+                res.json({ success: true });
+            }
+        );
+    });
 };
 
 exports.deleteUser = (req, res) => {
@@ -73,8 +143,26 @@ exports.deleteUser = (req, res) => {
         return res.status(400).json({ error: "Tidak dapat menghapus akun sendiri yang sedang aktif." });
     }
 
-    db.get("SELECT username, nama, operator_code FROM users WHERE id = ? AND deleted_at IS NULL", [id], (err, user) => {
+    db.get("SELECT username, nama, operator_code, role, branch_id FROM users WHERE id = ? AND deleted_at IS NULL", [id], (err, user) => {
         if (!user) return res.status(404).json({ error: "Pengguna tidak ditemukan." });
+
+        const isSuperAdmin = req.user.role === 'Super Admin';
+        const isAdmin = req.user.role === 'Admin';
+
+        // Cegah penghapusan akun Super Admin (proteksi dari siapa pun)
+        if (user.role === 'Super Admin') {
+            return res.status(403).json({ error: "Akun Super Admin tidak dapat dihapus." });
+        }
+        
+        if (!isSuperAdmin) {
+            if (isAdmin && req.user.handled_branches) {
+                if (!req.user.handled_branches.includes(user.branch_id)) {
+                    return res.status(403).json({ error: "Akses ditolak. Pengguna ini bukan dari cabang Anda." });
+                }
+            } else if (user.branch_id !== req.user.branch_id) {
+                return res.status(403).json({ error: "Akses ditolak. Pengguna ini bukan dari cabang Anda." });
+            }
+        }
 
         const now = new Date().toISOString();
         db.run("UPDATE users SET deleted_at = ? WHERE id = ?", [now, id], function(err) {
@@ -116,9 +204,24 @@ exports.resetPassword = async (req, res) => {
 };
 
 exports.getRefCounters = (req, res) => {
-    const canSeeAll = req.user.role === 'Admin' || req.user.role === 'Kepala Bidang';
+    const canSeeAll = req.user.role === 'Super Admin' || req.user.role === 'Admin' || req.user.role === 'Kepala Bidang';
+    
+    let queryUser = "SELECT id, username, operator_code FROM users WHERE deleted_at IS NULL";
+    let paramsUser = [];
+    const isSuperAdmin = req.user.role === 'Super Admin';
+    const isAdmin = req.user.role === 'Admin';
+    if (!isSuperAdmin) {
+        if (isAdmin && req.user.handled_branches) {
+            const placeholders = req.user.handled_branches.map(() => '?').join(',');
+            queryUser += ` AND branch_id IN (${placeholders})`;
+            paramsUser.push(...req.user.handled_branches);
+        } else {
+            queryUser += " AND branch_id = ?";
+            paramsUser.push(req.user.branch_id);
+        }
+    }
 
-    db.all("SELECT id, username, operator_code FROM users WHERE deleted_at IS NULL", [], (err, users) => {
+    db.all(queryUser, paramsUser, (err, users) => {
         if (err) return res.status(500).json({ error: err.message });
 
         // Pastikan semua user punya entri di ref_counters untuk 4 jenis slip
@@ -171,8 +274,8 @@ exports.updateRefCounter = (req, res) => {
     const slipType = req.params.slip_type || 'debet';
     const { counter, prefix } = req.body;
 
-    // Hanya Admin dan Kepala Bidang bisa edit counter milik orang lain
-    const canEditAll = req.user.role === 'Admin' || req.user.role === 'Kepala Bidang';
+    // Hanya Super Admin, Admin dan Kepala Bidang bisa edit counter milik orang lain
+    const canEditAll = req.user.role === 'Super Admin' || req.user.role === 'Admin' || req.user.role === 'Kepala Bidang';
     if (!canEditAll && req.user.username !== username) {
         return res.status(403).json({ error: "Anda hanya dapat mengubah counter milik Anda sendiri." });
     }
@@ -207,8 +310,8 @@ exports.resetRefCounter = (req, res) => {
     const { username } = req.params;
     const slipType = req.params.slip_type || 'debet';
 
-    // Hanya Admin dan Kepala Bidang bisa reset counter milik orang lain
-    const canEditAll = req.user.role === 'Admin' || req.user.role === 'Kepala Bidang';
+    // Hanya Super Admin, Admin dan Kepala Bidang bisa reset counter milik orang lain
+    const canEditAll = req.user.role === 'Super Admin' || req.user.role === 'Admin' || req.user.role === 'Kepala Bidang';
     if (!canEditAll && req.user.username !== username) {
         return res.status(403).json({ error: "Anda hanya dapat mereset counter milik Anda sendiri." });
     }
@@ -233,7 +336,18 @@ exports.importUsers = async (req, res) => {
 
     try {
         const defaultHash = await bcrypt.hash(DEFAULT_PASSWORD, SALT_ROUNDS);
-        let imported = 0, skipped = 0;
+        
+        db.all("SELECT id, name FROM branches", [], (err, branches) => {
+            const branchMap = {};
+            if (!err && branches) {
+                branches.forEach(b => {
+                    branchMap[b.id] = b.id;
+                    branchMap[b.name.toLowerCase()] = b.id;
+                    branchMap[b.name.replace(/^cabang\s+/i, '').toLowerCase()] = b.id;
+                });
+            }
+
+            let imported = 0, skipped = 0;
 
         const processRow = (index) => {
             if (index >= rows.length) {
@@ -255,8 +369,21 @@ exports.importUsers = async (req, res) => {
             const role = (row.role || "").trim();
             const status = (row.status || "").trim() || "Aktif";
             const operator_code = (row.operator_code || "").trim();
+            
+            let inputBranch = (row.branch_id || "").trim();
+            let finalBranchId = inputBranch;
+            if (inputBranch) {
+                const searchKey = inputBranch.toLowerCase();
+                const searchKeyNoCabang = inputBranch.replace(/^cabang\s+/i, '').toLowerCase();
+                if (branchMap[searchKey]) {
+                    finalBranchId = branchMap[searchKey];
+                } else if (branchMap[searchKeyNoCabang]) {
+                    finalBranchId = branchMap[searchKeyNoCabang];
+                }
+            }
+            const branch_id = finalBranchId || (req.user.role === 'Super Admin' ? 'B-PUSAT' : req.user.branch_id);
 
-            if (!username || !nama || !role || !operator_code) {
+            if (!username || !nama || !role) {
                 skipped++;
                 return processRow(index + 1);
             }
@@ -270,8 +397,8 @@ exports.importUsers = async (req, res) => {
 
                 // Insert user
                 const id = crypto.randomUUID();
-                db.run("INSERT INTO users (id, username, nama, bagian, role, status, operator_code, password_hash) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-                    [id, username, nama, bagian, role, status, operator_code, defaultHash], function(errInsert) {
+                db.run("INSERT INTO users (id, username, nama, bagian, role, status, operator_code, password_hash, branch_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    [id, username, nama, bagian, role, status, operator_code, defaultHash, branch_id], function(errInsert) {
                         if (errInsert) {
                             skipped++;
                             return processRow(index + 1);
@@ -293,15 +420,16 @@ exports.importUsers = async (req, res) => {
                                 : "INSERT OR IGNORE INTO ref_counters (username, slip_type, counter, prefix) VALUES (?, ?, 1, ?)";
                             db.run(sql, [username, t.type, t.prefix], resolve);
                         }));
-                        Promise.all(promises).then(() => {
-                            imported++;
-                            processRow(index + 1);
+                            Promise.all(promises).then(() => {
+                                imported++;
+                                processRow(index + 1);
+                            });
                         });
-                    });
-            });
-        };
+                });
+            };
 
-        processRow(0);
+            processRow(0);
+        });
     } catch (e) {
         res.status(500).json({ error: e.message });
     }

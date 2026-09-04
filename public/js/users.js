@@ -5,12 +5,14 @@ import { fetchNextRef } from './transactions.js?v=3';
 
 export function renderUsersView() {
     const listCard = document.getElementById("user-list-card");
-    const canSeeUserList = state.currentRole === 'Admin' || state.currentRole === 'Kepala Bidang';
+    const canSeeUserList = state.currentRole === 'Super Admin' || state.currentRole === 'Admin' || state.currentRole === 'Kepala Bidang';
+    const isSuperAdmin = state.currentRole === 'Super Admin';
     const isAdmin = state.currentRole === 'Admin';
 
     if (listCard) {
         listCard.style.display = canSeeUserList ? "block" : "none";
     }
+
 
     // Hide/show admin specific user management controls
     const addBtn = document.getElementById("btn-add-user");
@@ -19,10 +21,10 @@ export function renderUsersView() {
     const importLabel = importFileInput ? importFileInput.closest("label") : null;
     const csvHint = document.getElementById("csv-import-hint");
 
-    if (addBtn) addBtn.style.display = isAdmin ? "inline-flex" : "none";
-    if (exportBtn) exportBtn.style.display = isAdmin ? "inline-flex" : "none";
-    if (importLabel) importLabel.style.display = isAdmin ? "inline-flex" : "none";
-    if (csvHint) csvHint.style.display = isAdmin ? "block" : "none";
+    if (addBtn) addBtn.style.display = (isSuperAdmin || isAdmin) ? "inline-flex" : "none";
+    if (exportBtn) exportBtn.style.display = (isSuperAdmin || isAdmin) ? "inline-flex" : "none";
+    if (importLabel) importLabel.style.display = (isSuperAdmin || isAdmin) ? "inline-flex" : "none";
+    if (csvHint) csvHint.style.display = (isSuperAdmin || isAdmin) ? "block" : "none";
 
     if (canSeeUserList && state.usersDB) {
         const tbody = document.getElementById("user-table-body");
@@ -31,7 +33,9 @@ export function renderUsersView() {
 
             state.usersDB.forEach(user => {
                 const isSelf = state.currentUser && state.currentUser.id === user.id;
-                const canImpersonate = (state.currentRole === 'Admin' || state.currentRole === 'Kepala Bidang') && !isSelf && user.status === 'Aktif';
+                const isSuperAdmin = state.currentRole === 'Super Admin';
+                const isTargetSuperAdmin = user.role === 'Super Admin';
+                const canImpersonate = (isSuperAdmin || state.currentRole === 'Admin' || state.currentRole === 'Kepala Bidang') && !isSelf && user.status === 'Aktif';
 
                 const impersonateBtn = canImpersonate ? `
                     <button class="btn btn-secondary btn-impersonate-user" style="padding: 4px 8px; font-size:11px; color:var(--primary); border-color:var(--primary-light);" title="Masuk sebagai user ini">
@@ -39,7 +43,9 @@ export function renderUsersView() {
                     </button>
                 ` : '';
 
-                const adminActions = isAdmin ? `
+                // Tombol Edit & Password muncul jika: Super Admin (bisa edit semua), atau Admin (tidak bisa edit Super Admin)
+                const canEdit = isSuperAdmin || (isAdmin && !isTargetSuperAdmin) || isSelf;
+                const adminActions = canEdit ? `
                     <button class="btn btn-secondary btn-edit-user" style="padding: 4px 8px; font-size:11px;">
                         <i data-lucide="edit" style="width:11px; height:11px;"></i> Edit
                     </button>
@@ -48,7 +54,9 @@ export function renderUsersView() {
                     </button>
                 ` : '';
 
-                const deleteBtn = isAdmin ? `
+                // Tombol Hapus TIDAK muncul untuk akun Super Admin atau untuk diri sendiri
+                const canDelete = (isSuperAdmin || isAdmin) && !isTargetSuperAdmin && !isSelf;
+                const deleteBtn = canDelete ? `
                     <button class="btn btn-secondary btn-delete-user" style="padding: 4px 8px; font-size:11px; color:var(--danger); border-color:var(--danger-light);">
                         <i data-lucide="trash-2" style="width:11px; height:11px;"></i> Hapus
                     </button>
@@ -58,6 +66,7 @@ export function renderUsersView() {
                 tr.innerHTML = `
                     <td><strong>${user.nama}</strong></td>
                     <td><code>${user.username}</code></td>
+                    <td>${user.branch_name || user.branch_id || '-'}</td>
                     <td>${user.bagian}</td>
                     <td><span class="badge badge-info">${user.role}</span></td>
                     <td><span class="badge badge-primary">${user.operator_code || '-'}</span></td>
@@ -68,13 +77,15 @@ export function renderUsersView() {
                         ${deleteBtn}
                     </td>
                 `;
-                if (isAdmin) {
-                    tr.querySelector('.btn-edit-user').addEventListener('click', () => openEditUserModal(user.id));
-                    tr.querySelector('.btn-password-user').addEventListener('click', () => openResetPasswordModal(user.id, user.nama));
-                    tr.querySelector('.btn-delete-user').addEventListener('click', () => deleteUser(user.id, user.nama));
+                if (canEdit) {
+                    tr.querySelector('.btn-edit-user')?.addEventListener('click', () => openEditUserModal(user.id));
+                    tr.querySelector('.btn-password-user')?.addEventListener('click', () => openResetPasswordModal(user.id, user.nama));
+                }
+                if (canDelete) {
+                    tr.querySelector('.btn-delete-user')?.addEventListener('click', () => deleteUser(user.id, user.nama));
                 }
                 if (canImpersonate) {
-                    tr.querySelector('.btn-impersonate-user').addEventListener('click', () => impersonateUser(user.username));
+                    tr.querySelector('.btn-impersonate-user')?.addEventListener('click', () => impersonateUser(user.username));
                 }
                 tbody.appendChild(tr);
             });
@@ -93,12 +104,53 @@ export function openEditUserModal(id) {
     document.getElementById("user-nama").value = user.nama;
     document.getElementById("user-username").value = user.username;
     document.getElementById("user-bagian").value = user.bagian;
-    document.getElementById("user-role").value = user.role;
     document.getElementById("user-operator-code").value = user.operator_code || "";
     document.getElementById("user-status").value = user.status;
 
+    const roleSelect = document.getElementById("user-role");
+    if (user.role === 'Super Admin') {
+        // Kunci role Super Admin — tidak bisa diubah dari sini
+        // Tambahkan option sementara jika belum ada, lalu set dan disable
+        let superOpt = roleSelect.querySelector('option[value="Super Admin"]');
+        if (!superOpt) {
+            superOpt = document.createElement('option');
+            superOpt.value = 'Super Admin';
+            superOpt.textContent = 'Super Admin';
+            roleSelect.appendChild(superOpt);
+        }
+        roleSelect.value = 'Super Admin';
+        roleSelect.disabled = true;
+    } else {
+        // Hapus option Super Admin sementara jika ada (dari edit sebelumnya)
+        const tempOpt = roleSelect.querySelector('option[value="Super Admin"]');
+        if (tempOpt) roleSelect.removeChild(tempOpt);
+        roleSelect.value = user.role;
+        roleSelect.disabled = false;
+    }
+
+    loadBranchesForUserSelect(user.branch_id);
+
     document.getElementById("user-modal-title").innerText = "Edit Pengguna";
     openModal("modal-user");
+}
+
+function loadBranchesForUserSelect(selectedBranchId = "") {
+    const select = document.getElementById("user-branch-id");
+    if (!select) return;
+
+    authFetch('/api/branches')
+        .then(res => res.json())
+        .then(branches => {
+            select.innerHTML = '<option value="">-- Pilih Cabang --</option>';
+            branches.forEach(b => {
+                const opt = document.createElement("option");
+                opt.value = b.id;
+                opt.textContent = b.name;
+                if (b.id === selectedBranchId) opt.selected = true;
+                select.appendChild(opt);
+            });
+        })
+        .catch(err => console.error("Gagal memuat cabang:", err));
 }
 
 export function openAddUserModal() {
@@ -106,9 +158,17 @@ export function openAddUserModal() {
     document.getElementById("user-nama").value = "";
     document.getElementById("user-username").value = "";
     document.getElementById("user-bagian").value = "Teller";
-    document.getElementById("user-role").value = "Teller";
     document.getElementById("user-operator-code").value = "";
     document.getElementById("user-status").value = "Aktif";
+
+    const roleSelect = document.getElementById("user-role");
+    // Pastikan option Super Admin tidak ada di modal tambah user
+    const tempOpt = roleSelect.querySelector('option[value="Super Admin"]');
+    if (tempOpt) roleSelect.removeChild(tempOpt);
+    roleSelect.value = "Teller";
+    roleSelect.disabled = false;
+
+    loadBranchesForUserSelect();
 
     document.getElementById("user-modal-title").innerText = "Tambah Pengguna Baru";
     openModal("modal-user");
@@ -122,9 +182,10 @@ export async function submitUser() {
     const role = document.getElementById("user-role").value;
     const operator_code = document.getElementById("user-operator-code").value;
     const status = document.getElementById("user-status").value;
+    const branch_id = document.getElementById("user-branch-id").value;
 
-    if (!nama || !username || !operator_code) {
-        showToast("Isi nama, username, dan operator ID!", "warning");
+    if (!nama || !username) {
+        showToast("Isi nama dan username!", "warning");
         return;
     }
 
@@ -135,6 +196,7 @@ export async function submitUser() {
         role,
         status,
         operator_code,
+        branch_id,
         activeUser: state.currentUser.nama,
         activeRole: state.currentUser.role
     };
@@ -198,7 +260,7 @@ export function renderRefCountersTable() {
         const exampleRef = `${rc.prefix || rc.operator_code || ""}${String(rc.counter).padStart(3, '0')}`;
         const tr = document.createElement("tr");
 
-        const isAllowedToEdit = (state.currentRole === 'Admin' || state.currentRole === 'Kepala Bidang') || (state.currentUser && state.currentUser.username === rc.username);
+        const isAllowedToEdit = (state.currentRole === 'Super Admin' || state.currentRole === 'Admin' || state.currentRole === 'Kepala Bidang') || (state.currentUser && state.currentUser.username === rc.username);
         const disabledAttr = isAllowedToEdit ? "" : "disabled";
         const pointerEvents = isAllowedToEdit ? "" : "pointer-events:none; opacity:0.6;";
 
@@ -385,15 +447,16 @@ export function exportUsers() {
         showToast("Tidak ada data pengguna untuk diekspor.", "warning");
         return;
     }
-    let csv = "Username,Nama,Bagian,Role,Status,Operator ID\n";
+    let csv = "Username,Nama,Cabang,Bagian,Role,Status,Operator ID\n";
     state.usersDB.forEach(u => {
         const username = `"${(u.username || "").replace(/"/g, '""')}"`;
         const nama = `"${(u.nama || "").replace(/"/g, '""')}"`;
+        const branch_id = `"${(u.branch_id || "").replace(/"/g, '""')}"`;
         const bagian = `"${(u.bagian || "").replace(/"/g, '""')}"`;
         const role = `"${(u.role || "").replace(/"/g, '""')}"`;
         const status = `"${(u.status || "").replace(/"/g, '""')}"`;
         const operator_code = `"${(u.operator_code || "").replace(/"/g, '""')}"`;
-        csv += `${username},${nama},${bagian},${role},${status},${operator_code}\n`;
+        csv += `${username},${nama},${branch_id},${bagian},${role},${status},${operator_code}\n`;
     });
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const link = document.createElement("a");
@@ -406,7 +469,7 @@ export function exportUsers() {
 }
 
 export function downloadUserTemplate() {
-    const csv = "Username,Nama,Bagian,Role,Status,Operator ID\ncs_budi,Budi Santoso,Customer Service,Customer Service,Aktif,CS\nteller_ani,Ani Wijaya,Teller,Teller,Aktif,TLR\n";
+    const csv = "Username,Nama,Cabang,Bagian,Role,Status,Operator ID\ncs_budi,Budi Santoso,Pusat,Customer Service,Customer Service,Aktif,CS\nteller_ani,Ani Wijaya,Singaparna,Teller,Teller,Aktif,TLR\n";
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
@@ -436,14 +499,7 @@ export async function importUsers(file) {
             return;
         }
 
-        const firstLine = lines[0];
-        
-        // Detect delimiter (support comma and semicolon for Indonesian regional settings in Excel)
-        const commaCount = (firstLine.match(/,/g) || []).length;
-        const semiCount = (firstLine.match(/;/g) || []).length;
-        const delimiter = semiCount > commaCount ? ';' : ',';
-
-        const parseCSVRow = (line) => {
+        const parseCSVRow = (line, delim) => {
             const result = [];
             let current = '';
             let inQuotes = false;
@@ -451,7 +507,7 @@ export async function importUsers(file) {
                 const char = line[i];
                 if (char === '"') {
                     inQuotes = !inQuotes;
-                } else if (char === delimiter && !inQuotes) {
+                } else if (char === delim && !inQuotes) {
                     result.push(current.trim());
                     current = '';
                 } else {
@@ -462,41 +518,68 @@ export async function importUsers(file) {
             return result;
         };
 
-        const parsedHeader = parseCSVRow(firstLine);
+        let headerIndex = -1;
+        let parsedHeader = [];
+        let delimiter = ',';
+
+        for (let i = 0; i < lines.length; i++) {
+            const line = lines[i];
+            const commaCount = (line.match(/,/g) || []).length;
+            const semiCount = (line.match(/;/g) || []).length;
+            const tempDelim = semiCount > commaCount ? ';' : ',';
+
+            const parts = parseCSVRow(line, tempDelim);
+            const headersStr = parts.map(h => h.toLowerCase().trim());
+            
+            if (headersStr.includes("username") || headersStr.includes("nama") || headersStr.includes("bagian") || headersStr.includes("operator id")) {
+                headerIndex = i;
+                parsedHeader = parts;
+                delimiter = tempDelim;
+                break;
+            }
+        }
+
+        if (headerIndex === -1) {
+            statusBar.style.background = "#fff3cd";
+            statusBar.style.color = "#856404";
+            statusBar.innerText = "⚠ Header (Username, Nama, dll) tidak ditemukan.";
+            return;
+        }
+
         const headers = parsedHeader.map(h => h.toLowerCase().trim());
-        const hasHeader = headers.includes("username") || headers.includes("nama") || headers.includes("bagian") || headers.includes("role") || headers.includes("status") || headers.includes("operator id") || headers.includes("operator_code");
-        const dataLines = hasHeader ? lines.slice(1) : lines;
+        const dataLines = lines.slice(headerIndex + 1);
 
         let usernameIdx = 0;
         let namaIdx = 1;
-        let bagianIdx = 2;
-        let roleIdx = 3;
-        let statusIdx = 4;
-        let opCodeIdx = 5;
+        let branch_idIdx = 2;
+        let bagianIdx = 3;
+        let roleIdx = 4;
+        let statusIdx = 5;
+        let opCodeIdx = 6;
 
-        if (hasHeader) {
-            usernameIdx = headers.indexOf("username");
-            namaIdx = headers.indexOf("nama");
-            bagianIdx = headers.indexOf("bagian");
-            roleIdx = headers.indexOf("role");
-            statusIdx = headers.indexOf("status");
-            opCodeIdx = headers.findIndex(h => h.includes("operator") || h.includes("id") || h.includes("code"));
-        }
+        usernameIdx = headers.indexOf("username");
+        namaIdx = headers.indexOf("nama");
+        branch_idIdx = headers.indexOf("cabang");
+        bagianIdx = headers.indexOf("bagian");
+        roleIdx = headers.indexOf("role");
+        statusIdx = headers.indexOf("status");
+        opCodeIdx = headers.findIndex(h => h.includes("operator") || h.includes("id") || h.includes("code"));
 
         const rows = [];
         dataLines.forEach(line => {
-            const parts = parseCSVRow(line);
+            const parts = parseCSVRow(line, delimiter);
             if (parts.length === 0) return;
 
             const username = usernameIdx !== -1 ? (parts[usernameIdx] || "").trim() : "";
             const nama = namaIdx !== -1 ? (parts[namaIdx] || "").trim() : "";
+            const branch_id = branch_idIdx !== -1 ? (parts[branch_idIdx] || "").trim() : "";
             const bagian = bagianIdx !== -1 ? (parts[bagianIdx] || "").trim() : "";
             const role = roleIdx !== -1 ? (parts[roleIdx] || "").trim() : "";
             const status = (statusIdx !== -1 && parts[statusIdx]) ? parts[statusIdx].trim() : "Aktif";
             const operator_code = opCodeIdx !== -1 ? (parts[opCodeIdx] || "").trim() : "";
 
-            if (username && nama && role && operator_code) {
-                rows.push({ username, nama, bagian, role, status, operator_code });
+            if (username && nama && role) {
+                rows.push({ username, nama, branch_id, bagian, role, status, operator_code });
             }
         });
 

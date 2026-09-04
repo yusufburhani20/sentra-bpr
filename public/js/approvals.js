@@ -35,7 +35,7 @@ export async function fetchPendingApprovalsCount() {
 let lastApprovalsDataStr = null;
 
 export async function renderApprovalsView() {
-    const isAdminOrSpv = state.currentUser && (state.currentUser.role === 'Admin' || state.currentUser.role === 'Kepala Bidang');
+    const isAdminOrSpv = state.currentUser && (state.currentUser.role === 'Super Admin' || state.currentUser.role === 'Admin' || state.currentUser.role === 'Kepala Bidang');
     
     // Fetch data terlebih dahulu untuk membandingkan state
     let newPending = [];

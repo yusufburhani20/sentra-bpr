@@ -24,7 +24,30 @@ function getAsync(sql, params = []) {
 
 async function initializeDb(callback) {
     try {
-        // 1. Users Table
+        // 1. Branches Table (Multi-Tenant)
+        await runAsync(`CREATE TABLE IF NOT EXISTS branches (
+            id TEXT PRIMARY KEY,
+            name TEXT,
+            type TEXT,
+            deleted_at TEXT
+        )`);
+
+        // 2. Cash Offices Table
+        await runAsync(`CREATE TABLE IF NOT EXISTS cash_offices (
+            id TEXT PRIMARY KEY,
+            branch_id TEXT,
+            name TEXT,
+            deleted_at TEXT
+        )`);
+
+        // 2.5 Admin Branches Table (Many-to-Many)
+        await runAsync(`CREATE TABLE IF NOT EXISTS admin_branches (
+            admin_id TEXT,
+            branch_id TEXT,
+            PRIMARY KEY (admin_id, branch_id)
+        )`);
+
+        // 3. Users Table
         await runAsync(`CREATE TABLE IF NOT EXISTS users (
             id TEXT PRIMARY KEY,
             username TEXT UNIQUE,
@@ -34,10 +57,12 @@ async function initializeDb(callback) {
             status TEXT,
             operator_code TEXT,
             password_hash TEXT,
-            deleted_at TEXT
+            deleted_at TEXT,
+            branch_id TEXT,
+            cash_office_id TEXT
         )`);
 
-        // 2. Cost Codes Table
+        // 4. Cost Codes Table
         await runAsync(`CREATE TABLE IF NOT EXISTS cost_codes (
             id TEXT PRIMARY KEY,
             kode TEXT UNIQUE,
@@ -45,7 +70,7 @@ async function initializeDb(callback) {
             deleted_at TEXT
         )`);
 
-        // 3. Transactions Table
+        // 5. Transactions Table
         await runAsync(`CREATE TABLE IF NOT EXISTS transactions (
             id TEXT PRIMARY KEY,
             ref_no TEXT UNIQUE,
@@ -59,7 +84,8 @@ async function initializeDb(callback) {
             nominal_utama REAL,
             nominal_desimal REAL,
             keterangan TEXT,
-            terbilang TEXT
+            terbilang TEXT,
+            branch_id TEXT
         )`);
 
         // Safe alterations/indexes for transactions
@@ -69,35 +95,40 @@ async function initializeDb(callback) {
         await runAsync("ALTER TABLE transactions ADD COLUMN kredit_rekening TEXT");
         await runAsync("ALTER TABLE transactions ADD COLUMN username TEXT");
         await runAsync("ALTER TABLE transactions ADD COLUMN tanggal_slip TEXT");
+        await runAsync("ALTER TABLE transactions ADD COLUMN branch_id TEXT");
         await runAsync("CREATE INDEX IF NOT EXISTS idx_transactions_tanggal ON transactions (tanggal)");
         await runAsync("CREATE INDEX IF NOT EXISTS idx_transactions_operator ON transactions (operator_code)");
         await runAsync("CREATE INDEX IF NOT EXISTS idx_transactions_username ON transactions (username)");
         await runAsync("CREATE INDEX IF NOT EXISTS idx_transactions_debet_rek ON transactions (debet_rekening)");
         await runAsync("CREATE INDEX IF NOT EXISTS idx_transactions_kredit_rek ON transactions (kredit_rekening)");
+        await runAsync("CREATE INDEX IF NOT EXISTS idx_transactions_branch_id ON transactions (branch_id)");
         await runAsync("CREATE INDEX IF NOT EXISTS idx_cost_codes_search ON cost_codes (kode, deskripsi)");
 
-        // 4. Audit Logs Table
+        // 6. Audit Logs Table
         await runAsync(`CREATE TABLE IF NOT EXISTS audit_logs (
             id TEXT PRIMARY KEY,
             tanggal TEXT,
             "user" TEXT,
             role TEXT,
             aksi TEXT,
-            ip TEXT
+            ip TEXT,
+            branch_id TEXT
         )`);
         await runAsync(`CREATE INDEX IF NOT EXISTS idx_audit_logs_user_aksi ON audit_logs ("user", aksi)`);
+        await runAsync(`CREATE INDEX IF NOT EXISTS idx_audit_logs_branch_id ON audit_logs (branch_id)`);
 
-        // 5. Notifications Table
+        // 7. Notifications Table
         await runAsync(`CREATE TABLE IF NOT EXISTS notifications (
             id TEXT PRIMARY KEY,
             tanggal TEXT,
             user_role TEXT,
             pesan TEXT,
-            dibaca INTEGER DEFAULT 0
+            dibaca INTEGER DEFAULT 0,
+            branch_id TEXT
         )`);
+        await runAsync("ALTER TABLE notifications ADD COLUMN branch_id TEXT");
 
-        // 6. Reference Counters Table (Migrated to username + slip_type composite key)
-        // Ensure table exists first in composite key format
+        // 8. Reference Counters Table
         await runAsync(`CREATE TABLE IF NOT EXISTS ref_counters (
             username TEXT,
             slip_type TEXT,
@@ -106,7 +137,6 @@ async function initializeDb(callback) {
             PRIMARY KEY (username, slip_type)
         )`);
 
-        // Check if we need to migrate existing ref_counters table to include slip_type
         let needsSlipTypeMigration = false;
         try {
             await getAsync("SELECT slip_type FROM ref_counters LIMIT 1");
@@ -115,17 +145,14 @@ async function initializeDb(callback) {
         }
 
         if (needsSlipTypeMigration) {
-            // Fetch old records (which only have username, counter, prefix)
             const oldRows = await new Promise((resolve) => {
                 db.all("SELECT * FROM ref_counters", [], (err, rows) => {
                     resolve(rows || []);
                 });
             });
 
-            // Drop old table
             await runAsync("DROP TABLE ref_counters");
 
-            // Re-create new table
             await runAsync(`CREATE TABLE IF NOT EXISTS ref_counters (
                 username TEXT,
                 slip_type TEXT,
@@ -134,7 +161,6 @@ async function initializeDb(callback) {
                 PRIMARY KEY (username, slip_type)
             )`);
 
-            // Migrate old rows as 'debet'
             for (const row of oldRows) {
                 if (row.username) {
                     const isPg = process.env.DB_TYPE === 'postgres';
@@ -146,7 +172,7 @@ async function initializeDb(callback) {
             }
         }
 
-        // 7. Approval Requests Table
+        // 9. Approval Requests Table
         await runAsync(`CREATE TABLE IF NOT EXISTS approval_requests (
             id TEXT PRIMARY KEY,
             transaction_id TEXT,
@@ -159,10 +185,13 @@ async function initializeDb(callback) {
             status TEXT DEFAULT 'PENDING',
             reviewed_by TEXT,
             reviewed_at TEXT,
-            reason TEXT
+            reason TEXT,
+            branch_id TEXT
         )`);
+        await runAsync("ALTER TABLE approval_requests ADD COLUMN branch_id TEXT");
+        await runAsync("CREATE INDEX IF NOT EXISTS idx_approval_requests_branch_id ON approval_requests (branch_id)");
 
-        // 8. Slip Submissions Table
+        // 10. Slip Submissions Table
         await runAsync(`CREATE TABLE IF NOT EXISTS slip_submissions (
             id TEXT PRIMARY KEY,
             tanggal_kirim TEXT,
@@ -179,12 +208,17 @@ async function initializeDb(callback) {
             bukti_sampai_path TEXT DEFAULT NULL,
             status TEXT DEFAULT 'Dikirim',
             tanggal_sampai TEXT DEFAULT NULL,
-            penerima_name TEXT DEFAULT NULL
+            penerima_name TEXT DEFAULT NULL,
+            branch_id TEXT,
+            tujuan_akunting TEXT DEFAULT NULL
         )`);
         await runAsync("ALTER TABLE slip_submissions ADD COLUMN username TEXT");
+        await runAsync("ALTER TABLE slip_submissions ADD COLUMN branch_id TEXT");
+        await runAsync("ALTER TABLE slip_submissions ADD COLUMN tujuan_akunting TEXT");
         await runAsync("CREATE INDEX IF NOT EXISTS idx_slip_submissions_username ON slip_submissions (username)");
+        await runAsync("CREATE INDEX IF NOT EXISTS idx_slip_submissions_branch_id ON slip_submissions (branch_id)");
 
-        // 9. System Settings Table
+        // 11. System Settings Table
         await runAsync(`CREATE TABLE IF NOT EXISTS system_settings (
             key TEXT PRIMARY KEY,
             value TEXT
@@ -192,35 +226,59 @@ async function initializeDb(callback) {
 
         // Migrations
         await runAsync("ALTER TABLE users ADD COLUMN deleted_at TEXT");
+        await runAsync("ALTER TABLE users ADD COLUMN branch_id TEXT");
+        
         await runAsync("ALTER TABLE cost_codes ADD COLUMN deleted_at TEXT");
         await runAsync("ALTER TABLE transactions ADD COLUMN deleted_at TEXT");
-        await runAsync("ALTER TABLE users ADD COLUMN password_hash TEXT");
-        
+        await runAsync("ALTER TABLE audit_logs ADD COLUMN branch_id TEXT");
+
         // Migrate existing user roles & notifications to new names
         await runAsync("UPDATE users SET role = 'Kepala Bidang' WHERE role = 'Supervisor'");
         await runAsync("UPDATE users SET role = 'SDMU' WHERE role = 'SDM'");
         await runAsync("UPDATE users SET role = 'Customer Service' WHERE role = 'Kas'");
         await runAsync("UPDATE notifications SET user_role = 'Kepala Bidang' WHERE user_role = 'Supervisor'");
 
+        // Seed default Branch (Kantor Pusat)
+        const seedBranch = async (id, name, type) => {
+            const sql = `
+                INSERT INTO branches (id, name, type)
+                VALUES (?, ?, ?)
+                ON CONFLICT (id) DO NOTHING
+            `;
+            await runAsync(sql, [id, name, type]);
+        };
+        await seedBranch("B-PUSAT", "Kantor Pusat", "Pusat");
+
+        // Migrate existing records to default branch (B-PUSAT) if they don't have one
+        const migrateToDefaultBranch = async (table) => {
+            await runAsync(`UPDATE ${table} SET branch_id = 'B-PUSAT' WHERE branch_id IS NULL OR branch_id = ''`);
+        };
+        await migrateToDefaultBranch("users");
+        await migrateToDefaultBranch("transactions");
+        await migrateToDefaultBranch("slip_submissions");
+        await migrateToDefaultBranch("approval_requests");
+        await migrateToDefaultBranch("audit_logs");
+        await migrateToDefaultBranch("notifications");
+
         // Hash default password
         const defaultHash = await bcrypt.hash(DEFAULT_PASSWORD, SALT_ROUNDS);
 
         // Seed default users if they do not exist (do not overwrite on conflict)
-        const seedUser = async (id, username, nama, bagian, role, status, operator_code, hash) => {
+        const seedUser = async (id, username, nama, bagian, role, status, operator_code, hash, branch_id) => {
             const sql = `
-                INSERT INTO users (id, username, nama, bagian, role, status, operator_code, password_hash)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO users (id, username, nama, bagian, role, status, operator_code, password_hash, branch_id)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT (id) DO NOTHING
             `;
-            await runAsync(sql, [id, username, nama, bagian, role, status, operator_code, hash]);
+            await runAsync(sql, [id, username, nama, bagian, role, status, operator_code, hash, branch_id]);
         };
 
-        await seedUser("USR-001", "admin1", "Agus Setiawan", "Administrasi", "Admin", "Aktif", "CSSPA0146", defaultHash);
-        await seedUser("USR-002", "spv1", "Heri Kiswanto", "Supervisor", "Kepala Bidang", "Aktif", "CSSPA0147", defaultHash);
-        await seedUser("USR-003", "teller1", "Budi Utomo", "Teller", "Teller", "Aktif", "CSSPA0148", defaultHash);
-        await seedUser("USR-004", "sdm1", "Siti Rahma", "SDMU", "SDMU", "Aktif", "CSSPA0149", defaultHash);
-        await seedUser("USR-005", "kas1", "Rian Hidayat", "Customer Service", "Customer Service", "Aktif", "CSSPA0150", defaultHash);
-        await seedUser("USR-006", "itsupport", "IT Support", "IT Support", "IT Support", "Aktif", "ITSUP0151", defaultHash);
+        await seedUser("USR-001", "admin1", "Agus Setiawan", "Administrasi", "Super Admin", "Aktif", "CSSPA0146", defaultHash, "B-PUSAT");
+        await seedUser("USR-002", "spv1", "Heri Kiswanto", "Supervisor", "Kepala Bidang", "Aktif", "CSSPA0147", defaultHash, "B-PUSAT");
+        await seedUser("USR-003", "teller1", "Budi Utomo", "Teller", "Teller", "Aktif", "CSSPA0148", defaultHash, "B-PUSAT");
+        await seedUser("USR-004", "sdm1", "Siti Rahma", "SDMU", "SDMU", "Aktif", "CSSPA0149", defaultHash, "B-PUSAT");
+        await seedUser("USR-005", "kas1", "Rian Hidayat", "Customer Service", "Customer Service", "Aktif", "CSSPA0150", defaultHash, "B-PUSAT");
+        await seedUser("USR-006", "itsupport", "IT Support", "IT Support", "IT Support", "Aktif", "ITSUP0151", defaultHash, "B-PUSAT");
 
         // Force-seed default cost codes
         const seedCc = async (id, kode, deskripsi) => {
@@ -498,6 +556,15 @@ async function initializeDb(callback) {
         }
 
         // ─── END iDEB TABLES ──────────────────────────────────────────────────────
+
+        // Migrate existing Admins to admin_branches
+        if (isPg) {
+            await runAsync(`INSERT INTO admin_branches (admin_id, branch_id) SELECT id, branch_id FROM users WHERE role = 'Admin' AND branch_id IS NOT NULL ON CONFLICT DO NOTHING`).catch(() => {});
+            await runAsync(`UPDATE users SET role = 'Super Admin' WHERE role = 'Admin' AND branch_id = 'B-PUSAT'`).catch(() => {});
+        } else {
+            await runAsync(`INSERT OR IGNORE INTO admin_branches (admin_id, branch_id) SELECT id, branch_id FROM users WHERE role = 'Admin' AND branch_id IS NOT NULL`).catch(() => {});
+            await runAsync(`UPDATE users SET role = 'Super Admin' WHERE role = 'Admin' AND branch_id = 'B-PUSAT'`).catch(() => {});
+        }
 
         console.log("Database initialized & default credentials verified.");
         if (callback) callback();

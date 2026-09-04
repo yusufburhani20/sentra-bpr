@@ -88,6 +88,7 @@ app.use('/api/slip-submissions', require('./routes/slipSubmissionRoutes'));
 app.use('/api/system', require('./routes/systemRoutes'));
 app.use('/api/user-files', require('./routes/fileBackupRoutes'));
 app.use('/api/ideb', require('./routes/idebRoutes'));
+app.use('/api/branches', require('./routes/branchRoutes'));
 
 // ─── PROTECTED UPLOADS: File gambar bukti kirim hanya untuk user login ─────────
 // Tanpa ini, file di folder uploads/ bisa diakses publik via URL langsung.

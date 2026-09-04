@@ -111,7 +111,7 @@ export function renderSubmissionsTable() {
 
     // Toggle Laporan Container based on Role (Admin/Supervisor only)
     const laporanContainer = document.getElementById("laporan-slip-container");
-    const isReportAuthorized = state.currentRole === 'Admin';
+    const isReportAuthorized = state.currentRole === 'Super Admin' || state.currentRole === 'Admin';
     
     if (laporanContainer) {
         if (isReportAuthorized) {
@@ -191,9 +191,9 @@ export function renderSubmissionsTable() {
         let statusText = "Dikirim";
         let statusInfo = `<div style="font-size:11px; color:var(--text-muted); margin-top:2px;">Oleh: ${escapeHtml(item.operator_name)}</div>`;
         
-        if (item.status === 'Sampai') {
+        if (item.status === 'Diterima' || item.status === 'Sampai') {
             statusBadgeClass = "badge-success";
-            statusText = "Sampai";
+            statusText = "Diterima";
             statusInfo = `
                 <div style="font-size:11px; color:var(--text-muted); margin-top:2px;">
                     Penerima: <strong>${escapeHtml(item.penerima_name)}</strong><br>
@@ -205,14 +205,22 @@ export function renderSubmissionsTable() {
         // Action Column Button
         let actionBtnHTML = `<span class="text-muted" style="font-size:11px;">Selesai</span>`;
         if (item.status === 'Dikirim') {
-            actionBtnHTML = `
-                <button class="btn btn-primary btn-confirm-arrival" style="padding: 6px 10px; font-size:11px;" data-id="${item.id}">
-                    <i data-lucide="check-circle" style="width:12px; height:12px; margin-right:4px;"></i> Terima
-                </button>
-            `;
+            // Validate if the current user has permission to confirm
+            const isAuthorizedToConfirm = state.currentRole === 'Super Admin' || state.currentRole === 'Admin' || 
+                                         (item.tujuan_akunting && item.tujuan_akunting === state.currentUser.username);
+            
+            if (isAuthorizedToConfirm) {
+                actionBtnHTML = `
+                    <button class="btn btn-primary btn-confirm-arrival" style="padding: 6px 10px; font-size:11px;" data-id="${item.id}">
+                        <i data-lucide="check-circle" style="width:12px; height:12px; margin-right:4px;"></i> Terima
+                    </button>
+                `;
+            } else {
+                actionBtnHTML = `<span class="text-muted" style="font-size:11px; font-style:italic;">Menunggu Akunting</span>`;
+            }
         }
 
-        const canDelete = state.currentRole === 'Admin';
+        const canDelete = state.currentRole === 'Super Admin' || state.currentRole === 'Admin';
         const deleteBtnHTML = canDelete ? `
             <button class="btn btn-secondary btn-delete-submission" style="padding: 6px 10px; font-size:11px; color:var(--danger); border-color:var(--danger-light);" data-id="${item.id}">
                 <i data-lucide="trash-2" style="width:12px; height:12px; margin-right:4px;"></i> Hapus
@@ -298,6 +306,23 @@ export function setupSlipSubmissionForm() {
         kantorKasInput.value = state.currentUser.bagian || "Kantor Kas";
     }
 
+    // Load Akunting targets
+    const akuntingSelect = document.getElementById("submit-tujuan-akunting");
+    if (akuntingSelect) {
+        authFetch('/api/users/akunting')
+            .then(res => res.json())
+            .then(users => {
+                akuntingSelect.innerHTML = '<option value="">-- Pilih Akunting Penerima --</option>';
+                users.forEach(u => {
+                    const option = document.createElement("option");
+                    option.value = u.username;
+                    option.textContent = u.nama;
+                    akuntingSelect.appendChild(option);
+                });
+            })
+            .catch(err => console.error("Gagal memuat daftar Akunting:", err));
+    }
+
     // Dynamic list initializer
     customChecklistItems = [];
     renderCustomChecklistList();
@@ -371,8 +396,11 @@ export async function submitSlipSubmission() {
         return;
     }
 
+    const tujuan_akunting = document.getElementById("submit-tujuan-akunting") ? document.getElementById("submit-tujuan-akunting").value : "";
+
     const formData = new FormData();
     formData.append("kantor_kas", kantor_kas);
+    formData.append("tujuan_akunting", tujuan_akunting);
     formData.append("checklist_slips", chkSlips);
     formData.append("checklist_mutasi", chkMutasi);
     formData.append("checklist_pb", chkPB);

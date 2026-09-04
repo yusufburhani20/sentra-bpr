@@ -9,11 +9,55 @@ let lastDashboardDataStr = null;
 
 export async function renderDashboardView() {
     try {
-        const res = await fetch('/api/dashboard/stats').then(r => r.json());
+        const filterEl = document.getElementById("dashboard-branch-filter");
+        const selectedBranch = filterEl ? filterEl.value : "";
+        const container = document.getElementById("dashboard-filter-container");
+
+        const isSuperAdmin = state.currentRole === 'Super Admin';
+        const isAdmin = state.currentRole === 'Admin';
+        const handledBranches = (state.currentUser && state.currentUser.handled_branches) ? state.currentUser.handled_branches : [];
+
+        // Show/hide filter container
+        if (isSuperAdmin || (isAdmin && handledBranches.length > 1)) {
+            if (container) container.style.display = "block";
+
+            if (filterEl && filterEl.options.length <= 1) {
+                try {
+                    const bRes = await window.authFetch('/api/branches');
+                    if (bRes.ok) {
+                        const branches = await bRes.json();
+                        if (Array.isArray(branches)) {
+                            branches.forEach(b => {
+                                if (isSuperAdmin || handledBranches.includes(b.id)) {
+                                    const opt = document.createElement("option");
+                                    opt.value = b.id;
+                                    opt.textContent = b.name;
+                                    filterEl.appendChild(opt);
+                                }
+                            });
+                        }
+                    }
+                } catch (e) {
+                    console.error("Gagal memuat cabang untuk filter dashboard", e);
+                }
+
+                // Pasang event listener sekali saja (setelah opsi cabang dimuat)
+                filterEl.addEventListener("change", () => {
+                    lastDashboardDataStr = null; // Reset cache agar re-render paksa
+                    renderDashboardView();
+                });
+            }
+        } else {
+            if (container) container.style.display = "none";
+        }
+
+        // Fetch stats dengan filter branch yang dipilih
+        const branchParam = selectedBranch ? `?branch=${encodeURIComponent(selectedBranch)}` : "";
+        const res = await fetch(`/api/dashboard/stats${branchParam}`).then(r => r.json());
         if (!res.success) return;
 
-        const dataStr = JSON.stringify(res);
-        if (dataStr === lastDashboardDataStr && chartVolumeTrend) return; // Skip re-render if data hasn't changed
+        const dataStr = selectedBranch + JSON.stringify(res);
+        if (dataStr === lastDashboardDataStr && chartVolumeTrend) return; // Skip re-render if data unchanged
         lastDashboardDataStr = dataStr;
 
         const kpis = res.kpis;

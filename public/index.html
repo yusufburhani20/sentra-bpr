@@ -148,6 +148,12 @@
                         </a>
                     </li>
                     <li>
+                        <a class="nav-item-link" data-view="branches" id="nav-branches">
+                            <i data-lucide="building-2"></i>
+                            <span>Manajemen Cabang</span>
+                        </a>
+                    </li>
+                    <li>
                         <a class="nav-item-link" data-view="audit" id="nav-audit">
                             <i data-lucide="shield-check"></i>
                             <span>Audit Trail</span>
@@ -233,6 +239,15 @@
 
                 <!-- 0. VIEW: DASHBOARD -->
                 <section id="view-dashboard" class="view-section" style="display:block;">
+                    <!-- DASHBOARD HEADER -->
+                    <div class="dashboard-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <h2 style="margin:0; font-size: 20px; font-weight: 700; color: var(--text-dark);">Dashboard Statistik</h2>
+                        <div id="dashboard-filter-container" style="display: none;">
+                            <select id="dashboard-branch-filter" class="form-control" style="width: 250px; font-size: 13px;">
+                                <option value="">Semua Cabang</option>
+                            </select>
+                        </div>
+                    </div>
                     <!-- KPI CARDS -->
                     <div class="dashboard-kpi-grid">
                         <div class="kpi-card card-glow-primary">
@@ -757,6 +772,10 @@
                                     <option value="">Semua Rekening</option>
                                     <!-- Populated dynamically -->
                                 </select>
+                                <select id="riwayat-filter-branch" class="form-control" style="width:160px; display:none;">
+                                    <option value="">Semua Cabang</option>
+                                    <!-- Populated dynamically -->
+                                </select>
                                 <input type="month" id="riwayat-filter-month" class="form-control" style="width:160px;">
                                 <div style="display:flex; align-items:center; gap:8px;">
                                     <label for="riwayat-limit"
@@ -839,8 +858,15 @@
 
                             <div class="form-group">
                                 <label class="form-label">Kantor Kas / Unit Pengirim</label>
-                                <input type="text" id="submit-kantor-kas" class="form-control"
-                                    placeholder="Contoh: Kantor Kas Jabar">
+                                <input type="text" id="submit-kantor-kas" class="form-control" placeholder="Contoh: Kantor Kas Jabar">
+                            </div>
+
+                            <div class="form-group" style="margin-top:16px;">
+                                <label class="form-label">Dikirim ke Akunting Mana?</label>
+                                <select id="submit-tujuan-akunting" class="form-control">
+                                    <option value="">-- Pilih Akunting Penerima --</option>
+                                    <!-- Dynamic options -->
+                                </select>
                             </div>
 
                             <!-- Checklists -->
@@ -1167,7 +1193,7 @@
                         <!-- CSV format hint -->
                         <div id="csv-import-hint"
                             style="font-size:11px; color:var(--text-muted); margin-bottom:12px; padding:8px 12px; background:var(--primary-light); border-radius:6px;">
-                            <strong>Format CSV:</strong> kolom: Username, Nama, Bagian, Role, Status, Operator ID
+                            <strong>Format CSV:</strong> kolom: Username, Nama, Cabang, Bagian, Role, Status, Operator ID
                             &nbsp;|&nbsp;
                             <a id="btn-download-user-template" href="#"
                                 style="color:var(--primary); font-weight:700; text-decoration:none;">⬇ Unduh Template</a>
@@ -1178,6 +1204,7 @@
                                     <tr>
                                         <th>Nama Pengguna</th>
                                         <th>Username</th>
+                                        <th>Cabang</th>
                                         <th>Unit / Bagian</th>
                                         <th>Peran (Role)</th>
                                         <th>Kode Operator ID</th>
@@ -1262,11 +1289,13 @@
                                 </div>
                                 <select id="audit-filter-role" class="form-control" style="width:160px;">
                                     <option value="">Semua Peran (Role)</option>
+                                    <option value="Super Admin">Super Admin</option>
                                     <option value="Admin">Admin</option>
                                     <option value="Kepala Bidang">Kepala Bidang</option>
                                     <option value="Teller">Teller</option>
                                     <option value="SDMU">SDMU</option>
                                     <option value="Customer Service">Customer Service</option>
+                                    <option value="Akunting">Akunting</option>
                                     <option value="IT Support">IT Support</option>
                                 </select>
                             </div>
@@ -1369,6 +1398,128 @@
                                     <i data-lucide="rocket" style="width:15px; height:15px;"></i> Mulai Deploy
                                 </button>
                             </div>
+                        </div>
+                    </div>
+                </div>
+
+
+                <!-- VIEW: MANAJEMEN CABANG -->
+                <section id="view-branches" class="view-section" style="display:none;">
+                    <div class="card">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                            <h2 style="font-size:16px; font-weight:700;"><i data-lucide="building-2"></i> Manajemen Cabang</h2>
+                            <button class="btn btn-primary" id="btn-add-branch" style="padding:8px 16px; font-size:12px;">
+                                <i data-lucide="plus-circle" style="width:14px; height:14px;"></i> Tambah Cabang Baru
+                            </button>
+                        </div>
+                        
+                        <div class="table-responsive">
+                            <table class="data-table" id="branches-table">
+                                <thead>
+                                    <tr>
+                                        <th style="width:150px;">ID Cabang</th>
+                                        <th>Nama Cabang</th>
+                                        <th>Tipe</th>
+                                        <th style="width:120px; text-align:center;">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="branches-table-body">
+                                    <!-- Populated dynamically -->
+                                    <tr><td colspan="4" style="text-align:center; color:var(--text-muted);">Memuat data...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- MODAL TAMBAH/EDIT CABANG -->
+                <div id="modal-branch" class="modal-overlay">
+                    <div class="modal-container" style="max-width: 500px;">
+                        <div class="modal-header">
+                            <h3 class="modal-title" id="modal-branch-title">Tambah Cabang</h3>
+                            <button type="button" class="modal-close modal-close-btn" onclick="document.getElementById('modal-branch').classList.remove('active')"><i data-lucide="x"></i></button>
+                        </div>
+                        <div class="modal-body">
+                            <form id="form-branch">
+                            <input type="hidden" id="branch-id" value="">
+                            
+                            <div class="form-group">
+                                <label class="form-label">Nama Cabang / Unit Kerja</label>
+                                <input type="text" id="branch-name" class="form-control" placeholder="Contoh: Cabang Tasikmalaya" required>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">Tipe</label>
+                                <select id="branch-type" class="form-control">
+                                    <option value="Cabang">Cabang</option>
+                                    <option value="Pusat">Pusat</option>
+                                </select>
+                            </div>
+
+                            <hr style="margin: 20px 0; border: 0; border-top: 1px solid var(--border-color);">
+                            
+                            <h4 style="margin-bottom: 15px; font-size: 14px; color: var(--text-color);">Pengaturan Admin Cabang</h4>
+                            
+                            <!-- State 1: Already has Admin -->
+                            <div id="branch-admin-exists-section" style="display:none; background: #f8fafc; padding: 12px; border-radius: 6px; border: 1px solid #e2e8f0; margin-bottom: 15px;">
+                                <div style="display:flex; justify-content: space-between; align-items: center;">
+                                    <div>
+                                        <p style="font-size: 12px; color: var(--text-muted); margin:0;">Admin Saat Ini</p>
+                                        <p style="font-size: 14px; font-weight: 500; margin:0;" id="branch-admin-name-display">-</p>
+                                    </div>
+                                    <button type="button" class="btn btn-sm btn-danger" id="btn-remove-branch-admin" style="padding: 4px 8px; font-size:12px;">Hapus Admin</button>
+                                </div>
+                                <input type="hidden" id="branch-current-admin-id" value="">
+                            </div>
+
+                            <!-- State 2: No Admin yet -->
+                            <div id="branch-admin-new-section" style="display:none;">
+                                <div class="form-group" style="margin-bottom: 15px;">
+                                    <label class="form-label">Metode Penentuan Admin</label>
+                                    <div style="display:flex; gap:15px; margin-top:5px;">
+                                        <label style="display:flex; align-items:center; gap:5px; font-size:13px; cursor:pointer;">
+                                            <input type="radio" name="admin_mode" value="select" checked onchange="document.getElementById('mode-select-admin').style.display='block'; document.getElementById('mode-create-admin').style.display='none';"> Pilih Admin Tersedia
+                                        </label>
+                                        <label style="display:flex; align-items:center; gap:5px; font-size:13px; cursor:pointer;">
+                                            <input type="radio" name="admin_mode" value="create" onchange="document.getElementById('mode-select-admin').style.display='none'; document.getElementById('mode-create-admin').style.display='block';"> Buat Baru
+                                        </label>
+                                        <label style="display:flex; align-items:center; gap:5px; font-size:13px; cursor:pointer;">
+                                            <input type="radio" name="admin_mode" value="none" onchange="document.getElementById('mode-select-admin').style.display='none'; document.getElementById('mode-create-admin').style.display='none';"> Lewati
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <div id="mode-select-admin" style="display:block;">
+                                    <div class="form-group">
+                                        <label class="form-label">Pilih Admin</label>
+                                        <select id="admin-select" class="form-control">
+                                            <option value="">-- Memuat Data Admin... --</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div id="mode-create-admin" style="display:none;">
+                                    <div class="form-group">
+                                        <label class="form-label">Username</label>
+                                        <input type="text" id="admin-username" class="form-control" placeholder="Contoh: admin_tms">
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label class="form-label">Nama Lengkap</label>
+                                        <input type="text" id="admin-nama" class="form-control" placeholder="Contoh: Budi (Admin)">
+                                    </div>
+
+                                    <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 15px;">
+                                        <i data-lucide="info" style="width:12px; height:12px; display:inline-block; vertical-align:middle;"></i> Password default adalah <strong>sentra123</strong>. Role otomatis diset menjadi Admin.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:20px;">
+                                <button type="button" class="btn btn-secondary modal-close-btn" onclick="document.getElementById('modal-branch').classList.remove('active')">Batal</button>
+                                <button type="submit" class="btn btn-primary">Simpan Cabang</button>
+                            </div>
+                            </form>
                         </div>
                     </div>
                 </div>
@@ -1931,12 +2082,19 @@
                         <input type="text" id="user-username" class="form-control" placeholder="Masukkan username...">
                     </div>
                     <div class="form-group">
+                        <label class="form-label">Cabang Penempatan</label>
+                        <select id="user-branch-id" class="form-control">
+                            <option value="">-- Pilih Cabang --</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
                         <label class="form-label">Bagian Kerja</label>
                         <select id="user-bagian" class="form-control">
                             <option value="Teller">Teller</option>
                             <option value="SDMU">Sumber Daya Manusia & Umum (SDMU)</option>
                             <option value="Customer Service">Customer Service</option>
                             <option value="Kepala Bidang">Kepala Bidang</option>
+                            <option value="Akunting">Akunting</option>
                             <option value="Administrasi">Administrasi (IT)</option>
                             <option value="IT Support">IT Support</option>
                         </select>
@@ -1948,6 +2106,7 @@
                             <option value="SDMU">SDMU</option>
                             <option value="Customer Service">Customer Service</option>
                             <option value="Kepala Bidang">Kepala Bidang</option>
+                            <option value="Akunting">Akunting</option>
                             <option value="Admin">Admin</option>
                             <option value="IT Support">IT Support</option>
                         </select>

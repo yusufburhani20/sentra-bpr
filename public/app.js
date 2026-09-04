@@ -10,23 +10,25 @@ import { renderDashboardView } from './js/dashboard.js';
 import { renderApprovalsView, fetchPendingApprovalsCount } from './js/approvals.js';
 import { fetchSubmissions, setupSlipSubmissionForm, submitSlipSubmission, submitConfirmArrival, addCustomChecklistItem } from './js/slipSubmissions.js';
 import { fetchFileBackupList, setupFileBackup } from './js/fileBackup.js';
+import { renderBranchesView } from './js/branches.js';
 
 window.authFetch = authFetch;
 
 // Check Permissions
 function checkPermission(view, role) {
     const permissions = {
-        "dashboard": ["Admin", "Kepala Bidang", "Teller", "SDMU", "Customer Service", "IT Support"],
-        "input": ["Admin", "Kepala Bidang", "Teller", "SDMU", "Customer Service"],
-        "riwayat": ["Admin", "Kepala Bidang", "Teller", "SDMU", "Customer Service"],
-        "kodebiaya": ["Admin", "Kepala Bidang", "Teller", "SDMU", "Customer Service"],
-        "kirimslip": ["Admin", "Kepala Bidang", "Teller", "SDMU", "Customer Service"],
-        "filebackup": ["Admin", "Kepala Bidang", "Teller", "SDMU", "Customer Service"],
-        "users": ["Admin", "Kepala Bidang", "Teller", "SDMU", "Customer Service"],
-        "audit": ["Admin", "Kepala Bidang"],
-        "approvals": ["Admin", "Kepala Bidang", "Teller", "SDMU", "Customer Service"],
-        "ideb": ["Admin"],
-        "ideb-master": ["Admin"]
+        "dashboard": ["Super Admin", "Admin", "Kepala Bidang", "Teller", "SDMU", "Customer Service", "IT Support", "Akunting"],
+        "input": ["Super Admin", "Admin", "Kepala Bidang", "Teller", "SDMU", "Customer Service"],
+        "riwayat": ["Super Admin", "Admin", "Kepala Bidang", "Teller", "SDMU", "Customer Service", "Akunting"],
+        "kodebiaya": ["Super Admin", "Admin", "Kepala Bidang", "Teller", "SDMU", "Customer Service", "Akunting"],
+        "kirimslip": ["Super Admin", "Admin", "Kepala Bidang", "Teller", "SDMU", "Customer Service", "Akunting"],
+        "filebackup": ["Super Admin", "Admin", "Kepala Bidang", "Teller", "SDMU", "Customer Service"],
+        "users": ["Super Admin", "Admin", "Kepala Bidang", "Teller", "SDMU", "Customer Service"],
+        "branches": ["Super Admin", "Admin"],
+        "audit": ["Super Admin", "Admin", "Kepala Bidang"],
+        "approvals": ["Super Admin", "Admin", "Kepala Bidang", "Teller", "SDMU", "Customer Service"],
+        "ideb": ["Super Admin", "Admin"],
+        "ideb-master": ["Super Admin", "Admin"]
     };
     return permissions[view] ? permissions[view].includes(role) : false;
 }
@@ -131,7 +133,8 @@ export async function refreshData() {
     try {
         const searchVal = document.getElementById("riwayat-search") ? document.getElementById("riwayat-search").value : "";
         const codeVal = document.getElementById("riwayat-filter-code") ? document.getElementById("riwayat-filter-code").value : "";
-        const dateVal = document.getElementById("riwayat-filter-month") ? document.getElementById("riwayat-filter-month").value : "";
+        const monthVal = document.getElementById("riwayat-filter-month") ? document.getElementById("riwayat-filter-month").value : "";
+        const branchVal = document.getElementById("riwayat-filter-branch") ? document.getElementById("riwayat-filter-branch").value : "";
         
         const auditSearchVal = document.getElementById("audit-search") ? document.getElementById("audit-search").value : "";
         const auditRoleVal = document.getElementById("audit-filter-role") ? document.getElementById("audit-filter-role").value : "";
@@ -161,18 +164,43 @@ export async function refreshData() {
                 promises.push(fetch('/api/cost-codes?limit=10000').then(r => r.json()));
                 keys.push('codes');
             }
-            promises.push(fetch(`/api/transactions?page=${state.currentTxPage}&limit=${state.paginationLimit}&search=${encodeURIComponent(searchVal)}&code=${encodeURIComponent(codeVal)}&date=${encodeURIComponent(dateVal)}`).then(r => r.json()));
+            // Populate branch filter if Super Admin or Admin with multiple branches
+            const branchFilter = document.getElementById("riwayat-filter-branch");
+            const isSuperAdmin = state.currentRole === 'Super Admin';
+            const isAdmin = state.currentRole === 'Admin';
+            const handledBranches = (state.currentUser && state.currentUser.handled_branches) ? state.currentUser.handled_branches : [];
+            
+            if (branchFilter && (isSuperAdmin || (isAdmin && handledBranches.length > 1))) {
+                branchFilter.style.display = 'block';
+                if (branchFilter.children.length <= 1) {
+                    fetch('/api/branches').then(r => r.json()).then(branches => {
+                        branches.forEach(b => {
+                            if (isSuperAdmin || handledBranches.includes(b.id)) {
+                                const opt = document.createElement('option');
+                                opt.value = b.id;
+                                opt.textContent = b.name;
+                                branchFilter.appendChild(opt);
+                            }
+                        });
+                    });
+                }
+            }
+            promises.push(fetch(`/api/transactions?page=${state.currentTxPage}&limit=${state.paginationLimit}&search=${encodeURIComponent(searchVal)}&code=${encodeURIComponent(codeVal)}&date=${encodeURIComponent(monthVal)}&branch=${encodeURIComponent(branchVal)}`).then(r => r.json()));
             keys.push('transactions');
         } else if (activeView === 'kodebiaya') {
             promises.push(fetch(`/api/cost-codes?page=${state.currentCcPage}&limit=${state.ccLimit}&search=${encodeURIComponent(searchVal)}`).then(r => r.json()));
             keys.push('cc_paginated');
         } else if (activeView === 'users') {
-            if (state.currentRole === 'Admin' || state.currentRole === 'Kepala Bidang') {
+            if (state.currentRole === 'Super Admin' || state.currentRole === 'Admin' || state.currentRole === 'Kepala Bidang') {
                 promises.push(fetch('/api/users').then(r => r.json()));
                 keys.push('users');
             }
             promises.push(fetch('/api/ref-counters').then(r => r.json()));
             keys.push('counters');
+        } else if (activeView === 'branches') {
+            if (state.currentRole === 'Super Admin' || state.currentRole === 'Admin') {
+                keys.push('branches_stub'); // The view calls its own fetch
+            }
         } else if (activeView === 'audit') {
             promises.push(fetch(`/api/audit-logs?page=${state.currentAuditPage}&limit=${state.paginationLimit}&search=${encodeURIComponent(auditSearchVal)}&role=${encodeURIComponent(auditRoleVal)}`).then(r => r.json()));
             keys.push('audit');
@@ -310,6 +338,8 @@ export async function showSection(sectionId) {
         fetchFileBackupList();
     } else if (sectionId === "kodebiaya") {
         renderKodeBiayaView();
+    } else if (sectionId === "branches") {
+        renderBranchesView();
     } else if (sectionId === "users") {
         renderUsersView();
     } else if (sectionId === "audit") {
@@ -671,6 +701,13 @@ if (!window.appJSInit) {
         state.currentTxPage = 1;
         await refreshAndRenderRiwayat();
     });
+    const riwayatBranchEl = document.getElementById("riwayat-filter-branch");
+    if (riwayatBranchEl) {
+        riwayatBranchEl.addEventListener("change", async () => {
+            state.currentTxPage = 1;
+            await refreshAndRenderRiwayat();
+        });
+    }
     
     document.getElementById("riwayat-limit").addEventListener("change", async (e) => {
         state.paginationLimit = parseInt(e.target.value) || 50;

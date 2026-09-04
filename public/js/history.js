@@ -81,10 +81,11 @@ export async function exportRiwayatToCSV() {
     const searchVal = document.getElementById("riwayat-search").value.toLowerCase();
     const codeVal = document.getElementById("riwayat-filter-code").value;
     const dateVal = document.getElementById("riwayat-filter-month").value;
+    const branchVal = document.getElementById("riwayat-filter-branch") ? document.getElementById("riwayat-filter-branch").value : "";
     
     try {
         showToast("Menyiapkan data ekspor...", "info");
-        const res = await fetch(`/api/transactions?page=1&limit=1000000&search=${encodeURIComponent(searchVal)}&code=${encodeURIComponent(codeVal)}&date=${encodeURIComponent(dateVal)}`).then(r => r.json());
+        const res = await fetch(`/api/transactions?page=1&limit=1000000&search=${encodeURIComponent(searchVal)}&code=${encodeURIComponent(codeVal)}&date=${encodeURIComponent(dateVal)}&branch=${encodeURIComponent(branchVal)}`).then(r => r.json());
         const exportData = res.data || [];
         
         if (exportData.length === 0) {

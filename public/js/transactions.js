@@ -66,7 +66,7 @@ export async function renderInputView() {
     document.getElementById("print-data-only").checked = printOnlyChecked;
 
     // Sembunyikan/nonaktifkan kontrol untuk non-Admin
-    const isAdmin = state.currentUser && state.currentUser.role === 'Admin';
+    const isAdmin = state.currentUser && (state.currentUser.role === 'Super Admin' || state.currentUser.role === 'Admin');
     const calInputs = [
         "cal-offset-x", "cal-offset-y", "cal-slip-width", "cal-slip-height", 
         "cal-slip-scale", "cal-slip-rotation", "cal-page-size", "cal-enable-drag"
