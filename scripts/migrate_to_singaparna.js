@@ -14,13 +14,25 @@ async function migrate() {
         }
         
         if (!rows || rows.length === 0) {
-            console.log("❌ Cabang Singaparna tidak ditemukan!");
-            console.log("⚠️ Silakan buat Cabang 'Cabang Singaparna' terlebih dahulu di menu Manajemen Cabang.");
-            process.exit(1);
+            console.log("⚠️ Cabang Singaparna tidak ditemukan. Membuat cabang secara otomatis...");
+            const singaparnaId = "B-" + Date.now();
+            db.run("INSERT INTO branches (id, name, type) VALUES (?, ?, ?)", [singaparnaId, "Cabang Singaparna", "Cabang"], function(errInsert) {
+                if (errInsert) {
+                    console.error("❌ Gagal membuat Cabang Singaparna:", errInsert);
+                    process.exit(1);
+                }
+                console.log(`✅ Berhasil membuat Cabang Singaparna dengan ID: ${singaparnaId}`);
+                lanjutkanMigrasi(singaparnaId);
+            });
+        } else {
+            const singaparnaId = rows[0].id;
+            console.log(`✅ Ditemukan ID Cabang Singaparna: ${singaparnaId} (${rows[0].name})`);
+            lanjutkanMigrasi(singaparnaId);
         }
+    });
+}
 
-        const singaparnaId = rows[0].id;
-        console.log(`✅ Ditemukan ID Cabang Singaparna: ${singaparnaId} (${rows[0].name})`);
+function lanjutkanMigrasi(singaparnaId) {
         
         console.log("🔄 Memperbarui semua transaksi lama yang masuk ke Kantor Pusat (B-PUSAT)...");
         
@@ -44,9 +56,14 @@ async function migrate() {
                     console.log(`✅ Berhasil memindahkan ${usersAffected} pengguna ke Cabang Singaparna.`);
                 }
                 
-                console.log("==========================================");
-                console.log("🎉 Migrasi selesai.");
-                process.exit(0);
+                console.log("🔄 Memastikan akun Admin utama menjadi Super Admin...");
+                db.run("UPDATE users SET role = 'Super Admin', branch_id = 'B-PUSAT' WHERE username = 'admin' OR username = 'admin1'", [], function(errAdmin) {
+                    if (errAdmin) console.error("❌ Error update admin:", errAdmin);
+                    
+                    console.log("==========================================");
+                    console.log("🎉 Migrasi selesai.");
+                    process.exit(0);
+                });
             });
         });
     });
