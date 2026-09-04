@@ -111,7 +111,7 @@ export function renderSubmissionsTable() {
 
     // Toggle Laporan Container based on Role (Admin/Supervisor only)
     const laporanContainer = document.getElementById("laporan-slip-container");
-    const isReportAuthorized = state.currentRole === 'Admin' || state.currentRole === 'Kepala Bidang';
+    const isReportAuthorized = state.currentRole === 'Admin';
     
     if (laporanContainer) {
         if (isReportAuthorized) {
@@ -212,7 +212,7 @@ export function renderSubmissionsTable() {
             `;
         }
 
-        const canDelete = state.currentRole === 'Admin' || state.currentRole === 'Kepala Bidang';
+        const canDelete = state.currentRole === 'Admin';
         const deleteBtnHTML = canDelete ? `
             <button class="btn btn-secondary btn-delete-submission" style="padding: 6px 10px; font-size:11px; color:var(--danger); border-color:var(--danger-light);" data-id="${item.id}">
                 <i data-lucide="trash-2" style="width:12px; height:12px; margin-right:4px;"></i> Hapus
