@@ -59,6 +59,10 @@ exports.createSubmission = (req, res) => {
         return res.status(400).json({ error: "Bukti kirim (foto/gambar) wajib diunggah!" });
     }
 
+    if (!tujuan_akunting) {
+        return res.status(400).json({ error: "Akunting penerima wajib dipilih!" });
+    }
+
     const id = "SUB-" + crypto.randomUUID();
     const tanggal_kirim = new Date().toISOString();
     const operator_name = req.user.nama;
@@ -117,7 +121,10 @@ exports.confirmArrival = (req, res) => {
         if (err) return res.status(500).json({ error: err.message });
         if (!row) return res.status(404).json({ error: "Slip tidak ditemukan" });
 
-        if (req.user.role !== 'Admin') {
+        if (req.user.role !== 'Admin' && req.user.role !== 'Super Admin') {
+            if (req.user.role !== 'Akunting') {
+                return res.status(403).json({ error: "Hanya Akunting atau Admin yang berhak mengonfirmasi berkas ini." });
+            }
             if (row.tujuan_akunting && row.tujuan_akunting !== req.user.username) {
                 return res.status(403).json({ error: "Hanya Akunting yang dituju yang berhak mengonfirmasi berkas ini." });
             }

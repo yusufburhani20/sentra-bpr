@@ -398,6 +398,11 @@ export async function submitSlipSubmission() {
 
     const tujuan_akunting = document.getElementById("submit-tujuan-akunting") ? document.getElementById("submit-tujuan-akunting").value : "";
 
+    if (!tujuan_akunting) {
+        showToast("Akunting penerima wajib dipilih!", "warning");
+        return;
+    }
+
     const formData = new FormData();
     formData.append("kantor_kas", kantor_kas);
     formData.append("tujuan_akunting", tujuan_akunting);
