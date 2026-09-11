@@ -8,7 +8,7 @@ import { renderUsersView, openAddUserModal, submitUser, submitResetPassword, exp
 import { renderAuditTrailView, clearAuditLogs, updateNotifBadge, renderNotifDropdown, markNotifsRead, startClock, initTheme, toggleTheme, initDeployPanel } from './js/system.js';
 import { renderDashboardView } from './js/dashboard.js';
 import { renderApprovalsView, fetchPendingApprovalsCount } from './js/approvals.js';
-import { fetchSubmissions, setupSlipSubmissionForm, submitSlipSubmission, submitConfirmArrival, addCustomChecklistItem } from './js/slipSubmissions.js';
+import { fetchSubmissions, setupSlipSubmissionForm, submitSlipSubmission, submitConfirmArrival, submitUploadSampai, addCustomChecklistItem } from './js/slipSubmissions.js';
 import { fetchFileBackupList, setupFileBackup } from './js/fileBackup.js';
 import { renderBranchesView } from './js/branches.js';
 
@@ -809,6 +809,7 @@ if (!window.appJSInit) {
     document.getElementById("btn-submit-slip-submission").addEventListener("click", submitSlipSubmission);
     document.getElementById("btn-refresh-submissions").addEventListener("click", fetchSubmissions);
     document.getElementById("btn-submit-confirm-arrival").addEventListener("click", submitConfirmArrival);
+    document.getElementById("btn-submit-upload-sampai").addEventListener("click", submitUploadSampai);
     document.getElementById("btn-stop-impersonate").addEventListener("click", async () => {
         try {
             const res = await authFetch('/api/auth/stop-impersonating', {

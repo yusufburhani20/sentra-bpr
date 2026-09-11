@@ -104,20 +104,53 @@ exports.createSubmission = (req, res) => {
     });
 };
 
-// Confirm arrival of a submission
-exports.confirmArrival = (req, res) => {
+// Upload bukti sampai by sender
+exports.uploadBuktiSampai = (req, res) => {
     const { id } = req.params;
-    const { penerima_name } = req.body;
 
     if (!req.file) {
         return res.status(400).json({ error: "Bukti sampai (foto/gambar) wajib diunggah!" });
     }
 
+    db.get("SELECT username FROM slip_submissions WHERE id = ?", [id], (err, row) => {
+        if (err) return res.status(500).json({ error: err.message });
+        if (!row) return res.status(404).json({ error: "Slip tidak ditemukan" });
+
+        if (row.username !== req.user.username && req.user.role !== 'Super Admin' && req.user.role !== 'Admin') {
+            return res.status(403).json({ error: "Hanya pengirim asli yang berhak mengunggah bukti sampai." });
+        }
+
+        const bukti_sampai_path = "/uploads/" + req.file.filename;
+
+        const query = `
+            UPDATE slip_submissions 
+            SET status = 'Sampai', bukti_sampai_path = ?
+            WHERE id = ?
+        `;
+
+        db.run(query, [bukti_sampai_path, id], function(err) {
+            if (err) return res.status(500).json({ error: err.message });
+
+            const logId = crypto.randomUUID();
+            db.run("INSERT INTO audit_logs VALUES (?, ?, ?, ?, ?, ?)",
+                [logId, new Date().toISOString(), req.user.nama, req.user.role,
+                 `Mengunggah Bukti Sampai: ID ${id}`, req.ip || "127.0.0.1"]);
+
+            res.json({ success: true });
+        });
+    });
+};
+
+// Confirm arrival of a submission
+exports.confirmArrival = (req, res) => {
+    const { id } = req.params;
+    const { penerima_name } = req.body;
+
     if (!penerima_name || !penerima_name.trim()) {
         return res.status(400).json({ error: "Nama penerima wajib diisi!" });
     }
 
-    db.get("SELECT tujuan_akunting FROM slip_submissions WHERE id = ?", [id], (err, row) => {
+    db.get("SELECT tujuan_akunting, bukti_sampai_path FROM slip_submissions WHERE id = ?", [id], (err, row) => {
         if (err) return res.status(500).json({ error: err.message });
         if (!row) return res.status(404).json({ error: "Slip tidak ditemukan" });
 
@@ -130,16 +163,19 @@ exports.confirmArrival = (req, res) => {
             }
         }
 
+        if (!row.bukti_sampai_path) {
+            return res.status(400).json({ error: "Bukti fisik belum diunggah oleh pengirim!" });
+        }
+
         const tanggal_sampai = new Date().toISOString();
-        const bukti_sampai_path = "/uploads/" + req.file.filename;
 
         const query = `
             UPDATE slip_submissions 
-            SET status = 'Diterima', tanggal_sampai = ?, penerima_name = ?, bukti_sampai_path = ?
+            SET status = 'Diterima', tanggal_sampai = ?, penerima_name = ?
             WHERE id = ?
         `;
 
-        db.run(query, [tanggal_sampai, penerima_name || req.user.nama, bukti_sampai_path, id], function(err) {
+        db.run(query, [tanggal_sampai, penerima_name || req.user.nama, id], function(err) {
             if (err) return res.status(500).json({ error: err.message });
 
             // Add to audit logs

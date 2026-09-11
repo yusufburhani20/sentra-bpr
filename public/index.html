@@ -2312,7 +2312,44 @@
         </div>
     </div>
 
-    <!-- MODAL: Konfirmasi Terima/Sampai Berkas Slip -->
+    <!-- MODAL: Upload Bukti Sampai (Oleh Pengirim) -->
+    <div class="modal-overlay" id="modal-upload-sampai">
+        <div class="modal-container" style="max-width: 440px;">
+            <div class="modal-header">
+                <h3 class="modal-title"><i data-lucide="upload"
+                        style="color:var(--primary); display:inline-block; vertical-align:middle; margin-right:6px;"></i>
+                    Upload Bukti Fisik Sampai</h3>
+                <button class="modal-close" onclick="closeModal('modal-upload-sampai')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="upload-sampai-id">
+                <div class="form-group" style="margin-top:16px;">
+                    <label class="form-label">Foto Bukti Sampai di Meja Akunting</label>
+                    <input type="file" id="upload-bukti-sampai-input" accept="image/*" style="display:none;">
+                    <div class="upload-area-box" id="upload-box-sampai-pengirim"
+                        style="border: 2px dashed var(--border-color); border-radius: 8px; padding: 20px; text-align: center; cursor: pointer; transition: all 0.2s;">
+                        <i data-lucide="camera"
+                            style="width: 28px; height: 28px; color: var(--text-muted); margin-bottom: 6px; margin-left:auto; margin-right:auto;"></i>
+                        <div style="font-size: 12px; font-weight: 700; color: var(--text-main);">Ambil Foto Kamera /
+                            Pilih File</div>
+                        <div style="font-size: 10px; color: var(--text-muted); margin-top: 2px;">Format gambar JPG/PNG,
+                            dikompres otomatis</div>
+                        <img id="preview-bukti-sampai-pengirim"
+                            style="display:none; max-width:100%; max-height:140px; border-radius:6px; margin-top:8px; object-fit:contain;">
+                    </div>
+                </div>
+                <div id="upload-sampai-error"
+                    style="display:none; color:var(--danger); font-size:12px; margin-top:6px;"></div>
+            </div>
+            <div class="modal-footer" style="display:flex; gap:12px; margin-top:20px;">
+                <button class="btn btn-secondary" style="flex:1;"
+                    onclick="closeModal('modal-upload-sampai')">Batal</button>
+                <button class="btn btn-primary" id="btn-submit-upload-sampai" style="flex:1;">Upload Bukti</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: Konfirmasi Terima/Sampai Berkas Slip (Akunting/Admin) -->
     <div class="modal-overlay" id="modal-confirm-arrival">
         <div class="modal-container" style="max-width: 440px;">
             <div class="modal-header">
@@ -2328,29 +2365,16 @@
                     <input type="text" id="confirm-penerima-name" class="form-control"
                         placeholder="Masukkan nama penerima...">
                 </div>
-                <div class="form-group" style="margin-top:16px;">
-                    <label class="form-label">Foto Bukti Sampai</label>
-                    <input type="file" id="confirm-bukti-sampai" accept="image/*" style="display:none;">
-                    <div class="upload-area-box" id="upload-box-sampai"
-                        style="border: 2px dashed var(--border-color); border-radius: 8px; padding: 20px; text-align: center; cursor: pointer; transition: all 0.2s;">
-                        <i data-lucide="camera"
-                            style="width: 28px; height: 28px; color: var(--text-muted); margin-bottom: 6px; margin-left:auto; margin-right:auto;"></i>
-                        <div style="font-size: 12px; font-weight: 700; color: var(--text-main);">Ambil Foto Kamera /
-                            Pilih File</div>
-                        <div style="font-size: 10px; color: var(--text-muted); margin-top: 2px;">Format gambar JPG/PNG,
-                            dikompres otomatis</div>
-                        <img id="preview-bukti-sampai"
-                            style="display:none; max-width:100%; max-height:140px; border-radius:6px; margin-top:8px; object-fit:contain;">
-                    </div>
-                </div>
+                <p style="font-size: 12px; color: var(--text-muted); margin-top: 10px;">
+                    Pastikan fisik berkas sudah Anda terima dan sesuai dengan bukti foto yang diunggah pengirim.
+                </p>
                 <div id="confirm-arrival-error"
                     style="display:none; color:var(--danger); font-size:12px; margin-top:6px;"></div>
             </div>
             <div class="modal-footer" style="display:flex; gap:12px; margin-top:20px;">
                 <button class="btn btn-secondary" style="flex:1;"
                     onclick="closeModal('modal-confirm-arrival')">Batal</button>
-                <button class="btn btn-primary" id="btn-submit-confirm-arrival" style="flex:1;">Simpan
-                    Konfirmasi</button>
+                <button class="btn btn-primary" id="btn-submit-confirm-arrival" style="flex:1;">Terima Berkas</button>
             </div>
         </div>
     </div>

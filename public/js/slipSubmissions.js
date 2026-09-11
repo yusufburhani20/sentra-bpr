@@ -188,12 +188,13 @@ export function renderSubmissionsTable() {
 
         // Format status, recipient name and date
         let statusBadgeClass = "badge-warning";
-        let statusText = "Dikirim";
+        let statusText = item.status;
         let statusInfo = `<div style="font-size:11px; color:var(--text-muted); margin-top:2px;">Oleh: ${escapeHtml(item.operator_name)}</div>`;
         
-        if (item.status === 'Diterima' || item.status === 'Sampai') {
+        if (item.status === 'Sampai') {
+            statusBadgeClass = "badge-info";
+        } else if (item.status === 'Diterima') {
             statusBadgeClass = "badge-success";
-            statusText = "Diterima";
             statusInfo = `
                 <div style="font-size:11px; color:var(--text-muted); margin-top:2px;">
                     Penerima: <strong>${escapeHtml(item.penerima_name)}</strong><br>
@@ -205,6 +206,17 @@ export function renderSubmissionsTable() {
         // Action Column Button
         let actionBtnHTML = `<span class="text-muted" style="font-size:11px;">Selesai</span>`;
         if (item.status === 'Dikirim') {
+            const isSender = item.username === state.currentUser.username;
+            if (isSender) {
+                actionBtnHTML = `
+                    <button class="btn btn-primary btn-upload-sampai" style="padding: 6px 10px; font-size:11px;" data-id="${item.id}">
+                        <i data-lucide="upload" style="width:12px; height:12px; margin-right:4px;"></i> Upload Bukti
+                    </button>
+                `;
+            } else {
+                actionBtnHTML = `<span class="text-muted" style="font-size:11px; font-style:italic;">Menunggu Pengirim</span>`;
+            }
+        } else if (item.status === 'Sampai') {
             // Validate if the current user has permission to confirm
             const isAuthorizedToConfirm = state.currentRole === 'Super Admin' || state.currentRole === 'Admin' || 
                                          (item.tujuan_akunting && item.tujuan_akunting === state.currentUser.username);
@@ -267,11 +279,21 @@ export function renderSubmissionsTable() {
             btnConfirm.addEventListener("click", () => {
                 document.getElementById("confirm-arrival-id").value = item.id;
                 document.getElementById("confirm-penerima-name").value = "";
-                document.getElementById("confirm-bukti-sampai").value = "";
-                document.getElementById("preview-bukti-sampai").style.display = "none";
                 document.getElementById("confirm-arrival-error").style.display = "none";
-                compressedSampaiBlob = null;
                 openModal("modal-confirm-arrival");
+            });
+        }
+
+        // Wire Upload Sampai Click handler
+        const btnUploadSampai = tr.querySelector(".btn-upload-sampai");
+        if (btnUploadSampai) {
+            btnUploadSampai.addEventListener("click", () => {
+                document.getElementById("upload-sampai-id").value = item.id;
+                document.getElementById("upload-bukti-sampai-input").value = "";
+                document.getElementById("preview-bukti-sampai-pengirim").style.display = "none";
+                document.getElementById("upload-sampai-error").style.display = "none";
+                compressedSampaiBlob = null;
+                openModal("modal-upload-sampai");
             });
         }
 
@@ -353,9 +375,9 @@ export function setupSlipSubmissionForm() {
         });
     }
 
-    const uploadBoxSampai = document.getElementById("upload-box-sampai");
-    const fileInputSampai = document.getElementById("confirm-bukti-sampai");
-    const previewSampai = document.getElementById("preview-bukti-sampai");
+    const uploadBoxSampai = document.getElementById("upload-box-sampai-pengirim");
+    const fileInputSampai = document.getElementById("upload-bukti-sampai-input");
+    const previewSampai = document.getElementById("preview-bukti-sampai-pengirim");
 
     if (uploadBoxSampai && fileInputSampai) {
         uploadBoxSampai.addEventListener("click", () => fileInputSampai.click());
@@ -452,35 +474,20 @@ export async function submitConfirmArrival() {
         return;
     }
 
-    if (!compressedSampaiBlob) {
-        errorEl.innerText = "Foto bukti fisik sampai wajib diambil!";
-        errorEl.style.display = "block";
-        return;
-    }
-
     errorEl.style.display = "none";
-
-    const formData = new FormData();
-    formData.append("penerima_name", penerima_name);
-    formData.append("bukti_sampai", compressedSampaiBlob, "bukti_sampai.jpg");
 
     try {
         showToast("Menyimpan konfirmasi penerimaan...", "info");
 
         const res = await authFetch(`/api/slip-submissions/${id}/confirm-arrival`, {
             method: 'PUT',
-            body: formData
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ penerima_name })
         }).then(r => r.json());
 
         if (res.success) {
             showToast("Penerimaan berkas berhasil dikonfirmasi!", "success");
             closeModal("modal-confirm-arrival");
-            
-            // Clean up state
-            compressedSampaiBlob = null;
-            document.getElementById("confirm-bukti-sampai").value = "";
-            document.getElementById("preview-bukti-sampai").style.display = "none";
-            
             await fetchSubmissions();
         } else {
             errorEl.innerText = res.error || "Gagal menyimpan konfirmasi.";
@@ -491,6 +498,51 @@ export async function submitConfirmArrival() {
         showToast("Koneksi server terputus.", "danger");
     }
 }
+
+// Upload bukti sampai by sender
+export async function submitUploadSampai() {
+    const id = document.getElementById("upload-sampai-id").value;
+    const errorEl = document.getElementById("upload-sampai-error");
+
+    if (!compressedSampaiBlob) {
+        errorEl.innerText = "Foto bukti fisik sampai wajib diambil!";
+        errorEl.style.display = "block";
+        return;
+    }
+
+    errorEl.style.display = "none";
+
+    const formData = new FormData();
+    formData.append("bukti_sampai", compressedSampaiBlob, "bukti_sampai.jpg");
+
+    try {
+        showToast("Mengunggah foto bukti fisik...", "info");
+
+        const res = await authFetch(`/api/slip-submissions/${id}/upload-sampai`, {
+            method: 'PUT',
+            body: formData
+        }).then(r => r.json());
+
+        if (res.success) {
+            showToast("Bukti fisik berhasil diunggah!", "success");
+            closeModal("modal-upload-sampai");
+            
+            // Clean up state
+            compressedSampaiBlob = null;
+            document.getElementById("upload-bukti-sampai-input").value = "";
+            document.getElementById("preview-bukti-sampai-pengirim").style.display = "none";
+            
+            await fetchSubmissions();
+        } else {
+            errorEl.innerText = res.error || "Gagal mengunggah foto.";
+            errorEl.style.display = "block";
+        }
+    } catch (e) {
+        console.error(e);
+        showToast("Koneksi server terputus.", "danger");
+    }
+}
+
 
 export function exportSubmissionsCSV() {
     const items = state.slipSubmissionsDB || [];
