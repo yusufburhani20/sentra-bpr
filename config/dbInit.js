@@ -215,6 +215,7 @@ async function initializeDb(callback) {
         await runAsync("ALTER TABLE slip_submissions ADD COLUMN username TEXT");
         await runAsync("ALTER TABLE slip_submissions ADD COLUMN branch_id TEXT");
         await runAsync("ALTER TABLE slip_submissions ADD COLUMN tujuan_akunting TEXT");
+        await runAsync("ALTER TABLE slip_submissions ADD COLUMN tanggal_upload_sampai TEXT").catch(() => {});
         await runAsync("CREATE INDEX IF NOT EXISTS idx_slip_submissions_username ON slip_submissions (username)");
         await runAsync("CREATE INDEX IF NOT EXISTS idx_slip_submissions_branch_id ON slip_submissions (branch_id)");
 

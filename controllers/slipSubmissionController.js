@@ -3,43 +3,57 @@ const db = require('../config/db');
 
 // Fetch all submissions
 exports.getSubmissions = (req, res) => {
-    let query = "SELECT * FROM slip_submissions ORDER BY tanggal_kirim DESC";
-    let params = [];
+    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    const now = new Date().toISOString();
+    const autoAcceptQuery = `
+        UPDATE slip_submissions
+        SET status = 'Diterima',
+            penerima_name = 'Sistem (Otomatis)',
+            tanggal_sampai = ?
+        WHERE status = 'Sampai' AND tanggal_upload_sampai <= ?
+    `;
 
-    const isSuperAdmin = req.user.role === 'Super Admin';
-    const isPusat = req.user.branch_id === 'B-PUSAT';
-    const isAdmin = req.user.role === 'Admin';
+    db.run(autoAcceptQuery, [now, oneDayAgo], (errAuto) => {
+        if (errAuto) console.error("Error auto-accepting slips:", errAuto);
 
-    if (isSuperAdmin) {
-        // Super Admin sees everything
-    } else if (isAdmin || req.user.role === 'Kepala Bidang') {
-        // Admin / Kepala Bidang Cabang sees all within their branch
-        query = "SELECT * FROM slip_submissions WHERE branch_id = ? ORDER BY tanggal_kirim DESC";
-        params = [req.user.branch_id];
-    } else if (req.user.role === 'Akunting') {
-        // Akunting sees all in branch, but especially theirs
-        query = "SELECT * FROM slip_submissions WHERE branch_id = ? ORDER BY tanggal_kirim DESC";
-        params = [req.user.branch_id];
-    } else {
-        // Standard user sees only their own
-        query = "SELECT * FROM slip_submissions WHERE branch_id = ? AND username = ? ORDER BY tanggal_kirim DESC";
-        params = [req.user.branch_id, req.user.username];
-    }
-    
-    db.all(query, params, (err, rows) => {
-        if (err) return res.status(500).json({ error: err.message });
+        let query = "SELECT * FROM slip_submissions ORDER BY tanggal_kirim DESC";
+        let params = [];
+
+        const isSuperAdmin = req.user.role === 'Super Admin';
+        const isPusat = req.user.branch_id === 'B-PUSAT';
+        const isAdmin = req.user.role === 'Admin';
+
+        if (isSuperAdmin) {
+            // Super Admin sees everything
+        } else if (isAdmin || req.user.role === 'Kepala Bidang') {
+            // Admin / Kepala Bidang Cabang sees all within their branch
+            query = "SELECT * FROM slip_submissions WHERE branch_id = ? ORDER BY tanggal_kirim DESC";
+            params = [req.user.branch_id];
+        } else if (req.user.role === 'Akunting') {
+            // Akunting sees all in branch, but especially theirs
+            query = "SELECT * FROM slip_submissions WHERE branch_id = ? ORDER BY tanggal_kirim DESC";
+            params = [req.user.branch_id];
+        } else {
+            // Standard user sees only their own
+            query = "SELECT * FROM slip_submissions WHERE branch_id = ? AND username = ? ORDER BY tanggal_kirim DESC";
+            params = [req.user.branch_id, req.user.username];
+        }
         
-        // Parse checklist_lainnya JSON array safely
-        const parsedRows = rows.map(row => {
-            try {
-                row.checklist_lainnya = JSON.parse(row.checklist_lainnya || '[]');
-            } catch (e) {
-                row.checklist_lainnya = [];
-            }
-            return row;
+        db.all(query, params, (err, rows) => {
+            if (err) return res.status(500).json({ error: err.message });
+            
+            // Parse checklist_lainnya JSON array safely
+            const parsedRows = rows.map(row => {
+                try {
+                    row.checklist_lainnya = JSON.parse(row.checklist_lainnya || '[]');
+                } catch (e) {
+                    row.checklist_lainnya = [];
+                }
+                return row;
+            });
+            
+            res.json(parsedRows);
         });
-        
-        res.json(parsedRows);
     });
 };
 
@@ -121,14 +135,15 @@ exports.uploadBuktiSampai = (req, res) => {
         }
 
         const bukti_sampai_path = "/uploads/" + req.file.filename;
+        const tanggal_upload_sampai = new Date().toISOString();
 
         const query = `
             UPDATE slip_submissions 
-            SET status = 'Sampai', bukti_sampai_path = ?
+            SET status = 'Sampai', bukti_sampai_path = ?, tanggal_upload_sampai = ?
             WHERE id = ?
         `;
 
-        db.run(query, [bukti_sampai_path, id], function(err) {
+        db.run(query, [bukti_sampai_path, tanggal_upload_sampai, id], function(err) {
             if (err) return res.status(500).json({ error: err.message });
 
             const logId = crypto.randomUUID();
