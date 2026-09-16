@@ -6,7 +6,7 @@ exports.getTransactions = (req, res) => {
     const limit = parseInt(req.query.limit) || 50;
     const offset = (page - 1) * limit;
 
-    const search = req.query.search ? req.query.search.trim() : "";
+    const search = req.query.search ? req.query.search.trim().toLowerCase() : "";
     const code = req.query.code ? req.query.code.trim() : "";
     const date = req.query.date ? req.query.date.trim() : "";
 
@@ -38,7 +38,7 @@ exports.getTransactions = (req, res) => {
 
     if (search) {
         const s = `%${search}%`;
-        const filterStr = " AND (ref_no LIKE ? OR debet_rekening LIKE ? OR debet_nama LIKE ? OR kredit_rekening LIKE ? OR kredit_nama LIKE ? OR keterangan LIKE ?)";
+        const filterStr = " AND (LOWER(ref_no) LIKE ? OR LOWER(debet_rekening) LIKE ? OR LOWER(debet_nama) LIKE ? OR LOWER(kredit_rekening) LIKE ? OR LOWER(kredit_nama) LIKE ? OR LOWER(keterangan) LIKE ?)";
         query += filterStr;
         countQuery += filterStr;
         params.push(s, s, s, s, s, s);

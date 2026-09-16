@@ -5,7 +5,7 @@ exports.getCostCodes = (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 50;
     const offset = (page - 1) * limit;
-    const search = req.query.search ? req.query.search.trim() : "";
+    const search = req.query.search ? req.query.search.trim().toLowerCase() : "";
 
     let query = "SELECT * FROM cost_codes WHERE deleted_at IS NULL";
     let countQuery = "SELECT COUNT(*) as count FROM cost_codes WHERE deleted_at IS NULL";
@@ -13,7 +13,7 @@ exports.getCostCodes = (req, res) => {
 
     if (search) {
         const s = `%${search}%`;
-        const filterStr = " AND (kode LIKE ? OR deskripsi LIKE ?)";
+        const filterStr = " AND (LOWER(kode) LIKE ? OR LOWER(deskripsi) LIKE ?)";
         query += filterStr;
         countQuery += filterStr;
         params.push(s, s);
@@ -41,7 +41,7 @@ exports.getCostCodes = (req, res) => {
 };
 
 exports.searchCostCodes = (req, res) => {
-    const search = req.query.query ? req.query.query.trim() : "";
+    const search = req.query.query ? req.query.query.trim().toLowerCase() : "";
     const limit = parseInt(req.query.limit) || 10;
 
     let query = "SELECT kode, deskripsi FROM cost_codes WHERE deleted_at IS NULL";
@@ -49,7 +49,7 @@ exports.searchCostCodes = (req, res) => {
 
     if (search) {
         const s = `%${search}%`;
-        query += " AND (kode LIKE ? OR deskripsi LIKE ?)";
+        query += " AND (LOWER(kode) LIKE ? OR LOWER(deskripsi) LIKE ?)";
         params.push(s, s);
     }
 
